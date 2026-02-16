@@ -21,7 +21,14 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "lcov", "html"],
       include: ["src/**/*.ts"],
-      exclude: ["src/index.ts"],
+      exclude: [
+        "src/index.ts",
+        "src/config/provider.ts",
+        "src/storage/adapter.ts",
+        "src/storage/types.ts",
+        "src/tenant/types.ts",
+        "src/tenant/index.ts",
+      ],
       thresholds: {
         branches: 80,
         functions: 80,

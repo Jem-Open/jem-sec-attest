@@ -15,7 +15,8 @@
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { redactSensitiveValues } from "../../src/config/env-substitute.js";
-import { loadConfigFromFiles } from "../../src/config/index.js";
+import { FileConfigProvider } from "../../src/config/file-provider.js";
+import { loadConfig, loadConfigFromFiles } from "../../src/config/index.js";
 
 const VALID_FIXTURES = join(import.meta.dirname, "../fixtures/valid");
 
@@ -154,5 +155,18 @@ describe("Env var security (integration)", () => {
         process.env[envKey] = originalEnv;
       }
     }
+  });
+});
+
+describe("loadConfig via ConfigProvider (integration)", () => {
+  it("loads config through the provider interface", async () => {
+    const provider = new FileConfigProvider({ configDir: VALID_FIXTURES });
+    const snapshot = await loadConfig(provider);
+
+    expect(snapshot.tenants.size).toBe(2);
+    expect(snapshot.configHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(snapshot.hostnameIndex.size).toBeGreaterThan(0);
+    expect(snapshot.emailDomainIndex.size).toBeGreaterThan(0);
+    expect(snapshot.loadedAt).toBeInstanceOf(Date);
   });
 });

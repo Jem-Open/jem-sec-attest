@@ -14,7 +14,12 @@
 
 import { describe, expect, it } from "vitest";
 import { ConfigValidationError } from "../../../src/config/errors.js";
-import { deepMergeSettings, validateUniqueness } from "../../../src/config/validator.js";
+import {
+  deepMergeSettings,
+  validateDefaults,
+  validateTenantConfig,
+  validateUniqueness,
+} from "../../../src/config/validator.js";
 import type { Tenant, TenantSettings } from "../../../src/tenant/types.js";
 
 describe("deepMergeSettings", () => {
@@ -66,6 +71,55 @@ describe("deepMergeSettings", () => {
     // features is Record, deep merged: a overridden, b kept
     expect(result.features?.a).toBe(false);
     expect(result.features?.b).toBe(true);
+  });
+});
+
+describe("validateDefaults", () => {
+  it("validates a correct defaults YAML", () => {
+    const raw =
+      "defaults:\n  branding:\n    primaryColor: '#000'\n  features:\n    featureA: true\n";
+    const result = validateDefaults(raw, "defaults.yaml");
+    expect(result.defaults.defaults.branding?.primaryColor).toBe("#000");
+    expect(result.sensitiveVars.size).toBe(0);
+  });
+
+  it("throws ConfigValidationError for invalid defaults", () => {
+    const raw = "invalid: true\n";
+    expect(() => validateDefaults(raw, "defaults.yaml")).toThrow(ConfigValidationError);
+  });
+
+  it("tracks sensitive vars in defaults", () => {
+    const raw = "defaults:\n  integrations:\n    webhookUrl: ${MY_SECRET}\n";
+    const result = validateDefaults(raw, "defaults.yaml", { MY_SECRET: "s3cret" });
+    expect(result.sensitiveVars.has("MY_SECRET")).toBe(true);
+  });
+});
+
+describe("validateTenantConfig", () => {
+  it("validates a correct tenant YAML", () => {
+    const raw =
+      'name: "Test"\nhostnames:\n  - test.example.com\nemailDomains:\n  - test.com\nsettings:\n  branding:\n    displayName: "Test"\n';
+    const result = validateTenantConfig(raw, "tenants/test.yaml", "test");
+    expect(result.tenant.id).toBe("test");
+    expect(result.tenant.name).toBe("Test");
+    expect(result.tenant.hostnames).toEqual(["test.example.com"]);
+  });
+
+  it("throws ConfigValidationError for invalid tenant YAML", () => {
+    const raw = "invalid: true\n";
+    expect(() => validateTenantConfig(raw, "tenants/bad.yaml", "bad")).toThrow(
+      ConfigValidationError,
+    );
+  });
+
+  it("substitutes env vars in tenant config", () => {
+    const raw =
+      'name: "Test"\nhostnames:\n  - test.example.com\nsettings:\n  integrations:\n    webhookUrl: ${HOOK_SECRET}\n';
+    const result = validateTenantConfig(raw, "tenants/test.yaml", "test", {
+      HOOK_SECRET: "https://hook.example.com",
+    });
+    expect(result.tenant.settings.integrations?.webhookUrl).toBe("https://hook.example.com");
+    expect(result.sub.sensitiveVars.has("HOOK_SECRET")).toBe(true);
   });
 });
 

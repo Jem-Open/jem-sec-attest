@@ -1,0 +1,13 @@
+# Base settings inherited by all tenants
+defaults:
+  branding:
+    primaryColor: "#1a1a2e"
+  features:
+    trainingModules: true
+    certificates: true
+    advancedReporting: false
+  integrations:
+    webhookUrl: ""
+    ssoProvider: ""
+  retention:
+    days: 365

@@ -1,0 +1,11 @@
+name: "Globex Inc"
+hostnames:
+  - globex.training.example.com
+emailDomains:
+  - globex.com
+settings:
+  branding:
+    logoUrl: "https://globex.com/logo.png"
+    displayName: "Globex Training Hub"
+  integrations:
+    webhookUrl: "${GLOBEX_WEBHOOK_SECRET}"

@@ -1,0 +1,11 @@
+defaults:
+  branding:
+    primaryColor: "#000000"
+  features:
+    featureA: true
+    featureB: false
+  integrations:
+    webhookUrl: ""
+    ssoProvider: ""
+  retention:
+    days: 90

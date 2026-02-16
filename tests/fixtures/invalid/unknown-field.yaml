@@ -1,0 +1,4 @@
+name: "Unknown"
+hostnames:
+  - unknown.example.com
+unknownField: "should fail"

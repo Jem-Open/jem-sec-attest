@@ -1,0 +1,6 @@
+name: "Unresolved"
+hostnames:
+  - unresolved.example.com
+settings:
+  integrations:
+    webhookUrl: "${TOTALLY_MISSING_VAR}"

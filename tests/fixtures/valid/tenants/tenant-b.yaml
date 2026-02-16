@@ -1,0 +1,10 @@
+name: "Tenant B"
+hostnames:
+  - b.example.com
+emailDomains:
+  - tenant-b.com
+settings:
+  branding:
+    displayName: "Tenant B Portal"
+  integrations:
+    webhookUrl: "${TEST_WEBHOOK_URL:-http://localhost:9999/hook}"

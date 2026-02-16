@@ -1,0 +1,16 @@
+name: "Acme Corp"
+hostnames:
+  - acme.training.example.com
+  - acme-legacy.example.com
+emailDomains:
+  - acme.com
+  - acmecorp.com
+settings:
+  branding:
+    logoUrl: "https://acme.com/logo.png"
+    primaryColor: "#e94560"
+    displayName: "Acme Training Portal"
+  features:
+    advancedReporting: true
+  integrations:
+    webhookUrl: "${ACME_WEBHOOK_SECRET}"

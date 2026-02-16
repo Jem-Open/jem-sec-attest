@@ -1,0 +1,148 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "jem-sec-attest Tenant Configuration Schema",
+  "description": "Schema for tenant configuration files and base defaults.",
+  "definitions": {
+    "TenantConfig": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "hostnames": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        },
+        "emailDomains": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "default": []
+        },
+        "settings": {
+          "type": "object",
+          "properties": {
+            "branding": {
+              "type": "object",
+              "properties": {
+                "logoUrl": {
+                  "type": "string"
+                },
+                "primaryColor": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "features": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            },
+            "integrations": {
+              "type": "object",
+              "properties": {
+                "webhookUrl": {
+                  "type": "string"
+                },
+                "ssoProvider": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "retention": {
+              "type": "object",
+              "properties": {
+                "days": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false,
+          "default": {}
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false,
+      "anyOf": [
+        { "required": ["hostnames"], "properties": { "hostnames": { "minItems": 1 } } },
+        { "required": ["emailDomains"], "properties": { "emailDomains": { "minItems": 1 } } }
+      ]
+    },
+    "BaseConfig": {
+      "type": "object",
+      "properties": {
+        "defaults": {
+          "type": "object",
+          "properties": {
+            "branding": {
+              "type": "object",
+              "properties": {
+                "logoUrl": {
+                  "type": "string"
+                },
+                "primaryColor": {
+                  "type": "string"
+                },
+                "displayName": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "features": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            },
+            "integrations": {
+              "type": "object",
+              "properties": {
+                "webhookUrl": {
+                  "type": "string"
+                },
+                "ssoProvider": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            },
+            "retention": {
+              "type": "object",
+              "properties": {
+                "days": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "required": [
+        "defaults"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

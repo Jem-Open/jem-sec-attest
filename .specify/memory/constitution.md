@@ -31,8 +31,11 @@ files and validated against a published schema.
 - There MUST NOT be an admin web portal. Configuration changes are
   code-reviewed and version-controlled.
 - Secrets MUST NEVER appear in configuration files. Use environment
-  variable references (`env:`) or secret-manager references
-  (`secretRef:`) exclusively.
+  variable substitution (`${VAR}` or `${VAR:-default}` syntax) or
+  secret-manager references (`secretRef:`) exclusively.
+  `secretRef:` support MAY be deferred to a later feature provided
+  environment variable substitution is available from the initial
+  release.
 - Every configuration schema MUST be published alongside the feature
   that consumes it, with example files and inline documentation.
 

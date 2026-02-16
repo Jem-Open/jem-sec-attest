@@ -1,0 +1,10 @@
+name: "Tenant A"
+hostnames:
+  - a.example.com
+emailDomains:
+  - tenant-a.com
+settings:
+  branding:
+    displayName: "Tenant A Portal"
+  features:
+    featureB: true

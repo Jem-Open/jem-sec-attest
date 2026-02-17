@@ -38,3 +38,6 @@ npm-debug.log*
 # Temporary files
 *.tmp
 tmp/
+.agents/skills/
+.claude/skills/
+.claude/settings.json

@@ -171,8 +171,9 @@ export class OIDCAdapter implements AuthAdapter {
         ok: true,
         claims: { sub, email, name, issuer: oidcConfig.issuerUrl },
       };
-    } catch (err) {
-      console.error("Token exchange failed:", err instanceof Error ? err.message : "Unknown error");
+    } catch (_err) {
+      // Log generic message; avoid leaking IdP error details that may contain tokens/PII
+      console.error("Token exchange failed for tenant:", tenant.id);
       return { ok: false, reason: "token-exchange-failed", message: "Token exchange failed" };
     }
   }

@@ -1,0 +1,135 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "jem-sec-attest Auth Configuration Schema",
+  "description": "Schema for OIDC authentication and session configuration.",
+  "definitions": {
+    "OIDCConfig": {
+      "type": "object",
+      "properties": {
+        "issuerUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "clientId": {
+          "type": "string",
+          "minLength": 1
+        },
+        "clientSecret": {
+          "type": "string",
+          "pattern": "^\\$\\{[A-Z_][A-Z0-9_]*\\}$"
+        },
+        "redirectUri": {
+          "type": "string",
+          "format": "uri"
+        },
+        "scopes": {
+          "minItems": 1,
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "logoutUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "claimMappings": {
+          "type": "object",
+          "propertyNames": {
+            "type": "string"
+          },
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "issuerUrl",
+        "clientId",
+        "clientSecret",
+        "redirectUri",
+        "scopes"
+      ],
+      "additionalProperties": false
+    },
+    "AuthSessionConfig": {
+      "type": "object",
+      "properties": {
+        "sessionTtlSeconds": {
+          "default": 3600,
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "sessionTtlSeconds"
+      ],
+      "additionalProperties": false
+    },
+    "AuthConfig": {
+      "type": "object",
+      "properties": {
+        "oidc": {
+          "type": "object",
+          "properties": {
+            "issuerUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "clientId": {
+              "type": "string",
+              "minLength": 1
+            },
+            "clientSecret": {
+              "type": "string",
+              "pattern": "^\\$\\{[A-Z_][A-Z0-9_]*\\}$"
+            },
+            "redirectUri": {
+              "type": "string",
+              "format": "uri"
+            },
+            "scopes": {
+              "minItems": 1,
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "logoutUrl": {
+              "type": "string",
+              "format": "uri"
+            },
+            "claimMappings": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [
+            "issuerUrl",
+            "clientId",
+            "clientSecret",
+            "redirectUri",
+            "scopes"
+          ],
+          "additionalProperties": false
+        },
+        "sessionTtlSeconds": {
+          "default": 3600,
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+        }
+      },
+      "required": [
+        "sessionTtlSeconds"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

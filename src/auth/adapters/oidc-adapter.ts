@@ -181,7 +181,13 @@ export class OIDCAdapter implements AuthAdapter {
 
     // Validate logoutUrl scheme — only allow https to prevent open redirect
     if (logoutUrl) {
-      const parsed = new URL(logoutUrl);
+      let parsed: URL;
+      try {
+        parsed = new URL(logoutUrl);
+      } catch {
+        // Malformed URL — fall back to internal sign-out confirmation page
+        return { redirectUrl: `/${tenant.id}/auth/signout-confirm` };
+      }
       if (parsed.protocol !== "https:") {
         throw new Error("logoutUrl must use https scheme");
       }

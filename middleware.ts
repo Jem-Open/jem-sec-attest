@@ -24,9 +24,9 @@
 
 import { getIronSession } from "iron-session";
 import { type NextRequest, NextResponse } from "next/server";
-import type { EmployeeSession } from "../src/auth/types";
-import { getSnapshot } from "../src/config/index";
-import { createResolver } from "../src/tenant/resolver";
+import type { EmployeeSession } from "./src/auth/types";
+import { getSnapshot } from "./src/config/index";
+import { createResolver } from "./src/tenant/resolver";
 
 const PUBLIC_PATHS = ["/api/auth/", "/_next/", "/favicon.ico"];
 
@@ -89,7 +89,10 @@ export async function middleware(request: NextRequest) {
   const tenantSlug = segments[0];
 
   if (!tenantSlug) {
-    return NextResponse.next();
+    // Root path "/" with a resolved tenant — redirect to the tenant's root.
+    // This prevents unauthenticated access to "/" and avoids bypassing
+    // session validation for any content served at the root path.
+    return NextResponse.redirect(new URL(`/${resolvedTenantId}`, request.url));
   }
 
   // Read session from encrypted cookie

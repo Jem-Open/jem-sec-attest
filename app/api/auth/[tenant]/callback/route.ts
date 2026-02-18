@@ -59,6 +59,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
   // Email domain validation against tenant's configured emailDomains.
   // If the tenant has emailDomains configured and the IdP returns claims
   // for a domain not matching the tenant, reject with tenant-mismatch.
+  if (typeof result.claims.email !== "string" || !result.claims.email) {
+    await logAuthEvent(
+      storage,
+      createAuthFailureEvent(tenantSlug, "missing-required-claims", request, result.claims.issuer),
+    );
+    return NextResponse.redirect(
+      new URL(`/${tenantSlug}/auth/error?code=auth_failed`, request.url),
+    );
+  }
   const emailParts = result.claims.email.split("@");
   if (emailParts.length !== 2 || !emailParts[1]) {
     await logAuthEvent(

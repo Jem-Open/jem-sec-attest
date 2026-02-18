@@ -205,7 +205,7 @@ describe("middleware", () => {
       return { NextResponse: MockNextResponse };
     });
 
-    const mod = await import("../../../app/middleware");
+    const mod = await import("../../../middleware");
     middleware = mod.middleware as (request: unknown) => Promise<unknown>;
   });
 

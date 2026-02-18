@@ -1,0 +1,258 @@
+openapi: 3.1.0
+info:
+  title: Employee SSO Authentication API
+  version: 0.1.0
+  description: |
+    OIDC-based employee authentication endpoints for multi-tenant
+    jem-sec-attest platform. All endpoints are tenant-scoped via
+    the [tenant] path parameter, which maps to the tenant slug.
+
+servers:
+  - url: "{scheme}://{hostname}"
+    variables:
+      scheme:
+        default: https
+      hostname:
+        default: acme.example.com
+        description: Tenant-specific hostname
+
+paths:
+  /api/auth/{tenant}/signin:
+    get:
+      operationId: initiateSignIn
+      summary: Initiate OIDC sign-in flow
+      description: |
+        Resolves tenant, validates OIDC configuration, generates PKCE
+        parameters and state, stores them in a temporary session, and
+        redirects to the tenant's IdP authorization endpoint.
+      tags: [Authentication]
+      parameters:
+        - $ref: "#/components/parameters/TenantSlug"
+      responses:
+        "302":
+          description: Redirect to IdP authorization endpoint
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: IdP authorization URL with OIDC parameters
+            Set-Cookie:
+              schema:
+                type: string
+              description: Encrypted temporary session cookie with state + PKCE verifier
+        "404":
+          $ref: "#/components/responses/TenantNotFound"
+        "500":
+          description: OIDC not configured for tenant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: "Single sign-on is not configured for your organization."
+
+  /api/auth/{tenant}/callback:
+    get:
+      operationId: handleOIDCCallback
+      summary: Handle OIDC callback from IdP
+      description: |
+        Validates state parameter (CSRF protection), exchanges authorization
+        code for tokens (with PKCE), validates id_token claims, provisions
+        or updates employee record (JIT), creates authenticated session,
+        records audit event, and redirects to tenant dashboard.
+      tags: [Authentication]
+      parameters:
+        - $ref: "#/components/parameters/TenantSlug"
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Authorization code from IdP
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+          description: State parameter for CSRF validation
+        - name: error
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Error code from IdP (if auth failed)
+        - name: error_description
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Error description from IdP (if auth failed)
+      responses:
+        "302":
+          description: |
+            Success: redirect to tenant dashboard with authenticated session cookie.
+            Failure: redirect to auth error page with error code.
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+            Set-Cookie:
+              schema:
+                type: string
+              description: Encrypted session cookie (on success)
+        "404":
+          $ref: "#/components/responses/TenantNotFound"
+
+  /api/auth/{tenant}/signout:
+    post:
+      operationId: signOut
+      summary: Sign out and destroy session
+      description: |
+        Destroys the local session, records an audit event, and optionally
+        redirects to the IdP logout endpoint if configured for the tenant.
+      tags: [Authentication]
+      parameters:
+        - $ref: "#/components/parameters/TenantSlug"
+      responses:
+        "302":
+          description: |
+            Redirect to sign-out confirmation page (or IdP logout URL if configured).
+          headers:
+            Location:
+              schema:
+                type: string
+                format: uri
+            Set-Cookie:
+              schema:
+                type: string
+              description: Cleared session cookie
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/TenantNotFound"
+
+components:
+  parameters:
+    TenantSlug:
+      name: tenant
+      in: path
+      required: true
+      schema:
+        type: string
+        minLength: 1
+      description: Tenant slug (e.g., "acme-corp")
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+          description: User-friendly error message (never exposes internals)
+
+    Employee:
+      type: object
+      required: [id, tenantId, idpSubject, email, displayName, firstSignInAt, lastSignInAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+        idpSubject:
+          type: string
+          description: OIDC sub claim
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        firstSignInAt:
+          type: string
+          format: date-time
+        lastSignInAt:
+          type: string
+          format: date-time
+
+    AuthAuditEvent:
+      type: object
+      required: [id, eventType, timestamp, ipAddress, userAgent]
+      properties:
+        id:
+          type: string
+          format: uuid
+        eventType:
+          type: string
+          enum: [sign-in, sign-out, auth-failure, auth-config-error]
+        tenantId:
+          type: string
+          nullable: true
+        employeeId:
+          type: string
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+        ipAddress:
+          type: string
+        userAgent:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+
+    OIDCTenantConfig:
+      type: object
+      required: [issuerUrl, clientId, clientSecret, redirectUri, scopes]
+      properties:
+        issuerUrl:
+          type: string
+          format: uri
+          description: OIDC Discovery base URL
+        clientId:
+          type: string
+          minLength: 1
+        clientSecret:
+          type: string
+          pattern: '^\$\{[A-Z_][A-Z0-9_]*\}$'
+          description: Environment variable reference (never plaintext)
+        redirectUri:
+          type: string
+          format: uri
+        scopes:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          description: Must include "openid"
+        logoutUrl:
+          type: string
+          format: uri
+          nullable: true
+        claimMappings:
+          type: object
+          additionalProperties:
+            type: string
+          nullable: true
+
+  responses:
+    TenantNotFound:
+      description: Tenant not found or not resolvable
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "Organization not found."
+
+    Unauthorized:
+      description: No valid session
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+          example:
+            error: "Not authenticated."

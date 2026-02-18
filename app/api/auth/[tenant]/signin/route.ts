@@ -62,20 +62,15 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
     return response;
   } catch (error) {
     // Log config error and redirect to error page
+    const isMissing = error instanceof Error && error.message.includes("not configured");
+    const auditReason = isMissing ? "missing-oidc-config" : "invalid-oidc-config";
+    const redirectCode = isMissing ? "missing_config" : "invalid_config";
+
     await storage.initialize();
-    await logAuthEvent(
-      storage,
-      createAuthConfigErrorEvent(
-        tenantSlug,
-        error instanceof Error && error.message.includes("not configured")
-          ? "missing-oidc-config"
-          : "invalid-oidc-config",
-        request,
-      ),
-    );
+    await logAuthEvent(storage, createAuthConfigErrorEvent(tenantSlug, auditReason, request));
 
     return NextResponse.redirect(
-      new URL(`/${tenantSlug}/auth/error?code=missing_config`, request.url),
+      new URL(`/${tenantSlug}/auth/error?code=${redirectCode}`, request.url),
     );
   }
 }

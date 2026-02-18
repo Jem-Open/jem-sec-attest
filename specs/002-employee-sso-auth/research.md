@@ -80,7 +80,7 @@ All packages pinned to latest stable as of February 2026.
 | `openid-client` | ^6.8.0 | OIDC client (discovery, auth code flow, token validation) | MIT |
 | `iron-session` | ^8.0.4 | Encrypted stateless session cookies | MIT |
 | `zod` | ^4.3.6 | Schema validation (upgrade from v3) | MIT |
-| `better-sqlite3` | ^12.6.0 | Local SQLite storage | MIT |
+| `better-sqlite3` | ^11.7.0 | Local SQLite storage | MIT |
 | `yaml` | ^2.8.0 | YAML config parsing | ISC |
 | `safe-stable-stringify` | ^2.5.0 | Deterministic hashing | MIT |
 | `dotenv` | ^16.4.0 | Environment variable loading | BSD-2-Clause |

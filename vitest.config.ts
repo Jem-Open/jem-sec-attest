@@ -34,6 +34,9 @@ export default defineConfig({
         "src/storage/types.ts",
         "src/tenant/types.ts",
         "src/tenant/index.ts",
+        "src/auth/index.ts",
+        "src/auth/types.ts",
+        "src/auth/adapters/auth-adapter.ts",
       ],
       thresholds: {
         branches: 80,

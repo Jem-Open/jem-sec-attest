@@ -22,6 +22,7 @@ const ERROR_MESSAGES: Record<string, string> = {
   signin_cancelled: "Sign-in was not completed.",
   invalid_request: "Something went wrong. Please try again.",
   missing_config: "Single sign-on is not configured for your organization.",
+  invalid_config: "Single sign-on configuration is invalid for your organization.",
   auth_failed: "Authentication failed. Please try again.",
   "state-mismatch": "Your sign-in session expired. Please try again.",
   "idp-error": "The identity provider reported an error.",
@@ -125,6 +126,14 @@ export default async function ErrorPage({
             borderRadius: "4px",
             fontSize: "1rem",
             fontWeight: 500,
+            outline: "2px solid transparent",
+            outlineOffset: "2px",
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.outline = "2px solid #1a73e8";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.outline = "2px solid transparent";
           }}
         >
           Try Again

@@ -192,7 +192,7 @@ describe("validateUniqueness", () => {
     } catch (error) {
       expect(error).toBeInstanceOf(ConfigValidationError);
       const cve = error as ConfigValidationError;
-      expect(cve.errors.length).toBeGreaterThanOrEqual(3); // duplicate id + hostname + email
+      expect(cve.errors).toHaveLength(3); // exactly: duplicate id + hostname + email
     }
   });
 

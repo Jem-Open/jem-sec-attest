@@ -13,31 +13,56 @@
 // limitations under the License.
 
 /**
- * Generates JSON Schema from Zod schemas.
- * Output: config/schema/tenant.schema.json
+ * Generates JSON Schema from Zod schemas using Zod v4's built-in toJSONSchema.
+ * Output: config/schema/tenant.schema.json, config/schema/auth.schema.json
  */
 
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { zodToJsonSchema } from "zod-to-json-schema";
-import { BaseConfigSchema, TenantConfigSchema } from "../src/config/schema.js";
+import { z } from "zod";
+import {
+  AuthConfigSchema,
+  AuthSessionConfigSchema,
+  BaseConfigSchema,
+  OIDCConfigSchema,
+  TenantConfigSchema,
+} from "../src/config/schema.js";
 
 const outputDir = join(process.cwd(), "config", "schema");
 mkdirSync(outputDir, { recursive: true });
 
-const tenantSchema = zodToJsonSchema(TenantConfigSchema, "TenantConfig");
-const baseSchema = zodToJsonSchema(BaseConfigSchema, "BaseConfig");
+const tenantSchema = z.toJSONSchema(TenantConfigSchema);
+const baseSchema = z.toJSONSchema(BaseConfigSchema);
 
 const combinedSchema = {
   $schema: "http://json-schema.org/draft-07/schema#",
   title: "jem-sec-attest Tenant Configuration Schema",
   description: "Schema for tenant configuration files and base defaults.",
   definitions: {
-    TenantConfig: tenantSchema.definitions?.TenantConfig ?? tenantSchema,
-    BaseConfig: baseSchema.definitions?.BaseConfig ?? baseSchema,
+    TenantConfig: tenantSchema,
+    BaseConfig: baseSchema,
   },
 };
 
-const outputPath = join(outputDir, "tenant.schema.json");
-writeFileSync(outputPath, `${JSON.stringify(combinedSchema, null, 2)}\n`);
-console.log(`Generated: ${outputPath}`);
+const tenantOutputPath = join(outputDir, "tenant.schema.json");
+writeFileSync(tenantOutputPath, `${JSON.stringify(combinedSchema, null, 2)}\n`);
+console.log(`Generated: ${tenantOutputPath}`);
+
+const oidcSchema = z.toJSONSchema(OIDCConfigSchema);
+const authSessionSchema = z.toJSONSchema(AuthSessionConfigSchema);
+const authSchema = z.toJSONSchema(AuthConfigSchema);
+
+const authCombinedSchema = {
+  $schema: "http://json-schema.org/draft-07/schema#",
+  title: "jem-sec-attest Auth Configuration Schema",
+  description: "Schema for OIDC authentication and session configuration.",
+  definitions: {
+    OIDCConfig: oidcSchema,
+    AuthSessionConfig: authSessionSchema,
+    AuthConfig: authSchema,
+  },
+};
+
+const authOutputPath = join(outputDir, "auth.schema.json");
+writeFileSync(authOutputPath, `${JSON.stringify(authCombinedSchema, null, 2)}\n`);
+console.log(`Generated: ${authOutputPath}`);

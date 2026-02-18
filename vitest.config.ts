@@ -12,9 +12,15 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import path from "node:path";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
+  resolve: {
+    alias: {
+      "@": path.resolve(__dirname, "src"),
+    },
+  },
   test: {
     globals: true,
     coverage: {
@@ -28,6 +34,9 @@ export default defineConfig({
         "src/storage/types.ts",
         "src/tenant/types.ts",
         "src/tenant/index.ts",
+        "src/auth/index.ts",
+        "src/auth/types.ts",
+        "src/auth/adapters/auth-adapter.ts",
       ],
       thresholds: {
         branches: 80,

@@ -1,20 +1,20 @@
 <!--
   Sync Impact Report
   ==================
-  Version change: N/A (initial) -> 1.0.0
-  Modified principles: N/A (initial creation)
+  Version change: 1.0.0 -> 1.1.0 (MINOR — new principle added)
+  Modified principles: None
   Added sections:
-    - 8 Core Principles (I through VIII)
-    - Licensing & Contribution Requirements
-    - Development Workflow
-    - Governance
-  Removed sections: N/A
+    - Principle IX: Technology Stack (Next.js + AI SDK mandate)
+  Removed sections: None
   Templates requiring updates:
-    - .specify/templates/plan-template.md — Constitution Check section
-      is generic placeholder; ✅ no update needed (filled per-feature)
-    - .specify/templates/spec-template.md — ✅ compatible; no update needed
-    - .specify/templates/tasks-template.md — ✅ compatible; no update needed
-  Follow-up TODOs: None
+    - .specify/templates/plan-template.md — ✅ no update needed
+      (Constitution Check is filled per-feature; Technical Context
+      section already captures Language/Version and Primary Dependencies)
+    - .specify/templates/spec-template.md — ✅ no update needed
+    - .specify/templates/tasks-template.md — ✅ no update needed
+  Follow-up TODOs:
+    - CLAUDE.md should be updated when Next.js and AI SDK are installed
+      to reflect the new active technologies.
 -->
 
 # jem-sec-attest Constitution
@@ -173,6 +173,29 @@ change it describes.
 ironic liability. Deployer security guidance is essential given the
 self-hosted deployment model.
 
+### IX. Technology Stack
+
+The application MUST be built on **Next.js** (latest stable release)
+and the **Vercel AI SDK** (latest stable release).
+
+- All user-facing pages and API routes MUST use Next.js App Router
+  conventions.
+- AI-powered features (training content generation, role profiling,
+  interactive assessments) MUST use the AI SDK for provider
+  abstraction and structured-output handling.
+- Dependency versions MUST track the latest stable major release.
+  Upgrades to new major versions MUST be evaluated within 30 days of
+  release and adopted unless a documented incompatibility exists.
+- Next.js and AI SDK MUST be listed as production dependencies.
+  Version pinning to an outdated major version without a documented
+  exception is a constitution violation.
+
+**Rationale**: Standardizing on Next.js provides a unified full-stack
+framework (SSR, API routes, middleware) that aligns with the
+multi-tenant, security-first architecture. The AI SDK provides a
+vendor-neutral abstraction over LLM providers, reinforcing Principle V
+(Pluggable Architecture) for the AI integration layer.
+
 ## Licensing & Contribution Requirements
 
 This project is licensed under the **Apache License, Version 2.0**.
@@ -232,4 +255,4 @@ This project is licensed under the **Apache License, Version 2.0**.
   - **PATCH**: Clarifications, wording fixes, non-semantic
     refinements.
 
-**Version**: 1.0.0 | **Ratified**: 2026-02-16 | **Last Amended**: 2026-02-16
+**Version**: 1.1.0 | **Ratified**: 2026-02-16 | **Last Amended**: 2026-02-17

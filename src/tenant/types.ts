@@ -30,6 +30,18 @@ export interface TenantSettings {
   retention?: {
     days?: number;
   };
+  auth?: {
+    oidc?: {
+      issuerUrl: string;
+      clientId: string;
+      clientSecret: string;
+      redirectUri: string;
+      scopes: string[];
+      logoutUrl?: string;
+      claimMappings?: Record<string, string>;
+    };
+    sessionTtlSeconds?: number;
+  };
 }
 
 export interface Tenant {

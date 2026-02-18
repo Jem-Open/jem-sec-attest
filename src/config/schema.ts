@@ -19,6 +19,39 @@
 
 import { z } from "zod";
 
+export const OIDCConfigSchema = z
+  .object({
+    issuerUrl: z.string().url(),
+    clientId: z.string().min(1),
+    clientSecret: z
+      .string()
+      .regex(
+        /^\$\{[A-Z_][A-Z0-9_]*\}$/,
+        "Client secret must be an environment variable reference: ${VAR_NAME}",
+      ),
+    redirectUri: z.string().url(),
+    scopes: z
+      .array(z.string())
+      .min(1)
+      .refine((scopes) => scopes.includes("openid"), {
+        message: 'Scopes must include "openid"',
+      }),
+    logoutUrl: z.string().url().optional(),
+    claimMappings: z.record(z.string(), z.string()).optional(),
+  })
+  .strict();
+
+export const AuthSessionConfigSchema = z.object({
+  sessionTtlSeconds: z.number().int().positive().optional().default(3600),
+});
+
+export const AuthConfigSchema = z
+  .object({
+    oidc: OIDCConfigSchema.optional(),
+    sessionTtlSeconds: z.number().int().positive().optional().default(3600),
+  })
+  .strict();
+
 export const TenantSettingsSchema = z
   .object({
     branding: z
@@ -43,6 +76,7 @@ export const TenantSettingsSchema = z
       })
       .strict()
       .optional(),
+    auth: AuthConfigSchema.optional(),
   })
   .strict();
 
@@ -67,3 +101,6 @@ export const BaseConfigSchema = z
 export type TenantConfigInput = z.input<typeof TenantConfigSchema>;
 export type TenantConfigParsed = z.output<typeof TenantConfigSchema>;
 export type BaseConfigParsed = z.output<typeof BaseConfigSchema>;
+export type OIDCConfigInput = z.input<typeof OIDCConfigSchema>;
+export type OIDCConfigParsed = z.output<typeof OIDCConfigSchema>;
+export type AuthConfigParsed = z.output<typeof AuthConfigSchema>;

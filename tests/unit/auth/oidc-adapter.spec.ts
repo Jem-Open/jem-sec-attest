@@ -29,7 +29,7 @@ vi.mock("iron-session", () => ({
 import { sealData, unsealData } from "iron-session";
 import * as client from "openid-client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { OIDCAdapter } from "../../../src/auth/adapters/oidc-adapter";
+import { OIDCAdapter, _resetConfigCacheForTesting } from "../../../src/auth/adapters/oidc-adapter";
 import type { Tenant } from "../../../src/tenant/types";
 
 // ---------------------------------------------------------------------------
@@ -104,6 +104,7 @@ afterEach(() => {
   process.env.SESSION_SECRET = undefined;
   process.env.OIDC_CLIENT_SECRET = undefined;
   vi.clearAllMocks();
+  _resetConfigCacheForTesting();
 });
 
 // ---------------------------------------------------------------------------
@@ -134,6 +135,13 @@ function makeCallbackRequest(opts: {
 describe("OIDCAdapter.initiateSignIn", () => {
   const adapter = new OIDCAdapter();
 
+  function makeSignInSetup() {
+    return {
+      tenant: makeTenant(),
+      request: new Request("https://app.example.com/auth/signin"),
+    };
+  }
+
   it("throws 'OIDC not configured for tenant' when tenant has no OIDC config", async () => {
     const tenant = makeTenantWithoutOidc();
     const request = new Request("https://app.example.com/auth/signin");
@@ -143,8 +151,7 @@ describe("OIDCAdapter.initiateSignIn", () => {
   });
 
   it("returns a redirectUrl string on success", async () => {
-    const tenant = makeTenant();
-    const request = new Request("https://app.example.com/auth/signin");
+    const { tenant, request } = makeSignInSetup();
 
     const result = await adapter.initiateSignIn(request, tenant);
 
@@ -152,8 +159,7 @@ describe("OIDCAdapter.initiateSignIn", () => {
   });
 
   it("sets cookies.jem_auth_state on success", async () => {
-    const tenant = makeTenant();
-    const request = new Request("https://app.example.com/auth/signin");
+    const { tenant, request } = makeSignInSetup();
 
     const result = await adapter.initiateSignIn(request, tenant);
 
@@ -162,8 +168,7 @@ describe("OIDCAdapter.initiateSignIn", () => {
   });
 
   it("builds authorization URL with S256 PKCE method", async () => {
-    const tenant = makeTenant();
-    const request = new Request("https://app.example.com/auth/signin");
+    const { tenant, request } = makeSignInSetup();
 
     await adapter.initiateSignIn(request, tenant);
 
@@ -174,8 +179,7 @@ describe("OIDCAdapter.initiateSignIn", () => {
   });
 
   it("seals { state, codeVerifier, issuerUrl } with TTL 600 into the cookie", async () => {
-    const tenant = makeTenant();
-    const request = new Request("https://app.example.com/auth/signin");
+    const { tenant, request } = makeSignInSetup();
 
     await adapter.initiateSignIn(request, tenant);
 
@@ -191,8 +195,7 @@ describe("OIDCAdapter.initiateSignIn", () => {
 
   it("throws when SESSION_SECRET is missing", async () => {
     process.env.SESSION_SECRET = undefined;
-    const tenant = makeTenant();
-    const request = new Request("https://app.example.com/auth/signin");
+    const { tenant, request } = makeSignInSetup();
 
     await expect(adapter.initiateSignIn(request, tenant)).rejects.toThrow(
       "SESSION_SECRET must be set and at least 32 characters",
@@ -200,30 +203,14 @@ describe("OIDCAdapter.initiateSignIn", () => {
   });
 
   it("calls discovery with the issuerUrl and resolved client secret", async () => {
-    // Use a unique issuerUrl per this test to guarantee a cache miss even
-    // when the shared module-level configCache already holds ISSUER_URL from
-    // earlier tests. vi.clearAllMocks() resets call counts but not the cache.
-    const uniqueIssuerUrl = "https://idp-discovery-test.example.com";
-    const tenant: Tenant = {
-      ...makeTenant(),
-      settings: {
-        auth: {
-          oidc: {
-            issuerUrl: uniqueIssuerUrl,
-            clientId: "client-123",
-            clientSecret: "${OIDC_CLIENT_SECRET}",
-            redirectUri: "https://app.example.com/auth/callback",
-            scopes: ["openid", "email", "profile"],
-          },
-        },
-      },
-    };
-    const request = new Request("https://app.example.com/auth/signin");
+    // Cache is now cleared in afterEach via _resetConfigCacheForTesting(),
+    // so we can use the standard ISSUER_URL without unique-URL workarounds.
+    const { tenant, request } = makeSignInSetup();
 
     await adapter.initiateSignIn(request, tenant);
 
     expect(mockedDiscovery).toHaveBeenCalledWith(
-      new URL(uniqueIssuerUrl),
+      new URL(ISSUER_URL),
       "client-123",
       OIDC_CLIENT_SECRET,
     );

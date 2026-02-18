@@ -186,6 +186,8 @@ describe("EmployeeRepository", () => {
 
       expect(storage.transaction).toHaveBeenCalledOnce();
       expect(storage.transaction).toHaveBeenCalledWith(tenantId, expect.any(Function));
+      // Verify the transaction callback was actually invoked (inner operations ran)
+      expect(storage.findMany).toHaveBeenCalled();
     });
 
     it("returns the created employee when no existing record is found", async () => {

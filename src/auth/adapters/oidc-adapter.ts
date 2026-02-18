@@ -35,6 +35,15 @@ function getSessionSecret(): string {
 // Cache discovered OIDC configuration per issuer URL
 const configCache = new Map<string, client.Configuration>();
 
+/**
+ * Clears the module-level OIDC configuration cache.
+ * Exported for test isolation only — do NOT call in production code.
+ * @internal
+ */
+export function _resetConfigCacheForTesting(): void {
+  configCache.clear();
+}
+
 function resolveClientSecret(secretRef: string): string {
   const match = secretRef.match(/^\$\{([A-Z_][A-Z0-9_]*)\}$/);
   if (!match?.[1]) throw new Error(`Invalid secret reference: ${secretRef}`);

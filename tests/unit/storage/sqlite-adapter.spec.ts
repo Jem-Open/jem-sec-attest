@@ -126,9 +126,9 @@ describe("SQLiteAdapter", () => {
       });
 
       // Attempting to update with wrong tenant should throw
-      await expect(
-        adapter.update("tenant-B", "items", created.id, { value: 999 }),
-      ).rejects.toThrow();
+      await expect(adapter.update("tenant-B", "items", created.id, { value: 999 })).rejects.toThrow(
+        /Record not found/,
+      );
 
       // Original should be unchanged
       const found = await adapter.findById<{ id: string; name: string; value: number }>(

@@ -32,6 +32,10 @@ npm-debug.log*
 *.sqlite
 *.sqlite3
 
+# Next.js
+.next/
+out/
+
 # TypeScript cache
 *.tsbuildinfo
 

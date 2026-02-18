@@ -1,0 +1,69 @@
+// Copyright 2026 jem-sec-attest contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+/**
+ * Tenant slug validation for auth route handlers.
+ * Returns generic 404 for invalid/unknown slugs to prevent tenant enumeration.
+ * FR-006: Tenant isolation — never leak tenant existence.
+ */
+
+import { getSnapshot } from "../config/index.js";
+import type { Tenant } from "../tenant/types.js";
+
+export interface TenantValidationResult {
+  valid: true;
+  tenant: Tenant;
+}
+
+export interface TenantValidationFailure {
+  valid: false;
+}
+
+export type TenantLookupResult = TenantValidationResult | TenantValidationFailure;
+
+/**
+ * Validate that a tenant slug maps to a known tenant.
+ * Returns the Tenant object if valid, or a failure result.
+ * The caller should return a generic 404 on failure — never reveal
+ * whether the slug was syntactically invalid vs. simply unknown.
+ */
+export function validateTenantSlug(slug: string): TenantLookupResult {
+  const snapshot = getSnapshot();
+  if (!snapshot) {
+    return { valid: false };
+  }
+
+  const tenant = snapshot.tenants.get(slug);
+  if (!tenant) {
+    return { valid: false };
+  }
+
+  return { valid: true, tenant };
+}
+
+/**
+ * Validate that an email domain is allowed for the given tenant.
+ * If the tenant has emailDomains configured, the email domain must
+ * match one of them. If no emailDomains are configured, all domains
+ * are accepted (non-strict mode).
+ */
+export function validateEmailDomainForTenant(tenant: Tenant, emailDomain: string): boolean {
+  // If no email domains are configured, accept all (non-strict)
+  if (tenant.emailDomains.length === 0) {
+    return true;
+  }
+
+  const normalizedDomain = emailDomain.toLowerCase();
+  return tenant.emailDomains.some((d) => d.toLowerCase() === normalizedDomain);
+}

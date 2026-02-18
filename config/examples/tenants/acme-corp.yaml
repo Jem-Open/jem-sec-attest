@@ -1,0 +1,25 @@
+# Example tenant configuration with OIDC authentication
+# See specs/002-employee-sso-auth/quickstart.md for setup instructions
+
+name: Acme Corporation
+hostnames:
+  - acme.example.com
+emailDomains:
+  - acme.com
+settings:
+  branding:
+    displayName: Acme Corporation
+    logoUrl: https://cdn.acme.com/logo.png
+    primaryColor: "#1a73e8"
+  auth:
+    oidc:
+      issuerUrl: https://acme.okta.com
+      clientId: 0oa1bcdef2ghijk3lmno
+      clientSecret: "${ACME_OIDC_CLIENT_SECRET}"
+      redirectUri: https://acme.example.com/api/auth/acme-corp/callback
+      scopes:
+        - openid
+        - profile
+        - email
+      logoutUrl: https://acme.okta.com/oauth2/v1/logout
+    sessionTtlSeconds: 3600

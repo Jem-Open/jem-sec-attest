@@ -55,7 +55,7 @@ describe("fail-fast on invalid configuration", () => {
       const cve = error as ConfigValidationError;
       expect(cve.errors.length).toBeGreaterThanOrEqual(1);
       const messages = cve.errors.map((e) => e.message).join("; ");
-      expect(messages).toMatch(/required|name/i);
+      expect(messages).toMatch(/required|name|expected string/i);
     }
   });
 

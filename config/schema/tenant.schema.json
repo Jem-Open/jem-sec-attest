@@ -4,6 +4,7 @@
   "description": "Schema for tenant configuration files and base defaults.",
   "definitions": {
     "TenantConfig": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "properties": {
         "name": {
@@ -11,22 +12,23 @@
           "minLength": 1
         },
         "hostnames": {
+          "default": [],
           "type": "array",
           "items": {
             "type": "string",
             "minLength": 1
-          },
-          "default": []
+          }
         },
         "emailDomains": {
+          "default": [],
           "type": "array",
           "items": {
             "type": "string",
             "minLength": 1
-          },
-          "default": []
+          }
         },
         "settings": {
+          "default": {},
           "type": "object",
           "properties": {
             "branding": {
@@ -46,6 +48,9 @@
             },
             "features": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {
                 "type": "boolean"
               }
@@ -67,26 +72,90 @@
               "properties": {
                 "days": {
                   "type": "integer",
-                  "exclusiveMinimum": 0
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
                 }
               },
               "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "oidc": {
+                  "type": "object",
+                  "properties": {
+                    "issuerUrl": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "clientId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "clientSecret": {
+                      "type": "string",
+                      "pattern": "^\\$\\{[A-Z_][A-Z0-9_]*\\}$"
+                    },
+                    "redirectUri": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "scopes": {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "logoutUrl": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "claimMappings": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "issuerUrl",
+                    "clientId",
+                    "clientSecret",
+                    "redirectUri",
+                    "scopes"
+                  ],
+                  "additionalProperties": false
+                },
+                "sessionTtlSeconds": {
+                  "default": 3600,
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "sessionTtlSeconds"
+              ],
+              "additionalProperties": false
             }
           },
-          "additionalProperties": false,
-          "default": {}
+          "additionalProperties": false
         }
       },
       "required": [
-        "name"
+        "name",
+        "hostnames",
+        "emailDomains",
+        "settings"
       ],
-      "additionalProperties": false,
-      "anyOf": [
-        { "required": ["hostnames"], "properties": { "hostnames": { "minItems": 1 } } },
-        { "required": ["emailDomains"], "properties": { "emailDomains": { "minItems": 1 } } }
-      ]
+      "additionalProperties": false
     },
     "BaseConfig": {
+      "$schema": "https://json-schema.org/draft/2020-12/schema",
       "type": "object",
       "properties": {
         "defaults": {
@@ -109,6 +178,9 @@
             },
             "features": {
               "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
               "additionalProperties": {
                 "type": "boolean"
               }
@@ -130,9 +202,74 @@
               "properties": {
                 "days": {
                   "type": "integer",
-                  "exclusiveMinimum": 0
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
                 }
               },
+              "additionalProperties": false
+            },
+            "auth": {
+              "type": "object",
+              "properties": {
+                "oidc": {
+                  "type": "object",
+                  "properties": {
+                    "issuerUrl": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "clientId": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "clientSecret": {
+                      "type": "string",
+                      "pattern": "^\\$\\{[A-Z_][A-Z0-9_]*\\}$"
+                    },
+                    "redirectUri": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "scopes": {
+                      "minItems": 1,
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "logoutUrl": {
+                      "type": "string",
+                      "format": "uri"
+                    },
+                    "claimMappings": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "required": [
+                    "issuerUrl",
+                    "clientId",
+                    "clientSecret",
+                    "redirectUri",
+                    "scopes"
+                  ],
+                  "additionalProperties": false
+                },
+                "sessionTtlSeconds": {
+                  "default": 3600,
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "sessionTtlSeconds"
+              ],
               "additionalProperties": false
             }
           },

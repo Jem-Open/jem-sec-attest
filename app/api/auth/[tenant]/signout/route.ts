@@ -69,7 +69,12 @@ async function handleSignOut(
   // Get IdP logout redirect
   const result = await oidcAdapter.signOut(request, tenant);
 
-  return NextResponse.redirect(result.redirectUrl);
+  if (result.redirectUrl) {
+    return NextResponse.redirect(result.redirectUrl);
+  }
+
+  // No IdP logout URL configured — redirect to confirmation page
+  return NextResponse.redirect(new URL(`/${tenantSlug}/auth/signout-confirm`, request.url));
 }
 
 export async function POST(request: Request, context: { params: Promise<{ tenant: string }> }) {

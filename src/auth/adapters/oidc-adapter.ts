@@ -171,7 +171,8 @@ export class OIDCAdapter implements AuthAdapter {
         ok: true,
         claims: { sub, email, name, issuer: oidcConfig.issuerUrl },
       };
-    } catch {
+    } catch (err) {
+      console.error("Token exchange failed:", err instanceof Error ? err.message : "Unknown error");
       return { ok: false, reason: "token-exchange-failed", message: "Token exchange failed" };
     }
   }
@@ -189,7 +190,8 @@ export class OIDCAdapter implements AuthAdapter {
         return { redirectUrl: `/${tenant.id}/auth/signout-confirm` };
       }
       if (parsed.protocol !== "https:") {
-        throw new Error("logoutUrl must use https scheme");
+        // Non-https URL — fall back to internal sign-out confirmation page
+        return { redirectUrl: `/${tenant.id}/auth/signout-confirm` };
       }
     }
 

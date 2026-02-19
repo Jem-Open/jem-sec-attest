@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "0e5f8f4bec43",
+  "session_id": "46ad8813-eb9c-4fd7-9a50-b4ccaaaf6722",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-19T11:24:58.302788Z",
+  "branch": "003-training-intake",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "app/[tenant]/intake/page.tsx",
+    "src/intake/ai-model-resolver.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "81f3bfaec224",
+  "token_usage": {
+    "input_tokens": 502,
+    "cache_creation_tokens": 419969,
+    "cache_read_tokens": 10928546,
+    "output_tokens": 34186,
+    "api_call_count": 136
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-19T11:24:57.223381Z",
+    "agent_lines": 0,
+    "human_added": 27,
+    "human_modified": 1,
+    "human_removed": 0,
+    "total_committed": 27,
+    "agent_percentage": 0
+  },
+  "transcript_path": ".claude/projects/-Users-thamsanqamoyo-Documents-code-jem-open-jem-sec-attest/46ad8813-eb9c-4fd7-9a50-b4ccaaaf6722.jsonl"
+}

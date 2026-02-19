@@ -11,3 +11,9 @@ defaults:
     ssoProvider: ""
   retention:
     days: 365
+  ai:
+    provider: "anthropic"
+    model: "claude-sonnet-4-20250514"
+    temperature: 0
+    maxRetries: 2
+    # gatewayUrl: "https://gateway.ai.vercel.app/v1"  # Vercel AI Gateway (default routing layer)

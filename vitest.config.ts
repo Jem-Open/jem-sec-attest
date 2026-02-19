@@ -37,6 +37,8 @@ export default defineConfig({
         "src/auth/index.ts",
         "src/auth/types.ts",
         "src/auth/adapters/auth-adapter.ts",
+        "src/intake/types.ts",
+        "src/intake/index.ts",
       ],
       thresholds: {
         branches: 80,
@@ -47,18 +49,21 @@ export default defineConfig({
     },
     projects: [
       {
+        resolve: { alias: { "@": path.resolve(__dirname, "src") } },
         test: {
           name: "unit",
           include: ["tests/unit/**/*.spec.ts"],
         },
       },
       {
+        resolve: { alias: { "@": path.resolve(__dirname, "src") } },
         test: {
           name: "integration",
           include: ["tests/integration/**/*.spec.ts"],
         },
       },
       {
+        resolve: { alias: { "@": path.resolve(__dirname, "src") } },
         test: {
           name: "contract",
           include: ["tests/contract/**/*.spec.ts"],

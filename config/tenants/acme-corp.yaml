@@ -14,3 +14,11 @@ settings:
     advancedReporting: true
   integrations:
     webhookUrl: "${ACME_WEBHOOK_SECRET}"
+  # AI configuration — uses project defaults (Anthropic Claude via Vercel AI Gateway)
+  # Uncomment and modify to override for this tenant:
+  # ai:
+  #   provider: "anthropic"           # "anthropic" | "openai" | "azure-openai"
+  #   model: "claude-sonnet-4-20250514"  # model identifier for the chosen provider
+  #   temperature: 0                  # 0 = deterministic extraction
+  #   maxRetries: 2                   # retry count on transient failures
+  #   gatewayUrl: "https://gateway.ai.vercel.app/v1"  # Vercel AI Gateway URL

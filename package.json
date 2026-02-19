@@ -23,6 +23,9 @@
     "generate:schema": "tsx scripts/generate-schema.ts"
   },
   "dependencies": {
+    "@ai-sdk/anthropic": "^3.0.45",
+    "@ai-sdk/azure": "^3.0.31",
+    "@ai-sdk/openai": "^3.0.30",
     "ai": "^6.0.90",
     "better-sqlite3": "^11.7.0",
     "dotenv": "^16.4.7",

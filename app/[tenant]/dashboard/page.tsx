@@ -68,9 +68,25 @@ export default async function DashboardPage({
           </button>
         </form>
       </header>
-      <p style={{ color: "#666" }}>
+      <p style={{ color: "#666", marginBottom: "2rem" }}>
         Signed in as {session.employee.email} ({tenant})
       </p>
+      <nav>
+        <a
+          href={`/${tenant}/intake`}
+          style={{
+            display: "inline-block",
+            padding: "0.75rem 1.5rem",
+            backgroundColor: "#1a1a2e",
+            color: "#fff",
+            borderRadius: "4px",
+            textDecoration: "none",
+            fontSize: "0.9rem",
+          }}
+        >
+          Role Profile Intake
+        </a>
+      </nav>
     </main>
   );
 }

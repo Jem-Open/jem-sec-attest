@@ -42,6 +42,13 @@ export interface TenantSettings {
     };
     sessionTtlSeconds?: number;
   };
+  ai?: {
+    provider?: "anthropic" | "openai" | "azure-openai";
+    model?: string;
+    temperature?: number;
+    maxRetries?: number;
+    gatewayUrl?: string;
+  };
 }
 
 export interface Tenant {

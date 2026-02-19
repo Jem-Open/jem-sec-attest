@@ -9,3 +9,10 @@ settings:
     displayName: "Globex Training Hub"
   integrations:
     webhookUrl: "${GLOBEX_WEBHOOK_SECRET}"
+  # AI configuration — Globex uses OpenAI via Vercel AI Gateway
+  ai:
+    provider: "openai"
+    model: "gpt-4o"
+    temperature: 0
+    maxRetries: 3
+    gatewayUrl: "https://gateway.ai.vercel.app/v1"

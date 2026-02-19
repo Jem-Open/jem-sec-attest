@@ -52,6 +52,20 @@ export const AuthConfigSchema = z
   })
   .strict();
 
+export const AIConfigSchema = z
+  .object({
+    provider: z.enum(["anthropic", "openai", "azure-openai"]).default("anthropic"),
+    model: z.string().min(1).default("claude-sonnet-4-20250514"),
+    temperature: z.number().min(0).max(1).default(0),
+    maxRetries: z.number().int().min(0).max(5).default(2),
+    gatewayUrl: z
+      .string()
+      .url()
+      .optional()
+      .describe("Vercel AI Gateway URL. When set, provider requests route through the gateway."),
+  })
+  .strict();
+
 export const TenantSettingsSchema = z
   .object({
     branding: z
@@ -77,6 +91,7 @@ export const TenantSettingsSchema = z
       .strict()
       .optional(),
     auth: AuthConfigSchema.optional(),
+    ai: AIConfigSchema.optional(),
   })
   .strict();
 
@@ -104,3 +119,4 @@ export type BaseConfigParsed = z.output<typeof BaseConfigSchema>;
 export type OIDCConfigInput = z.input<typeof OIDCConfigSchema>;
 export type OIDCConfigParsed = z.output<typeof OIDCConfigSchema>;
 export type AuthConfigParsed = z.output<typeof AuthConfigSchema>;
+export type AIConfigParsed = z.output<typeof AIConfigSchema>;

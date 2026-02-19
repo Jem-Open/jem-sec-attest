@@ -59,8 +59,14 @@ export function resolveModel(tenant: Tenant): LanguageModel {
           "AZURE_OPENAI_API_KEY environment variable is required for Azure OpenAI provider",
         );
       }
+      if (!gatewayUrl && !process.env.AZURE_RESOURCE_NAME) {
+        throw new Error(
+          "AZURE_RESOURCE_NAME environment variable is required when AI_GATEWAY_URL is not set for Azure OpenAI provider",
+        );
+      }
       const azure = createAzure({
         apiKey: process.env.AZURE_OPENAI_API_KEY,
+        resourceName: process.env.AZURE_RESOURCE_NAME,
         ...(gatewayUrl ? { baseURL: gatewayUrl } : {}),
       });
       return azure(modelId);

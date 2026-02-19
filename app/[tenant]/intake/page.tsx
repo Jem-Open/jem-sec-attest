@@ -51,6 +51,8 @@ const STRINGS = {
   currentProfileTitle: "Current Profile",
   newPreviewTitle: "New Profile Preview",
   minExpectations: "At least 1 job expectation is required",
+  aiEmptyWarning:
+    "AI could not extract job expectations from the provided text. Please add at least one expectation manually before confirming.",
   maxExpectations: "Maximum 15 job expectations allowed",
   minChars: "Minimum 50 characters required",
   maxChars: "Maximum 10,000 characters allowed",
@@ -220,6 +222,7 @@ export default function IntakePage({ params }: { params: Promise<{ tenant: strin
   const [expectations, setExpectations] = useState<string[]>([""]);
   const [error, setError] = useState("");
   const [existingProfile, setExistingProfile] = useState<RoleProfile | null>(null);
+  const [aiReturnedEmpty, setAiReturnedEmpty] = useState(false);
   const [oldExpectations, setOldExpectations] = useState<string[]>([]);
 
   // -------------------------------------------------------------------------
@@ -303,7 +306,9 @@ export default function IntakePage({ params }: { params: Promise<{ tenant: strin
       }
 
       const data = (await res.json()) as { jobExpectations: string[] };
-      setExpectations(data.jobExpectations.length > 0 ? data.jobExpectations : [""]);
+      const aiEmpty = data.jobExpectations.length === 0;
+      setAiReturnedEmpty(aiEmpty);
+      setExpectations(aiEmpty ? [""] : data.jobExpectations);
       setIntakeState("preview");
     } catch (err) {
       setError(
@@ -346,6 +351,7 @@ export default function IntakePage({ params }: { params: Promise<{ tenant: strin
     setJobText("");
     setExpectations([""]);
     setError("");
+    setAiReturnedEmpty(false);
     setOldExpectations([]);
     setIntakeState("input");
   }
@@ -357,6 +363,7 @@ export default function IntakePage({ params }: { params: Promise<{ tenant: strin
     setJobText("");
     setExpectations([""]);
     setError("");
+    setAiReturnedEmpty(false);
     setIntakeState("input");
   }
 
@@ -533,6 +540,20 @@ export default function IntakePage({ params }: { params: Promise<{ tenant: strin
             {oldExpectations.length > 0 ? STRINGS.newPreviewTitle : STRINGS.previewTitle}
           </h1>
           <p style={{ color: "#555", marginBottom: "1.25rem" }}>{STRINGS.previewSubtitle}</p>
+
+          {aiReturnedEmpty && (
+            <div
+              role="alert"
+              style={{
+                ...bannerStyle,
+                borderColor: "#b91c1c",
+                backgroundColor: "#fef2f2",
+                color: "#7f1d1d",
+              }}
+            >
+              {STRINGS.aiEmptyWarning}
+            </div>
+          )}
 
           <fieldset style={{ border: "none", padding: 0, margin: "0 0 1.5rem 0" }}>
             <legend

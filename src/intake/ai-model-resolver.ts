@@ -32,6 +32,11 @@ export function resolveModel(tenant: Tenant): LanguageModel {
 
   switch (provider) {
     case "anthropic": {
+      if (!process.env.ANTHROPIC_API_KEY) {
+        throw new Error(
+          "ANTHROPIC_API_KEY environment variable is required for Anthropic provider",
+        );
+      }
       const anthropic = createAnthropic({
         apiKey: process.env.ANTHROPIC_API_KEY,
         ...(gatewayUrl ? { baseURL: gatewayUrl } : {}),
@@ -39,6 +44,9 @@ export function resolveModel(tenant: Tenant): LanguageModel {
       return anthropic(modelId);
     }
     case "openai": {
+      if (!process.env.OPENAI_API_KEY) {
+        throw new Error("OPENAI_API_KEY environment variable is required for OpenAI provider");
+      }
       const openai = createOpenAI({
         apiKey: process.env.OPENAI_API_KEY,
         ...(gatewayUrl ? { baseURL: gatewayUrl } : {}),
@@ -46,6 +54,11 @@ export function resolveModel(tenant: Tenant): LanguageModel {
       return openai(modelId);
     }
     case "azure-openai": {
+      if (!process.env.AZURE_OPENAI_API_KEY) {
+        throw new Error(
+          "AZURE_OPENAI_API_KEY environment variable is required for Azure OpenAI provider",
+        );
+      }
       const azure = createAzure({
         apiKey: process.env.AZURE_OPENAI_API_KEY,
         ...(gatewayUrl ? { baseURL: gatewayUrl } : {}),

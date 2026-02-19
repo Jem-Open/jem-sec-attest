@@ -548,7 +548,8 @@ export default function IntakePage({ params }: { params: Promise<{ tenant: strin
 
             {expectations.map((exp, index) => (
               <div
-                key={`${index}-${exp}`}
+                // biome-ignore lint/suspicious/noArrayIndexKey: editable list uses index as stable key
+                key={index}
                 style={{
                   display: "flex",
                   gap: "0.5rem",

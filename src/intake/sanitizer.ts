@@ -21,6 +21,13 @@
 export function sanitizeJobText(raw: string): string {
   // Strip HTML tags (prevent XSS if text is ever rendered)
   let sanitized = raw.replace(/<[^>]*>/g, "");
+  // Decode common HTML entities
+  sanitized = sanitized
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
   // Normalize whitespace
   sanitized = sanitized.replace(/\s+/g, " ").trim();
   return sanitized;

@@ -31,7 +31,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
   const tenantId = request.headers.get("x-tenant-id");
   const employeeId = request.headers.get("x-employee-id");
 
-  if (!tenantId || !employeeId) {
+  if (!tenantId || !employeeId || tenantId !== tenantSlug) {
     return NextResponse.json(
       { error: "unauthorized", message: "Not authenticated" },
       { status: 401 },

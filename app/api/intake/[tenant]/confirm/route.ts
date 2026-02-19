@@ -30,11 +30,11 @@ const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db"
 const profileRepo = new ProfileRepository(storage);
 
 export async function POST(request: Request, { params }: { params: Promise<{ tenant: string }> }) {
-  await params;
+  const { tenant } = await params;
   const tenantId = request.headers.get("x-tenant-id");
   const employeeId = request.headers.get("x-employee-id");
 
-  if (!tenantId || !employeeId) {
+  if (!tenantId || !employeeId || tenantId !== tenant) {
     return NextResponse.json(
       { error: "unauthorized", message: "Not authenticated" },
       { status: 401 },

@@ -75,4 +75,12 @@ describe("sanitizeJobText", () => {
       "text click more",
     );
   });
+
+  it("decodes common HTML entities", () => {
+    expect(sanitizeJobText("Tom &amp; Jerry &lt;3")).toBe("Tom & Jerry <3");
+  });
+
+  it("decodes entities after stripping tags", () => {
+    expect(sanitizeJobText("<b>A &amp; B</b>")).toBe("A & B");
+  });
 });

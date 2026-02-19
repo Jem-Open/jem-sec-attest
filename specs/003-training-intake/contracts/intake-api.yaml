@@ -1,0 +1,199 @@
+openapi: "3.1.0"
+info:
+  title: Employee Training Intake API
+  version: "1.0.0"
+  description: |
+    API for the employee training intake flow.
+    Employees submit job descriptions to generate structured role profiles
+    (lists of job expectations) for training personalization.
+
+paths:
+  /api/intake/{tenant}/generate:
+    post:
+      operationId: generateRoleProfile
+      summary: Generate a role profile from job description text
+      description: |
+        Accepts untrusted job description text, processes it via AI to extract
+        a list of job expectations, and returns the preview. The raw job text is
+        NOT persisted — it is processed in-memory and discarded after the
+        response is sent.
+      parameters:
+        - name: tenant
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Tenant slug (validated against config)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [jobText]
+              properties:
+                jobText:
+                  type: string
+                  minLength: 50
+                  maxLength: 10000
+                  description: Raw job description/expectations pasted by the employee
+      responses:
+        "200":
+          description: Role profile generated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleProfileExtraction"
+        "400":
+          description: Validation error (text too short/long)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated
+        "422":
+          description: AI could not extract meaningful expectations from input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: AI service temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/intake/{tenant}/confirm:
+    post:
+      operationId: confirmRoleProfile
+      summary: Confirm and persist the role profile
+      description: |
+        Persists the (potentially edited) role profile and associates it with
+        the authenticated employee. If a profile already exists, replaces it
+        (version incremented) and logs an audit event.
+      parameters:
+        - name: tenant
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfileConfirmation"
+      responses:
+        "201":
+          description: Role profile confirmed and stored (new)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleProfileResponse"
+        "200":
+          description: Role profile confirmed and updated (replaced existing)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleProfileResponse"
+        "400":
+          description: Validation error (missing expectations, exceeds limits)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Not authenticated
+
+  /api/intake/{tenant}/profile:
+    get:
+      operationId: getRoleProfile
+      summary: Get the current employee's confirmed role profile
+      description: |
+        Returns the employee's confirmed role profile if one exists.
+        Used to check intake status and display profile information.
+      parameters:
+        - name: tenant
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Role profile found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RoleProfileResponse"
+        "404":
+          description: No confirmed profile exists for this employee
+        "401":
+          description: Not authenticated
+
+components:
+  schemas:
+    RoleProfileExtraction:
+      type: object
+      required:
+        - jobExpectations
+      properties:
+        jobExpectations:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 15
+          description: Key job responsibilities and duties extracted from the job description
+
+    ProfileConfirmation:
+      type: object
+      required:
+        - jobExpectations
+      properties:
+        jobExpectations:
+          type: array
+          items:
+            type: string
+          minItems: 1
+          maxItems: 15
+
+    RoleProfileResponse:
+      type: object
+      required:
+        - id
+        - employeeId
+        - jobExpectations
+        - status
+        - confirmedAt
+        - version
+      properties:
+        id:
+          type: string
+          format: uuid
+        employeeId:
+          type: string
+        jobExpectations:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [confirmed]
+        confirmedAt:
+          type: string
+          format: date-time
+        version:
+          type: integer
+
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error description

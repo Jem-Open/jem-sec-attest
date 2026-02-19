@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "1e9b7279b742",
+  "session_id": "ad370138-e856-4191-b532-f86a8a85a7fd",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-19T13:02:56.044686Z",
+  "branch": "003-training-intake",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/intake/sanitizer.ts",
+    "tests/unit/intake/sanitizer.spec.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "91a0e12cb880",
+  "transcript_identifier_at_start": "29267ddd-c623-48b7-b118-9e57b2374ee6",
+  "token_usage": {
+    "input_tokens": 26,
+    "cache_creation_tokens": 32553,
+    "cache_read_tokens": 556656,
+    "output_tokens": 3320,
+    "api_call_count": 21
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-19T13:02:56.012077Z",
+    "agent_lines": 26,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 26,
+    "agent_percentage": 100
+  },
+  "transcript_path": ".claude/projects/-Users-thamsanqamoyo-Documents-code-jem-open-jem-sec-attest/ad370138-e856-4191-b532-f86a8a85a7fd.jsonl"
+}

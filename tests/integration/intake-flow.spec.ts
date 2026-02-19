@@ -74,8 +74,9 @@ describe("Intake Flow Integration", () => {
     it("raw job text string does NOT appear in any database record", async () => {
       const rawJobText = "UNIQUE_MARKER_TEXT_THAT_SHOULD_NOT_PERSIST_IN_DATABASE";
 
-      // The raw job text is only used for AI generation (not tested here)
-      // but we confirm it's not stored in the profile
+      // Confirm a profile whose expectations do NOT contain the raw text.
+      // In the real flow, rawJobText would be sent to /generate and discarded;
+      // only the extracted expectations are passed to confirmProfile.
       await repo.confirmProfile(
         "acme-corp",
         "emp-001",
@@ -84,7 +85,7 @@ describe("Intake Flow Integration", () => {
         "1.0.0",
       );
 
-      // Scan all records in all collections
+      // Scan all records in all collections to verify the raw text was never stored
       const roleProfiles = await storage.findMany("acme-corp", "role_profiles", {});
       const auditEvents = await storage.findMany("acme-corp", "audit_events", {});
 
@@ -119,7 +120,14 @@ describe("Intake Flow Integration", () => {
       // biome-ignore lint/style/noNonNullAssertion: test assertion after null check
       expect(globexProfile!.jobExpectations[0]).toContain("Globex");
 
-      // Cross-tenant: tenant A can't see tenant B
+      // Cross-tenant: create emp-002 in globex only, then verify acme can't see it
+      await repo.confirmProfile(
+        "globex-inc",
+        "emp-002",
+        { jobExpectations: ["Handle Globex-only employee onboarding processes"] },
+        "hash-c",
+        "1.0.0",
+      );
       const crossTenant = await repo.findByEmployee("acme-corp", "emp-002");
       expect(crossTenant).toBeNull();
     });

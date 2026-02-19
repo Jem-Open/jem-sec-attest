@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "17ce9ec9d94b",
+  "strategy": "manual-commit",
+  "branch": "003-training-intake",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/intake/sanitizer.ts",
+    "tests/unit/intake/sanitizer.spec.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/17/ce9ec9d94b/0/metadata.json",
+      "transcript": "/17/ce9ec9d94b/0/full.jsonl",
+      "context": "/17/ce9ec9d94b/0/context.md",
+      "content_hash": "/17/ce9ec9d94b/0/content_hash.txt",
+      "prompt": "/17/ce9ec9d94b/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 501,
+    "cache_creation_tokens": 419274,
+    "cache_read_tokens": 10858469,
+    "output_tokens": 34185,
+    "api_call_count": 135
+  }
+}

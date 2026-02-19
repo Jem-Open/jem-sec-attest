@@ -74,37 +74,41 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
   const configHash = snapshot?.configHash ?? "unknown";
   const appVersion = process.env.APP_VERSION ?? "0.1.0";
 
-  // Check if this is a new profile or an update
+  // Check if this is a new profile or an update, then persist + audit atomically
   const existingProfile = await profileRepo.findByEmployee(tenantId, employeeId);
 
-  const profile = await profileRepo.confirmProfile(
-    tenantId,
-    employeeId,
-    parsed.data,
-    configHash,
-    appVersion,
-  );
-
-  // Log appropriate audit event
-  if (existingProfile) {
-    await logProfileUpdated(
-      storage,
+  const profile = await storage.transaction(tenantId, async () => {
+    const saved = await profileRepo.confirmProfile(
       tenantId,
       employeeId,
-      profile.id,
-      existingProfile.version,
-      profile.version,
+      parsed.data,
+      configHash,
+      appVersion,
     );
-    return NextResponse.json(profile, { status: 200 });
-  }
 
-  await logProfileConfirmed(
-    storage,
-    tenantId,
-    employeeId,
-    profile.id,
-    profile.version,
-    profile.jobExpectations.length,
-  );
-  return NextResponse.json(profile, { status: 201 });
+    // Audit logging inside the same transaction for atomicity
+    if (existingProfile) {
+      await logProfileUpdated(
+        storage,
+        tenantId,
+        employeeId,
+        saved.id,
+        existingProfile.version,
+        saved.version,
+      );
+    } else {
+      await logProfileConfirmed(
+        storage,
+        tenantId,
+        employeeId,
+        saved.id,
+        saved.version,
+        saved.jobExpectations.length,
+      );
+    }
+
+    return saved;
+  });
+
+  return NextResponse.json(profile, { status: existingProfile ? 200 : 201 });
 }

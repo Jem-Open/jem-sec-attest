@@ -56,6 +56,8 @@ const STRINGS = {
   maxExpectations: "Maximum 15 job expectations allowed",
   minChars: "Minimum 50 characters required",
   maxChars: "Maximum 10,000 characters allowed",
+  expectationTooShort: "Each expectation must be at least 10 characters",
+  expectationTooLong: "Each expectation must be at most 500 characters",
 } as const;
 
 // ---------------------------------------------------------------------------
@@ -65,6 +67,8 @@ const STRINGS = {
 const MAX_CHARS = 10_000;
 const MIN_CHARS = 50;
 const MAX_EXPECTATIONS = 15;
+const MIN_EXPECTATION_CHARS = 10;
+const MAX_EXPECTATION_CHARS = 500;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -237,7 +241,9 @@ export default function IntakePage({ params }: { params: Promise<{ tenant: strin
   const expectationsValid =
     expectations.length >= 1 &&
     expectations.length <= MAX_EXPECTATIONS &&
-    expectations.every((e) => e.trim().length > 0);
+    expectations.every(
+      (e) => e.trim().length >= MIN_EXPECTATION_CHARS && e.trim().length <= MAX_EXPECTATION_CHARS,
+    );
 
   const expectationsCountMessage =
     expectations.length < 1
@@ -567,47 +573,71 @@ export default function IntakePage({ params }: { params: Promise<{ tenant: strin
               Job Expectations
             </legend>
 
-            {expectations.map((exp, index) => (
-              <div
-                // biome-ignore lint/suspicious/noArrayIndexKey: editable list uses index as stable key
-                key={index}
-                style={{
-                  display: "flex",
-                  gap: "0.5rem",
-                  alignItems: "center",
-                  marginBottom: "0.6rem",
-                }}
-              >
-                <label
-                  htmlFor={`expectation-${index}`}
-                  style={{ ...labelStyle, margin: 0, whiteSpace: "nowrap" }}
+            {expectations.map((exp, index) => {
+              const trimmedLen = exp.trim().length;
+              const tooShort = trimmedLen > 0 && trimmedLen < MIN_EXPECTATION_CHARS;
+              const tooLong = trimmedLen > MAX_EXPECTATION_CHARS;
+              const empty = trimmedLen === 0;
+              const hasError = empty || tooShort || tooLong;
+
+              return (
+                <div
+                  // biome-ignore lint/suspicious/noArrayIndexKey: editable list uses index as stable key
+                  key={index}
+                  style={{ marginBottom: "0.6rem" }}
                 >
-                  {STRINGS.expectationLabel(index)}
-                </label>
-                <input
-                  id={`expectation-${index}`}
-                  type="text"
-                  value={exp}
-                  onChange={(e) => handleExpectationChange(index, e.target.value)}
-                  aria-required="true"
-                  aria-label={STRINGS.expectationLabel(index)}
-                  style={{
-                    ...expectationInputStyle,
-                    borderColor: exp.trim().length === 0 ? "#b91c1c" : "#ccc",
-                  }}
-                />
-                {expectations.length > 1 && (
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveExpectation(index)}
-                    aria-label={`${STRINGS.removeExpectation} expectation ${index + 1}`}
-                    style={dangerButtonStyle}
+                  <div
+                    style={{
+                      display: "flex",
+                      gap: "0.5rem",
+                      alignItems: "center",
+                    }}
                   >
-                    {STRINGS.removeExpectation}
-                  </button>
-                )}
-              </div>
-            ))}
+                    <label
+                      htmlFor={`expectation-${index}`}
+                      style={{ ...labelStyle, margin: 0, whiteSpace: "nowrap" }}
+                    >
+                      {STRINGS.expectationLabel(index)}
+                    </label>
+                    <input
+                      id={`expectation-${index}`}
+                      type="text"
+                      value={exp}
+                      maxLength={MAX_EXPECTATION_CHARS}
+                      onChange={(e) => handleExpectationChange(index, e.target.value)}
+                      aria-required="true"
+                      aria-label={STRINGS.expectationLabel(index)}
+                      aria-invalid={hasError ? "true" : "false"}
+                      aria-describedby={hasError ? `expectation-error-${index}` : undefined}
+                      style={{
+                        ...expectationInputStyle,
+                        borderColor: hasError ? "#b91c1c" : "#ccc",
+                      }}
+                    />
+                    {expectations.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveExpectation(index)}
+                        aria-label={`${STRINGS.removeExpectation} expectation ${index + 1}`}
+                        style={dangerButtonStyle}
+                      >
+                        {STRINGS.removeExpectation}
+                      </button>
+                    )}
+                  </div>
+                  {tooShort && (
+                    <div id={`expectation-error-${index}`} style={validationMessageStyle}>
+                      {STRINGS.expectationTooShort}
+                    </div>
+                  )}
+                  {tooLong && (
+                    <div id={`expectation-error-${index}`} style={validationMessageStyle}>
+                      {STRINGS.expectationTooLong}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
 
             {expectationsCountMessage && (
               <div role="alert" aria-live="polite" style={validationMessageStyle}>

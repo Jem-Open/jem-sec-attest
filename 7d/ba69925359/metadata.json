@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "7dba69925359",
+  "strategy": "manual-commit",
+  "branch": "003-training-intake",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "app/[tenant]/intake/page.tsx",
+    "app/api/intake/[tenant]/confirm/route.ts",
+    "app/api/intake/[tenant]/generate/route.ts",
+    "app/api/intake/[tenant]/profile/route.ts",
+    "src/intake/ai-model-resolver.ts",
+    "src/intake/sanitizer.ts",
+    "tests/unit/intake/sanitizer.spec.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/7d/ba69925359/0/metadata.json",
+      "transcript": "/7d/ba69925359/0/full.jsonl",
+      "context": "/7d/ba69925359/0/context.md",
+      "content_hash": "/7d/ba69925359/0/content_hash.txt",
+      "prompt": "/7d/ba69925359/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 484,
+    "cache_creation_tokens": 366568,
+    "cache_read_tokens": 10329429,
+    "output_tokens": 33073,
+    "api_call_count": 126
+  }
+}

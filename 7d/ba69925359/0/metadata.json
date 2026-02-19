@@ -1,0 +1,37 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "7dba69925359",
+  "session_id": "46ad8813-eb9c-4fd7-9a50-b4ccaaaf6722",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-19T07:21:19.410031Z",
+  "branch": "003-training-intake",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "tests/unit/intake/sanitizer.spec.ts",
+    "app/[tenant]/intake/page.tsx",
+    "app/api/intake/[tenant]/confirm/route.ts",
+    "app/api/intake/[tenant]/generate/route.ts",
+    "app/api/intake/[tenant]/profile/route.ts",
+    "src/intake/ai-model-resolver.ts",
+    "src/intake/sanitizer.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "0abf4e4d39a6",
+  "token_usage": {
+    "input_tokens": 484,
+    "cache_creation_tokens": 366568,
+    "cache_read_tokens": 10329429,
+    "output_tokens": 33073,
+    "api_call_count": 126
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-19T07:21:18.387901Z",
+    "agent_lines": 0,
+    "human_added": 29,
+    "human_modified": 6,
+    "human_removed": 0,
+    "total_committed": 29,
+    "agent_percentage": 0
+  },
+  "transcript_path": ".claude/projects/-Users-thamsanqamoyo-Documents-code-jem-open-jem-sec-attest/46ad8813-eb9c-4fd7-9a50-b4ccaaaf6722.jsonl"
+}

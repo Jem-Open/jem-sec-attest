@@ -83,4 +83,8 @@ describe("sanitizeJobText", () => {
   it("decodes entities after stripping tags", () => {
     expect(sanitizeJobText("<b>A &amp; B</b>")).toBe("A & B");
   });
+
+  it("strips tags reconstructed from HTML entities", () => {
+    expect(sanitizeJobText("&lt;script&gt;alert(1)&lt;/script&gt;")).toBe("alert(1)");
+  });
 });

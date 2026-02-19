@@ -20,10 +20,16 @@ describe("sanitizeJobText", () => {
     expect(sanitizeJobText("Hello <b>world</b>")).toBe("Hello world");
   });
 
-  it("removes script tags and their content markers", () => {
-    // The regex /<[^>]*>/g strips <script> and </script> but leaves the text
-    // between them intact. alert('xss') is preserved; no spaces are introduced.
-    expect(sanitizeJobText("text<script>alert('xss')</script>more")).toBe("textalert('xss')more");
+  it("removes script tags and their content", () => {
+    expect(sanitizeJobText("text<script>alert('xss')</script>more")).toBe("textmore");
+  });
+
+  it("removes script tags case-insensitively", () => {
+    expect(sanitizeJobText("a<SCRIPT>evil()</SCRIPT>b")).toBe("ab");
+  });
+
+  it("removes style tags and their content", () => {
+    expect(sanitizeJobText("text<style>body{display:none}</style>more")).toBe("textmore");
   });
 
   it("normalizes multiple whitespace characters", () => {
@@ -49,15 +55,13 @@ describe("sanitizeJobText", () => {
   });
 
   it("handles nested/malformed HTML like <scr<script>ipt>", () => {
-    // The regex greedily matches from the first '<' to the first '>'.
-    // In "<scr<script>", it matches "<scr<script>" leaving "ipt>" behind.
-    // Similarly "</scr</script>" leaves the preceding fragment.
     // The function must not throw; it returns a string derived from the input.
     const input = "before<scr<script>ipt>alert(1)</scr</script>ipt>after";
     const result = sanitizeJobText(input);
     expect(typeof result).toBe("string");
-    // The matched portions are stripped; non-tag remnants remain
-    expect(result).toBe("beforeipt>alert(1)ipt>after");
+    // The script block regex matches from <script> to </script>, removing content between.
+    // The generic tag regex then strips remaining malformed tag fragments.
+    expect(result).toBe("beforeafter");
   });
 
   it("handles unclosed tags", () => {
@@ -84,7 +88,7 @@ describe("sanitizeJobText", () => {
     expect(sanitizeJobText("<b>A &amp; B</b>")).toBe("A & B");
   });
 
-  it("strips tags reconstructed from HTML entities", () => {
-    expect(sanitizeJobText("&lt;script&gt;alert(1)&lt;/script&gt;")).toBe("alert(1)");
+  it("strips tags and content reconstructed from HTML entities", () => {
+    expect(sanitizeJobText("&lt;script&gt;alert(1)&lt;/script&gt;")).toBe("");
   });
 });

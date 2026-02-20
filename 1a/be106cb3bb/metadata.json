@@ -3,7 +3,7 @@
   "checkpoint_id": "1abe106cb3bb",
   "strategy": "manual-commit",
   "branch": "004-training-workflow",
-  "checkpoints_count": 1,
+  "checkpoints_count": 2,
   "files_touched": [
     "app/api/training/[tenant]/module/[moduleIndex]/quiz/route.ts",
     "app/api/training/[tenant]/module/[moduleIndex]/scenario/route.ts",
@@ -16,13 +16,20 @@
       "context": "/1a/be106cb3bb/0/context.md",
       "content_hash": "/1a/be106cb3bb/0/content_hash.txt",
       "prompt": "/1a/be106cb3bb/0/prompt.txt"
+    },
+    {
+      "metadata": "/1a/be106cb3bb/1/metadata.json",
+      "transcript": "/1a/be106cb3bb/1/full.jsonl",
+      "context": "/1a/be106cb3bb/1/context.md",
+      "content_hash": "/1a/be106cb3bb/1/content_hash.txt",
+      "prompt": "/1a/be106cb3bb/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 15,
-    "cache_creation_tokens": 94638,
-    "cache_read_tokens": 252129,
-    "output_tokens": 1690,
-    "api_call_count": 10
+    "input_tokens": 132,
+    "cache_creation_tokens": 236584,
+    "cache_read_tokens": 6180046,
+    "output_tokens": 13387,
+    "api_call_count": 93
   }
 }

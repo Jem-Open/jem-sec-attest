@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "0fb3cda263d5",
+  "strategy": "manual-commit",
+  "branch": "005-audit-evidence",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "specs/005-audit-evidence/contracts/evidence-api.yaml"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0f/b3cda263d5/0/metadata.json",
+      "transcript": "/0f/b3cda263d5/0/full.jsonl",
+      "context": "/0f/b3cda263d5/0/context.md",
+      "content_hash": "/0f/b3cda263d5/0/content_hash.txt",
+      "prompt": "/0f/b3cda263d5/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 61,
+    "cache_creation_tokens": 117410,
+    "cache_read_tokens": 2063193,
+    "output_tokens": 7894,
+    "api_call_count": 47
+  }
+}

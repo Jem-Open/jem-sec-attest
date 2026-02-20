@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "1fcecd893667",
+  "strategy": "manual-commit",
+  "branch": "004-training-workflow",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "src/training/module-generator.ts",
+    "tests/unit/training/quiz-route.spec.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/1f/cecd893667/0/metadata.json",
+      "transcript": "/1f/cecd893667/0/full.jsonl",
+      "context": "/1f/cecd893667/0/context.md",
+      "content_hash": "/1f/cecd893667/0/content_hash.txt",
+      "prompt": "/1f/cecd893667/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 111,
+    "cache_creation_tokens": 139694,
+    "cache_read_tokens": 5486353,
+    "output_tokens": 11381,
+    "api_call_count": 79
+  }
+}

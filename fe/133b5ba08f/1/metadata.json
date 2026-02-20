@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "fe133b5ba08f",
+  "session_id": "3f9bc1cc-9ddc-4854-a3de-3f1d1d8773e4",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-20T12:37:01.980354Z",
+  "branch": "fix/minimatch-redos",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "package.json",
+    "pnpm-lock.yaml"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "f896ec0d76c4",
+  "transcript_identifier_at_start": "cc4fae5f-346f-4d8f-93a0-284da1714128",
+  "token_usage": {
+    "input_tokens": 117,
+    "cache_creation_tokens": 141946,
+    "cache_read_tokens": 5927917,
+    "output_tokens": 11697,
+    "api_call_count": 83
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-20T12:37:01.699905Z",
+    "agent_lines": 0,
+    "human_added": 11,
+    "human_modified": 15,
+    "human_removed": 0,
+    "total_committed": 11,
+    "agent_percentage": 0
+  },
+  "transcript_path": ".claude/projects/-Users-thamsanqamoyo-Documents-code-jem-open-jem-sec-attest/3f9bc1cc-9ddc-4854-a3de-3f1d1d8773e4.jsonl"
+}

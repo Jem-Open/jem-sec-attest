@@ -3,7 +3,7 @@
   "checkpoint_id": "fa736520330b",
   "strategy": "manual-commit",
   "branch": "004-training-workflow",
-  "checkpoints_count": 1,
+  "checkpoints_count": 2,
   "files_touched": [
     "app/[tenant]/training/page.tsx",
     "app/api/training/[tenant]/evaluate/route.ts",
@@ -27,13 +27,20 @@
       "context": "/fa/736520330b/1/context.md",
       "content_hash": "/fa/736520330b/1/content_hash.txt",
       "prompt": "/fa/736520330b/1/prompt.txt"
+    },
+    {
+      "metadata": "/fa/736520330b/2/metadata.json",
+      "transcript": "/fa/736520330b/2/full.jsonl",
+      "context": "/fa/736520330b/2/context.md",
+      "content_hash": "/fa/736520330b/2/content_hash.txt",
+      "prompt": "/fa/736520330b/2/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 619,
-    "cache_creation_tokens": 561915,
-    "cache_read_tokens": 16856463,
-    "output_tokens": 45883,
-    "api_call_count": 219
+    "input_tokens": 651,
+    "cache_creation_tokens": 642184,
+    "cache_read_tokens": 17854895,
+    "output_tokens": 49922,
+    "api_call_count": 242
   }
 }

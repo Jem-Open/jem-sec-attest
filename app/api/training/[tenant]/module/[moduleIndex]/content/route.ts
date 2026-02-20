@@ -82,6 +82,8 @@ export async function POST(
   const sessionRepo = new SessionRepository(adapter);
   const profileRepo = new ProfileRepository(adapter);
 
+  await adapter.initialize();
+
   let activeSessionId: string | undefined;
 
   try {

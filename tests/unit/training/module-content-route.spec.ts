@@ -322,9 +322,9 @@ describe("POST /api/training/{tenant}/module/{moduleIndex}/content", () => {
       expect(body.error).toBe("invalid_request");
     });
 
-    it("returns 400 for module index greater than 7", async () => {
-      const request = makeRequest(8);
-      const response = await POST(request, makeParams(TENANT_ID, "8"));
+    it("returns 400 for module index greater than 19", async () => {
+      const request = makeRequest(20);
+      const response = await POST(request, makeParams(TENANT_ID, "20"));
 
       expect(response.status).toBe(400);
       const body = await response.json();
@@ -341,11 +341,11 @@ describe("POST /api/training/{tenant}/module/{moduleIndex}/content", () => {
       expect(response.status).toBe(404);
     });
 
-    it("accepts module index 7 (upper boundary)", async () => {
+    it("accepts module index 19 (upper boundary)", async () => {
       mockSessionRepo.findActiveSession.mockResolvedValue(null);
 
-      const request = makeRequest(7);
-      const response = await POST(request, makeParams(TENANT_ID, "7"));
+      const request = makeRequest(19);
+      const response = await POST(request, makeParams(TENANT_ID, "19"));
 
       expect(response.status).toBe(404);
     });

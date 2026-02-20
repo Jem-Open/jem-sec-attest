@@ -24,9 +24,6 @@ import { SessionRepository, VersionConflictError } from "@/training/session-repo
 import { StateTransitionError, transitionSession } from "@/training/state-machine";
 import { NextResponse } from "next/server";
 
-const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
-const sessionRepo = new SessionRepository(storage);
-
 export async function POST(request: Request, { params }: { params: Promise<{ tenant: string }> }) {
   const { tenant: tenantSlug } = await params;
   const tenantId = request.headers.get("x-tenant-id");
@@ -38,6 +35,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
       { status: 401 },
     );
   }
+
+  // Initialise repositories per-request to avoid connection sharing
+  const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
+  const sessionRepo = new SessionRepository(storage);
 
   await storage.initialize();
 

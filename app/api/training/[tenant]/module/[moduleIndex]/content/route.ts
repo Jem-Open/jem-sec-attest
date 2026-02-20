@@ -23,6 +23,7 @@ import { resolveModel } from "@/intake/ai-model-resolver";
 import { ProfileRepository } from "@/intake/profile-repository";
 import { SQLiteAdapter } from "@/storage/sqlite-adapter";
 import { ModuleGenerationError, generateModuleContent } from "@/training/module-generator";
+import { MAX_MODULE_INDEX } from "@/training/schemas";
 import { SessionRepository, VersionConflictError } from "@/training/session-repository";
 import { StateTransitionError, transitionModule } from "@/training/state-machine";
 import type { ModuleContent } from "@/training/types";
@@ -70,7 +71,7 @@ export async function POST(
 
   // 2. Parse and validate moduleIndex
   const moduleIndex = Number(moduleIndexStr);
-  if (Number.isNaN(moduleIndex) || moduleIndex < 0 || moduleIndex > 7) {
+  if (Number.isNaN(moduleIndex) || moduleIndex < 0 || moduleIndex > MAX_MODULE_INDEX) {
     return NextResponse.json(
       { error: "invalid_request", message: "Invalid module index" },
       { status: 400 },

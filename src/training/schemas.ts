@@ -20,6 +20,13 @@
 import { z } from "zod";
 
 // ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+/** Maximum valid moduleIndex value (0-indexed, inclusive). Matches maxModules - 1 from TenantSettingsSchema. */
+export const MAX_MODULE_INDEX = 19;
+
+// ---------------------------------------------------------------------------
 // Enum schemas
 // ---------------------------------------------------------------------------
 
@@ -157,12 +164,19 @@ export const FreeTextEvaluationSchema = z.object({
 // T003 – API request/response schemas
 // ---------------------------------------------------------------------------
 
-export const ScenarioSubmissionSchema = z.object({
-  scenarioId: z.string().min(1),
-  responseType: ResponseTypeSchema,
-  selectedOption: z.string().optional(),
-  freeTextResponse: z.string().max(2000).optional(),
-});
+export const ScenarioSubmissionSchema = z
+  .object({
+    scenarioId: z.string().min(1),
+    responseType: ResponseTypeSchema,
+    selectedOption: z.string().optional(),
+    freeTextResponse: z.string().max(2000).optional(),
+  })
+  .refine((data) => data.responseType !== "multiple-choice" || data.selectedOption !== undefined, {
+    message: "selectedOption is required for multiple-choice responses",
+  })
+  .refine((data) => data.responseType !== "free-text" || data.freeTextResponse !== undefined, {
+    message: "freeTextResponse is required for free-text responses",
+  });
 
 export const QuizSubmissionSchema = z.object({
   answers: z

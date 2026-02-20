@@ -1022,13 +1022,23 @@ describe("ScenarioSubmissionSchema", () => {
     ).toBe(true);
   });
 
-  it("treats selectedOption as optional", () => {
+  it("rejects MC submission without selectedOption", () => {
     const { selectedOption: _, ...rest } = validMc;
+    expect(ScenarioSubmissionSchema.safeParse(rest).success).toBe(false);
+  });
+
+  it("rejects free-text submission without freeTextResponse", () => {
+    const { freeTextResponse: _, ...rest } = validFt;
+    expect(ScenarioSubmissionSchema.safeParse(rest).success).toBe(false);
+  });
+
+  it("allows omitting freeTextResponse for MC submissions", () => {
+    const { freeTextResponse: _, ...rest } = validMc;
     expect(ScenarioSubmissionSchema.safeParse(rest).success).toBe(true);
   });
 
-  it("treats freeTextResponse as optional", () => {
-    const { freeTextResponse: _, ...rest } = validFt;
+  it("allows omitting selectedOption for free-text submissions", () => {
+    const { selectedOption: _, ...rest } = validFt;
     expect(ScenarioSubmissionSchema.safeParse(rest).success).toBe(true);
   });
 });

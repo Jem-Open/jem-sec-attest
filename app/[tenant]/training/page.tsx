@@ -667,7 +667,11 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
     setConflictMessage(STRINGS.conflictBanner);
     try {
       const res = await fetch(`/api/training/${tenant}/session`);
-      if (!res.ok) return;
+      if (!res.ok) {
+        setError(STRINGS.errorLoadSession);
+        setPageState("error");
+        return;
+      }
       const data = (await res.json()) as {
         session: TrainingSessionResponse;
         modules: ModuleSummary[];

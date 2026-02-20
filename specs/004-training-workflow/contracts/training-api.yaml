@@ -8,10 +8,7 @@ info:
     (set by Next.js middleware from iron-session).
 
 servers:
-  - url: /api/training/{tenant}
-    variables:
-      tenant:
-        description: Tenant slug from URL path
+  - url: /
 
 paths:
   /api/training/{tenant}/session:
@@ -330,7 +327,7 @@ components:
       schema:
         type: integer
         minimum: 0
-        maximum: 7
+        maximum: 19
 
   schemas:
     ErrorResponse:

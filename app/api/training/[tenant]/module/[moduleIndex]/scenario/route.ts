@@ -22,7 +22,7 @@ import { getSnapshot } from "@/config/index";
 import { resolveModel } from "@/intake/ai-model-resolver";
 import { SQLiteAdapter } from "@/storage/sqlite-adapter";
 import { EvaluationError, evaluateFreeText } from "@/training/evaluator";
-import { ScenarioSubmissionSchema } from "@/training/schemas";
+import { MAX_MODULE_INDEX, ScenarioSubmissionSchema } from "@/training/schemas";
 import type { ModuleStatus } from "@/training/schemas";
 import { scoreMcAnswer } from "@/training/score-calculator";
 import { SessionRepository, VersionConflictError } from "@/training/session-repository";
@@ -47,7 +47,7 @@ export async function POST(
 
   // 2. Parse and validate moduleIndex (0-19)
   const moduleIndex = Number.parseInt(moduleIndexStr, 10);
-  if (Number.isNaN(moduleIndex) || moduleIndex < 0 || moduleIndex > 19) {
+  if (Number.isNaN(moduleIndex) || moduleIndex < 0 || moduleIndex > MAX_MODULE_INDEX) {
     return NextResponse.json(
       { error: "validation_error", message: "moduleIndex must be an integer between 0 and 19" },
       { status: 400 },

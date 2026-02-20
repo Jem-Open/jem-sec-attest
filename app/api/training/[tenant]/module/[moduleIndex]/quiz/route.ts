@@ -45,11 +45,11 @@ export async function POST(
     );
   }
 
-  // 2. Parse and validate moduleIndex (0-7)
+  // 2. Parse and validate moduleIndex (0-19)
   const moduleIndex = Number.parseInt(moduleIndexStr, 10);
-  if (Number.isNaN(moduleIndex) || moduleIndex < 0 || moduleIndex > 7) {
+  if (Number.isNaN(moduleIndex) || moduleIndex < 0 || moduleIndex > 19) {
     return NextResponse.json(
-      { error: "validation_error", message: "moduleIndex must be an integer between 0 and 7" },
+      { error: "validation_error", message: "moduleIndex must be an integer between 0 and 19" },
       { status: 400 },
     );
   }
@@ -272,10 +272,16 @@ export async function POST(
   );
 
   // 13. Check if this is the last module; if so, transition session to `evaluating`
+  // Fetch the full module list once for the total count, then compute scoredCount
+  // optimistically — previously-scored modules plus the one we just transitioned — to
+  // avoid a second read that could race with the write we just committed.
   const allModules = await sessionRepo.findModulesBySession(tenantId, session.id);
-  // Count modules that are now scored (the one we just updated plus previously scored ones)
-  const scoredCount = allModules.filter((m) => m.status === "scored").length;
   const totalModules = allModules.length;
+  // Modules already in "scored" state before this request, plus 1 for the module just updated.
+  const previouslyScoredCount = allModules.filter(
+    (m) => m.id !== mod.id && m.status === "scored",
+  ).length;
+  const scoredCount = previouslyScoredCount + 1;
 
   if (scoredCount === totalModules) {
     const freshSession = await sessionRepo.findActiveSession(tenantId, employeeId);

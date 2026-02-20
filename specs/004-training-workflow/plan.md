@@ -95,19 +95,19 @@ app/
 tests/
 ├── unit/
 │   └── training/
-│       ├── state-machine.test.ts
-│       ├── score-calculator.test.ts
-│       ├── curriculum-generator.test.ts
-│       ├── module-generator.test.ts
-│       ├── evaluator.test.ts
-│       └── remediation-planner.test.ts
+│       ├── state-machine.spec.ts
+│       ├── score-calculator.spec.ts
+│       ├── curriculum-generator.spec.ts
+│       ├── module-generator.spec.ts
+│       ├── evaluator.spec.ts
+│       └── remediation-planner.spec.ts
 ├── integration/
 │   └── training/
-│       ├── session-repository.test.ts
-│       └── workflow.test.ts
+│       ├── session-repository.spec.ts
+│       └── workflow.spec.ts
 └── contract/
     └── training/
-        └── api-routes.test.ts
+        └── api-routes.spec.ts
 ```
 
 **Structure Decision**: Follows established single-project structure with `src/training/` module mirroring `src/intake/` patterns. API routes follow Next.js App Router conventions under `app/api/training/[tenant]/`. Client page at `app/[tenant]/training/page.tsx`.

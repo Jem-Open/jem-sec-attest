@@ -56,8 +56,9 @@ generateEvidenceForSession(storage, tenantId, sessionId).catch((err) =>
 ### Content Hash Computation
 
 ```typescript
-// Canonical JSON: sorted keys, then SHA-256
-const canonical = JSON.stringify(evidenceBody, Object.keys(evidenceBody).sort());
+// Canonical JSON: recursively sorted keys, then SHA-256
+// See src/evidence/hash.ts for full implementation
+const canonical = canonicalizeJson(evidenceBody);
 const hash = crypto.createHash("sha256").update(canonical).digest("hex");
 ```
 

@@ -76,8 +76,8 @@ export async function POST(
       return NextResponse.json(existing, { status: 200 });
     }
 
-    // Generate evidence (awaited, not fire-and-forget)
-    const evidence = await generateEvidenceForSession(storage, tenantId, sessionId);
+    // Generate evidence (awaited, not fire-and-forget — manages its own storage connection)
+    const evidence = await generateEvidenceForSession(tenantId, sessionId);
     return NextResponse.json(evidence, { status: 201 });
   } finally {
     await storage.close();

@@ -114,8 +114,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
       totalModules,
     );
 
-    // 7. Fire-and-forget evidence generation
-    generateEvidenceForSession(storage, tenantId, session.id).catch((err) =>
+    // 7. Fire-and-forget evidence generation (uses its own storage connection)
+    generateEvidenceForSession(tenantId, session.id).catch((err) =>
       console.error("Evidence generation failed:", err),
     );
 

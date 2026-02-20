@@ -40,7 +40,7 @@
 
 ## R4: Evidence Generation Trigger Points
 
-**Decision**: Call evidence generation from three existing routes that transition sessions to terminal states:
+**Decision**: Call evidence generation from two existing routes that transition sessions to terminal states:
 1. `evaluate/route.ts` — after transitioning to "passed" or "exhausted"
 2. `abandon/route.ts` — after transitioning to "abandoned"
 

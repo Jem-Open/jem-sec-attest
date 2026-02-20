@@ -208,7 +208,7 @@ describe("generateEvidenceForSession", () => {
   });
 
   it("generates evidence for a passed session", async () => {
-    const result = await generateEvidenceForSession(mockStorage, "acme-corp", "sess-001");
+    const result = await generateEvidenceForSession("acme-corp", "sess-001");
 
     expect(mockEvidenceRepo.create).toHaveBeenCalledOnce();
     const createArg = mockEvidenceRepo.create.mock.calls[0][1];
@@ -231,7 +231,7 @@ describe("generateEvidenceForSession", () => {
     });
     mockStorage.findById.mockResolvedValue(session);
 
-    await generateEvidenceForSession(mockStorage, "acme-corp", "sess-001");
+    await generateEvidenceForSession("acme-corp", "sess-001");
 
     const createArg = mockEvidenceRepo.create.mock.calls[0][1];
     expect(createArg.evidence.session.status).toBe("exhausted");
@@ -258,7 +258,7 @@ describe("generateEvidenceForSession", () => {
     mockStorage.findById.mockResolvedValue(session);
     mockSessionRepo.findModulesBySession.mockResolvedValue([module]);
 
-    await generateEvidenceForSession(mockStorage, "acme-corp", "sess-001");
+    await generateEvidenceForSession("acme-corp", "sess-001");
 
     const createArg = mockEvidenceRepo.create.mock.calls[0][1];
     expect(createArg.evidence.session.status).toBe("abandoned");
@@ -280,7 +280,7 @@ describe("generateEvidenceForSession", () => {
     };
     mockEvidenceRepo.findBySessionId.mockResolvedValue(existingEvidence);
 
-    const result = await generateEvidenceForSession(mockStorage, "acme-corp", "sess-001");
+    const result = await generateEvidenceForSession("acme-corp", "sess-001");
 
     expect(mockEvidenceRepo.create).not.toHaveBeenCalled();
     expect(result).toBe(existingEvidence);
@@ -290,13 +290,11 @@ describe("generateEvidenceForSession", () => {
     session = makeSession({ status: "in-progress" });
     mockStorage.findById.mockResolvedValue(session);
 
-    await expect(generateEvidenceForSession(mockStorage, "acme-corp", "sess-001")).rejects.toThrow(
-      /terminal/i,
-    );
+    await expect(generateEvidenceForSession("acme-corp", "sess-001")).rejects.toThrow(/terminal/i);
   });
 
   it("excludes correct and rubric fields from evidence", async () => {
-    await generateEvidenceForSession(mockStorage, "acme-corp", "sess-001");
+    await generateEvidenceForSession("acme-corp", "sess-001");
 
     const createArg = mockEvidenceRepo.create.mock.calls[0][1];
     const moduleEvidence = createArg.evidence.modules[0];
@@ -319,7 +317,7 @@ describe("generateEvidenceForSession", () => {
   });
 
   it("content hash matches recomputation", async () => {
-    await generateEvidenceForSession(mockStorage, "acme-corp", "sess-001");
+    await generateEvidenceForSession("acme-corp", "sess-001");
 
     const createArg = mockEvidenceRepo.create.mock.calls[0][1];
     const recomputedHash = computeContentHash(
@@ -330,7 +328,7 @@ describe("generateEvidenceForSession", () => {
   });
 
   it("includes policy attestation with config hash", async () => {
-    await generateEvidenceForSession(mockStorage, "acme-corp", "sess-001");
+    await generateEvidenceForSession("acme-corp", "sess-001");
 
     const createArg = mockEvidenceRepo.create.mock.calls[0][1];
     const attestation = createArg.evidence.policyAttestation;

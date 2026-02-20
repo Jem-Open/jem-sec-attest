@@ -174,9 +174,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
       );
     }
 
-    // Fire-and-forget evidence generation for terminal states
+    // Fire-and-forget evidence generation for terminal states (uses its own storage connection)
     if (newStatus === "passed" || newStatus === "exhausted") {
-      generateEvidenceForSession(storage, tenantId, session.id).catch((err) =>
+      generateEvidenceForSession(tenantId, session.id).catch((err) =>
         console.error("Evidence generation failed:", err),
       );
     }

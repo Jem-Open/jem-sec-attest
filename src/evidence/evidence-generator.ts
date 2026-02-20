@@ -18,7 +18,7 @@
  */
 
 import { getSnapshot } from "../config/index.js";
-import type { StorageAdapter } from "../storage/adapter.js";
+import { SQLiteAdapter } from "../storage/sqlite-adapter.js";
 import type { TrainingModule, TrainingSession } from "../training/schemas.js";
 import { SessionRepository } from "../training/session-repository.js";
 import { EvidenceRepository } from "./evidence-repository.js";
@@ -40,94 +40,109 @@ const SESSIONS_COLLECTION = "training_sessions";
 /**
  * Generate an immutable evidence record for a terminal training session.
  *
+ * Creates and manages its own storage connection so it is safe to call as a
+ * fire-and-forget background task without sharing a connection that may be
+ * closed by the caller.
+ *
  * Idempotent: if evidence already exists for the session, returns the existing record.
  * Throws if the session is not in a terminal state (passed, exhausted, abandoned).
  */
 export async function generateEvidenceForSession(
-  storage: StorageAdapter,
   tenantId: string,
   sessionId: string,
+  dbPath?: string,
 ): Promise<TrainingEvidence> {
-  const sessionRepo = new SessionRepository(storage);
-  const evidenceRepo = new EvidenceRepository(storage);
+  const storage = new SQLiteAdapter({ dbPath: dbPath ?? process.env.DB_PATH ?? "data/jem.db" });
+  await storage.initialize();
 
-  // 1. Load session
-  const session = await storage.findById<TrainingSession>(tenantId, SESSIONS_COLLECTION, sessionId);
+  try {
+    const sessionRepo = new SessionRepository(storage);
+    const evidenceRepo = new EvidenceRepository(storage);
 
-  if (!session) {
-    throw new Error(`Session '${sessionId}' not found`);
-  }
-
-  if (!TERMINAL_STATUSES.has(session.status)) {
-    throw new Error(
-      `Session '${sessionId}' is in '${session.status}' state, expected terminal state (passed, exhausted, or abandoned)`,
+    // 1. Load session
+    const session = await storage.findById<TrainingSession>(
+      tenantId,
+      SESSIONS_COLLECTION,
+      sessionId,
     );
-  }
 
-  // 2. Idempotency check — return existing evidence if already generated
-  const existing = await evidenceRepo.findBySessionId(tenantId, sessionId);
-  if (existing) {
-    return existing;
-  }
+    if (!session) {
+      throw new Error(`Session '${sessionId}' not found`);
+    }
 
-  // 3. Load modules
-  const modules = await sessionRepo.findModulesBySession(tenantId, sessionId);
+    if (!TERMINAL_STATUSES.has(session.status)) {
+      throw new Error(
+        `Session '${sessionId}' is in '${session.status}' state, expected terminal state (passed, exhausted, or abandoned)`,
+      );
+    }
 
-  // 4. Resolve tenant config for thresholds
-  const snapshot = getSnapshot();
-  const tenant = snapshot?.tenants.get(tenantId);
-  const passThreshold = tenant?.settings?.training?.passThreshold ?? 0.7;
-  const maxAttempts = tenant?.settings?.training?.maxAttempts ?? 3;
+    // 2. Idempotency check — return existing evidence if already generated
+    const existing = await evidenceRepo.findBySessionId(tenantId, sessionId);
+    if (existing) {
+      return existing;
+    }
 
-  // 5. Assemble the evidence body
-  const evidenceBody: EvidenceBody = {
-    session: {
+    // 3. Load modules
+    const modules = await sessionRepo.findModulesBySession(tenantId, sessionId);
+
+    // 4. Resolve tenant config for thresholds
+    const snapshot = getSnapshot();
+    const tenant = snapshot?.tenants.get(tenantId);
+    const passThreshold = tenant?.settings?.training?.passThreshold ?? 0.7;
+    const maxAttempts = tenant?.settings?.training?.maxAttempts ?? 3;
+
+    // 5. Assemble the evidence body
+    const evidenceBody: EvidenceBody = {
+      session: {
+        sessionId: session.id,
+        employeeId: session.employeeId,
+        tenantId: session.tenantId,
+        attemptNumber: session.attemptNumber,
+        totalAttempts: session.attemptNumber,
+        status: session.status as "passed" | "exhausted" | "abandoned",
+        createdAt: session.createdAt,
+        completedAt: session.completedAt,
+      },
+      policyAttestation: {
+        configHash: session.configHash,
+        roleProfileId: session.roleProfileId,
+        roleProfileVersion: session.roleProfileVersion,
+        appVersion: session.appVersion,
+        passThreshold,
+        maxAttempts,
+      },
+      modules: modules.map((m) => buildModuleEvidence(m)),
+      outcome: {
+        aggregateScore: session.aggregateScore,
+        passed: session.status === "passed" ? true : session.status === "abandoned" ? null : false,
+        passThreshold,
+        weakAreas: session.weakAreas,
+        moduleScores: modules.map((m) => ({
+          moduleIndex: m.moduleIndex,
+          title: m.title,
+          score: m.moduleScore,
+        })),
+      },
+    };
+
+    // 6. Compute content hash for tamper detection
+    const contentHash = computeContentHash(evidenceBody as unknown as Record<string, unknown>);
+
+    // 7. Persist the evidence record
+    const record = await evidenceRepo.create(tenantId, {
+      tenantId,
       sessionId: session.id,
       employeeId: session.employeeId,
-      tenantId: session.tenantId,
-      attemptNumber: session.attemptNumber,
-      totalAttempts: session.attemptNumber,
-      status: session.status as "passed" | "exhausted" | "abandoned",
-      createdAt: session.createdAt,
-      completedAt: session.completedAt,
-    },
-    policyAttestation: {
-      configHash: session.configHash,
-      roleProfileId: session.roleProfileId,
-      roleProfileVersion: session.roleProfileVersion,
-      appVersion: session.appVersion,
-      passThreshold,
-      maxAttempts,
-    },
-    modules: modules.map((m) => buildModuleEvidence(m)),
-    outcome: {
-      aggregateScore: session.aggregateScore,
-      passed: session.status === "passed" ? true : session.status === "abandoned" ? null : false,
-      passThreshold,
-      weakAreas: session.weakAreas,
-      moduleScores: modules.map((m) => ({
-        moduleIndex: m.moduleIndex,
-        title: m.title,
-        score: m.moduleScore,
-      })),
-    },
-  };
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      evidence: evidenceBody,
+      contentHash,
+      generatedAt: new Date().toISOString(),
+    });
 
-  // 6. Compute content hash for tamper detection
-  const contentHash = computeContentHash(evidenceBody as unknown as Record<string, unknown>);
-
-  // 7. Persist the evidence record
-  const record = await evidenceRepo.create(tenantId, {
-    tenantId,
-    sessionId: session.id,
-    employeeId: session.employeeId,
-    schemaVersion: CURRENT_SCHEMA_VERSION,
-    evidence: evidenceBody,
-    contentHash,
-    generatedAt: new Date().toISOString(),
-  });
-
-  return record;
+    return record;
+  } finally {
+    await storage.close();
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -159,7 +174,7 @@ function buildModuleEvidence(module: TrainingModule): ModuleEvidence {
           freeTextResponse: response?.freeTextResponse,
           score: response?.score ?? 0,
           llmRationale: response?.llmRationale,
-          submittedAt: response?.submittedAt ?? new Date().toISOString(),
+          submittedAt: response?.submittedAt ?? module.updatedAt ?? module.createdAt,
         },
       };
     }),
@@ -175,7 +190,7 @@ function buildModuleEvidence(module: TrainingModule): ModuleEvidence {
           freeTextResponse: answer?.freeTextResponse,
           score: answer?.score ?? 0,
           llmRationale: answer?.llmRationale,
-          submittedAt: answer?.submittedAt ?? new Date().toISOString(),
+          submittedAt: answer?.submittedAt ?? module.updatedAt ?? module.createdAt,
         },
       };
     }),

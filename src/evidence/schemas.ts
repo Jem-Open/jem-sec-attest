@@ -77,8 +77,8 @@ export const SessionSummarySchema = z.object({
   sessionId: z.string().uuid(),
   employeeId: z.string().min(1),
   tenantId: z.string().min(1),
-  attemptNumber: z.number().int().min(1).max(3),
-  totalAttempts: z.number().int().min(1).max(3),
+  attemptNumber: z.number().int().min(1),
+  totalAttempts: z.number().int().min(1),
   status: TerminalSessionStatusSchema,
   createdAt: z.string().datetime(),
   completedAt: z.string().datetime().nullable(),
@@ -110,7 +110,7 @@ export const OutcomeSummarySchema = z.object({
     z.object({
       moduleIndex: z.number().int(),
       title: z.string(),
-      score: z.number().nullable(),
+      score: z.number().min(0).max(1).nullable(),
     }),
   ),
 });
@@ -150,7 +150,7 @@ export const EvidenceSummarySchema = z.object({
   generatedAt: z.string().datetime(),
   outcome: z.object({
     status: TerminalSessionStatusSchema,
-    aggregateScore: z.number().nullable(),
+    aggregateScore: z.number().min(0).max(1).nullable(),
     passed: z.boolean().nullable(),
   }),
 });

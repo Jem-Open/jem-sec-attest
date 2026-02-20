@@ -384,8 +384,13 @@ describe("Nested evidence schemas", () => {
     ).toThrow();
   });
 
-  it("SessionSummarySchema rejects attemptNumber > 3", () => {
-    expect(() => SessionSummarySchema.parse(makeSessionSummary({ attemptNumber: 4 }))).toThrow();
+  it("SessionSummarySchema accepts attemptNumber > 3 (configurable per-tenant)", () => {
+    const result = SessionSummarySchema.parse(makeSessionSummary({ attemptNumber: 5 }));
+    expect(result.attemptNumber).toBe(5);
+  });
+
+  it("SessionSummarySchema rejects attemptNumber < 1", () => {
+    expect(() => SessionSummarySchema.parse(makeSessionSummary({ attemptNumber: 0 }))).toThrow();
   });
 
   it("PolicyAttestationSchema accepts valid attestation", () => {

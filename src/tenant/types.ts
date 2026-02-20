@@ -49,6 +49,12 @@ export interface TenantSettings {
     maxRetries?: number;
     gatewayUrl?: string;
   };
+  training?: {
+    passThreshold?: number;
+    maxAttempts?: number;
+    maxModules?: number;
+    enableRemediation?: boolean;
+  };
 }
 
 export interface Tenant {

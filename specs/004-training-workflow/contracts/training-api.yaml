@@ -1,0 +1,668 @@
+openapi: "3.1.0"
+info:
+  title: Training Workflow API
+  version: "1.0.0"
+  description: |
+    API contracts for the guided training workflow feature (004-training-workflow).
+    All endpoints require authentication via x-tenant-id and x-employee-id headers
+    (set by Next.js middleware from iron-session).
+
+servers:
+  - url: /api/training/{tenant}
+    variables:
+      tenant:
+        description: Tenant slug from URL path
+
+paths:
+  /api/training/{tenant}/session:
+    get:
+      operationId: getTrainingSession
+      summary: Get current training session state
+      description: |
+        Returns the employee's current or most recent training session, including
+        curriculum outline, module statuses, and scores. Used on page load to
+        determine where the employee left off. Returns 404 if no session exists.
+      parameters:
+        - $ref: "#/components/parameters/TenantPath"
+        - $ref: "#/components/parameters/TenantIdHeader"
+        - $ref: "#/components/parameters/EmployeeIdHeader"
+      responses:
+        "200":
+          description: Active or most recent session found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingSessionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: No training session exists for this employee
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+    post:
+      operationId: startTrainingSession
+      summary: Start a new training session
+      description: |
+        Creates a new training session and generates the curriculum outline via LLM.
+        Requires the employee to have a confirmed role profile. Fails if an active
+        session already exists (409). The curriculum outline is generated synchronously;
+        the response includes the full module list with titles and topics.
+      parameters:
+        - $ref: "#/components/parameters/TenantPath"
+        - $ref: "#/components/parameters/TenantIdHeader"
+        - $ref: "#/components/parameters/EmployeeIdHeader"
+      responses:
+        "201":
+          description: Session created with curriculum outline
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingSessionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Employee has no confirmed role profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Active session already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Curriculum generation failed (LLM returned invalid output)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: AI service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/training/{tenant}/abandon:
+    post:
+      operationId: abandonTrainingSession
+      summary: Abandon the current training session
+      description: |
+        Marks the active session as abandoned. Counts toward the 3-attempt limit.
+        Returns 404 if no active session exists. Returns 409 if max attempts reached
+        (session is already exhausted).
+      parameters:
+        - $ref: "#/components/parameters/TenantPath"
+        - $ref: "#/components/parameters/TenantIdHeader"
+        - $ref: "#/components/parameters/EmployeeIdHeader"
+      responses:
+        "200":
+          description: Session abandoned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingSessionResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: No active session to abandon
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Cannot abandon — session already completed or exhausted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/training/{tenant}/module/{moduleIndex}/content:
+    post:
+      operationId: generateModuleContent
+      summary: Generate content for a specific module
+      description: |
+        Triggers LLM generation of instructional content, scenarios, and quiz
+        questions for the specified module. The module must be in 'locked' state
+        and the previous module must be 'scored' (or this is the first module).
+        Returns the generated content. Idempotent — if content already exists,
+        returns the existing content.
+      parameters:
+        - $ref: "#/components/parameters/TenantPath"
+        - $ref: "#/components/parameters/TenantIdHeader"
+        - $ref: "#/components/parameters/EmployeeIdHeader"
+        - $ref: "#/components/parameters/ModuleIndexPath"
+      responses:
+        "200":
+          description: Module content generated (or already existed)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModuleResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Session or module not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Module not in correct state or version conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "422":
+          description: Content generation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: AI service unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/training/{tenant}/module/{moduleIndex}/scenario:
+    post:
+      operationId: submitScenarioResponse
+      summary: Submit a response to a scenario
+      description: |
+        Submits the employee's response to a specific scenario within a module.
+        Multiple-choice responses are scored immediately (numerically). Free-text
+        responses are evaluated by LLM and assigned a numeric score. The module
+        must be in 'scenario-active' state.
+      parameters:
+        - $ref: "#/components/parameters/TenantPath"
+        - $ref: "#/components/parameters/TenantIdHeader"
+        - $ref: "#/components/parameters/EmployeeIdHeader"
+        - $ref: "#/components/parameters/ModuleIndexPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScenarioSubmission"
+      responses:
+        "200":
+          description: Scenario response scored
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScenarioResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Session, module, or scenario not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Module not in correct state, scenario already answered, or version conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: AI service unavailable (for free-text evaluation)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/training/{tenant}/module/{moduleIndex}/quiz:
+    post:
+      operationId: submitQuizAnswers
+      summary: Submit quiz answers for a module
+      description: |
+        Submits the employee's answers to all quiz questions in a module.
+        Multiple-choice answers scored numerically; free-text answers evaluated
+        by LLM. Computes the overall module score. Module transitions to 'scored'
+        state. If this is the last module, the session transitions to 'evaluating'.
+      parameters:
+        - $ref: "#/components/parameters/TenantPath"
+        - $ref: "#/components/parameters/TenantIdHeader"
+        - $ref: "#/components/parameters/EmployeeIdHeader"
+        - $ref: "#/components/parameters/ModuleIndexPath"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/QuizSubmission"
+      responses:
+        "200":
+          description: Quiz scored, module completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QuizResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Session or module not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Module not in correct state or version conflict
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "503":
+          description: AI service unavailable (for free-text evaluation)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/training/{tenant}/evaluate:
+    post:
+      operationId: evaluateTrainingSession
+      summary: Compute final pass/fail decision
+      description: |
+        Computes the aggregate score across all modules and renders a pass/fail
+        decision. Session must be in 'evaluating' state (all modules scored).
+        On pass: session transitions to 'passed'. On fail with attempts remaining:
+        session transitions to 'failed', then can initiate remediation. On fail
+        with no attempts remaining: session transitions to 'exhausted'.
+      parameters:
+        - $ref: "#/components/parameters/TenantPath"
+        - $ref: "#/components/parameters/TenantIdHeader"
+        - $ref: "#/components/parameters/EmployeeIdHeader"
+      responses:
+        "200":
+          description: Evaluation complete
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EvaluationResult"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: No session in evaluating state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Session not in correct state for evaluation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  parameters:
+    TenantPath:
+      name: tenant
+      in: path
+      required: true
+      schema:
+        type: string
+    TenantIdHeader:
+      name: x-tenant-id
+      in: header
+      required: true
+      schema:
+        type: string
+    EmployeeIdHeader:
+      name: x-employee-id
+      in: header
+      required: true
+      schema:
+        type: string
+    ModuleIndexPath:
+      name: moduleIndex
+      in: path
+      required: true
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 7
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+        message:
+          type: string
+
+    TrainingSessionResponse:
+      type: object
+      required: [id, tenantId, employeeId, status, attemptNumber, curriculum, modules, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+        employeeId:
+          type: string
+        status:
+          type: string
+          enum: [curriculum-generating, in-progress, evaluating, passed, failed, in-remediation, exhausted, abandoned]
+        attemptNumber:
+          type: integer
+          minimum: 1
+          maximum: 3
+        curriculum:
+          $ref: "#/components/schemas/CurriculumOutline"
+        modules:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModuleSummary"
+        aggregateScore:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+        weakAreas:
+          type: array
+          nullable: true
+          items:
+            type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    CurriculumOutline:
+      type: object
+      required: [modules, generatedAt]
+      properties:
+        modules:
+          type: array
+          minItems: 1
+          maxItems: 8
+          items:
+            type: object
+            required: [title, topicArea, jobExpectationIndices]
+            properties:
+              title:
+                type: string
+              topicArea:
+                type: string
+              jobExpectationIndices:
+                type: array
+                items:
+                  type: integer
+        generatedAt:
+          type: string
+          format: date-time
+
+    ModuleSummary:
+      type: object
+      required: [moduleIndex, title, topicArea, status]
+      properties:
+        moduleIndex:
+          type: integer
+        title:
+          type: string
+        topicArea:
+          type: string
+        status:
+          type: string
+          enum: [locked, content-generating, learning, scenario-active, quiz-active, scored]
+        moduleScore:
+          type: number
+          nullable: true
+          minimum: 0
+          maximum: 1
+
+    ModuleResponse:
+      type: object
+      required: [moduleIndex, title, status, content]
+      properties:
+        moduleIndex:
+          type: integer
+        title:
+          type: string
+        topicArea:
+          type: string
+        status:
+          type: string
+        content:
+          $ref: "#/components/schemas/ModuleContentClient"
+        scenarioResponses:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScenarioResponseClient"
+        quizAnswers:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuizAnswerClient"
+        moduleScore:
+          type: number
+          nullable: true
+
+    ModuleContentClient:
+      type: object
+      description: Module content as seen by the client (correct answers stripped)
+      required: [instruction, scenarios, quiz]
+      properties:
+        instruction:
+          type: string
+          description: Markdown-formatted instructional content
+        scenarios:
+          type: array
+          items:
+            type: object
+            required: [id, narrative, responseType]
+            properties:
+              id:
+                type: string
+              narrative:
+                type: string
+              responseType:
+                type: string
+                enum: [multiple-choice, free-text]
+              options:
+                type: array
+                description: Present only for multiple-choice (correct field stripped)
+                items:
+                  type: object
+                  required: [key, text]
+                  properties:
+                    key:
+                      type: string
+                    text:
+                      type: string
+        quiz:
+          type: object
+          required: [questions]
+          properties:
+            questions:
+              type: array
+              items:
+                type: object
+                required: [id, text, responseType]
+                properties:
+                  id:
+                    type: string
+                  text:
+                    type: string
+                  responseType:
+                    type: string
+                    enum: [multiple-choice, free-text]
+                  options:
+                    type: array
+                    items:
+                      type: object
+                      required: [key, text]
+                      properties:
+                        key:
+                          type: string
+                        text:
+                          type: string
+
+    ScenarioSubmission:
+      type: object
+      required: [scenarioId, responseType]
+      properties:
+        scenarioId:
+          type: string
+        responseType:
+          type: string
+          enum: [multiple-choice, free-text]
+        selectedOption:
+          type: string
+          description: Required for multiple-choice
+        freeTextResponse:
+          type: string
+          maxLength: 2000
+          description: Required for free-text
+
+    ScenarioResult:
+      type: object
+      required: [scenarioId, score]
+      properties:
+        scenarioId:
+          type: string
+        score:
+          type: number
+          minimum: 0
+          maximum: 1
+        rationale:
+          type: string
+          description: Present only for free-text evaluations
+
+    ScenarioResponseClient:
+      type: object
+      required: [scenarioId, responseType, score, submittedAt]
+      properties:
+        scenarioId:
+          type: string
+        responseType:
+          type: string
+        selectedOption:
+          type: string
+        freeTextResponse:
+          type: string
+        score:
+          type: number
+        rationale:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+
+    QuizSubmission:
+      type: object
+      required: [answers]
+      properties:
+        answers:
+          type: array
+          items:
+            type: object
+            required: [questionId, responseType]
+            properties:
+              questionId:
+                type: string
+              responseType:
+                type: string
+                enum: [multiple-choice, free-text]
+              selectedOption:
+                type: string
+              freeTextResponse:
+                type: string
+                maxLength: 2000
+
+    QuizResult:
+      type: object
+      required: [moduleIndex, moduleScore, answers]
+      properties:
+        moduleIndex:
+          type: integer
+        moduleScore:
+          type: number
+          minimum: 0
+          maximum: 1
+        answers:
+          type: array
+          items:
+            type: object
+            required: [questionId, score]
+            properties:
+              questionId:
+                type: string
+              score:
+                type: number
+                minimum: 0
+                maximum: 1
+              rationale:
+                type: string
+
+    QuizAnswerClient:
+      type: object
+      required: [questionId, responseType, score, submittedAt]
+      properties:
+        questionId:
+          type: string
+        responseType:
+          type: string
+        selectedOption:
+          type: string
+        freeTextResponse:
+          type: string
+        score:
+          type: number
+        rationale:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+
+    EvaluationResult:
+      type: object
+      required: [sessionId, aggregateScore, passed, attemptNumber]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        aggregateScore:
+          type: number
+          minimum: 0
+          maximum: 1
+        passed:
+          type: boolean
+        attemptNumber:
+          type: integer
+        weakAreas:
+          type: array
+          nullable: true
+          items:
+            type: string
+          description: Topic areas below threshold (present on failure)
+        nextAction:
+          type: string
+          enum: [complete, remediation-available, exhausted]
+          description: Indicates what the employee can do next
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid authentication headers
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"

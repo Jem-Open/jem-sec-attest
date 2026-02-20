@@ -98,7 +98,7 @@ export async function generateEvidenceForSession(
         employeeId: session.employeeId,
         tenantId: session.tenantId,
         attemptNumber: session.attemptNumber,
-        totalAttempts: session.attemptNumber,
+        totalAttempts: maxAttempts,
         status: session.status as "passed" | "exhausted" | "abandoned",
         createdAt: session.createdAt,
         completedAt: session.completedAt,

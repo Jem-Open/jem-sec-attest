@@ -1,0 +1,115 @@
+# CodeRabbit Code Review
+
+Run an AI-powered code review using CodeRabbit.
+
+## Context
+
+- Current directory: /Users/thamsanqamoyo/Documents/code/jem-open/jem-sec-attest
+- Git repo: true
+Yes
+- Branch: 005-audit-evidence
+- Has changes: Yes
+
+## Instructions
+
+Review code based on: ****
+
+### Prerequisites Check
+
+**Skip these checks if you already verified them earlier in this session.**
+
+Otherwise, run:
+
+```bash
+coderabbit --version 2>/dev/null && coderabbit auth status 2>&1 | head -3
+```
+
+**If CLI not found**, tell user:
+> CodeRabbit CLI is not installed. Run in your terminal:
+>
+> ```bash
+> curl -fsSL https://cli.coderabbit.ai/install.sh | sh
+> ```
+>
+> Then restart your shell and try again.
+
+**If "Not logged in"**, tell user:
+> You need to authenticate. Run in your terminal:
+>
+> ```bash
+> coderabbit auth login
+> ```
+>
+> Then try again.
+
+### Run Review
+
+Once prerequisites are met:
+
+```bash
+coderabbit review --plain -t <type>
+```
+
+Where `<type>` from ``:
+
+- `all` (default) - All changes
+- `committed` - Committed changes only
+- `uncommitted` - Uncommitted only
+
+Add `--base <branch>` if specified.
+
+### Present Results
+
+Group findings by severity:
+
+1. **Critical** - Security, bugs
+2. **Suggestions** - Improvements
+3. **Positive** - What's good
+
+Offer to apply fixes if `codegenInstructions` are present.
+
+---
+
+fix it
+
+---
+
+## Context
+
+- Current git status: On branch 005-audit-evidence
+Your branch is up to date with 'origin/005-audit-evidence'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   src/evidence/evidence-generator.ts
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	nonexistent-session-id
+
+no changes added to commit (use "git add" and/or "git commit -a")
+- Current git diff (staged and unstaged changes): diff --git a/src/evidence/evidence-generator.ts b/src/evidence/evidence-generator.ts
+index b77619c..f8ff921 100644
+--- a/src/evidence/evidence-generator.ts
++++ b/src/evidence/evidence-generator.ts
+@@ -98,7 +98,7 @@ export async function generateEvidenceForSession(
+         employeeId: session.employeeId,
+         tenantId: session.tenantId,
+         attemptNumber: session.attemptNumber,
+-        totalAttempts: session.attemptNumber,
++        totalAttempts: maxAttempts,
+         status: session.status as "passed" | "exhausted" | "abandoned",
+         createdAt: session.createdAt,
+         completedAt: session.completedAt,
+- Current branch: 005-audit-evidence
+
+## Your task
+
+Based on the above changes:
+
+1. Create a new branch if on main
+2. Create a single commit with an appropriate message
+3. Push the branch to origin
+4. Create a pull request using `gh pr create`
+5. You have the capability to call multiple tools in a single response. You MUST do all of the above in a single message. Do not use any other tools or do anything else. Do not send any other text or messages besides these tool calls.

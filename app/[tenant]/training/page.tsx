@@ -986,6 +986,10 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
     setError("");
     try {
       const res = await fetch(`/api/training/${tenant}/session`, { method: "POST" });
+      if (res.status === 409) {
+        await refreshSession();
+        return;
+      }
       if (!res.ok) {
         const body = (await res.json().catch(() => ({}))) as { message?: string };
         throw new Error(body.message ?? `Server error (${res.status})`);

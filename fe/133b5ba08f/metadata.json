@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "fe133b5ba08f",
+  "strategy": "manual-commit",
+  "branch": "fix/minimatch-redos",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "package.json",
+    "pnpm-lock.yaml"
+  ],
+  "sessions": [
+    {
+      "metadata": "/fe/133b5ba08f/0/metadata.json",
+      "transcript": "/fe/133b5ba08f/0/full.jsonl",
+      "context": "/fe/133b5ba08f/0/context.md",
+      "content_hash": "/fe/133b5ba08f/0/content_hash.txt",
+      "prompt": "/fe/133b5ba08f/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 13,
+    "cache_creation_tokens": 5144,
+    "cache_read_tokens": 452506,
+    "output_tokens": 895,
+    "api_call_count": 11
+  }
+}

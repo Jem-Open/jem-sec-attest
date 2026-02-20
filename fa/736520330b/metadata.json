@@ -1,0 +1,32 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "fa736520330b",
+  "strategy": "manual-commit",
+  "branch": "004-training-workflow",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "app/[tenant]/training/page.tsx",
+    "app/api/training/[tenant]/evaluate/route.ts",
+    "app/api/training/[tenant]/module/[moduleIndex]/quiz/route.ts",
+    "app/api/training/[tenant]/session/route.ts",
+    "src/training/evaluator.ts",
+    "src/training/remediation-planner.ts",
+    "tests/unit/training/evaluator.spec.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/fa/736520330b/0/metadata.json",
+      "transcript": "/fa/736520330b/0/full.jsonl",
+      "context": "/fa/736520330b/0/context.md",
+      "content_hash": "/fa/736520330b/0/content_hash.txt",
+      "prompt": "/fa/736520330b/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 117,
+    "cache_creation_tokens": 141946,
+    "cache_read_tokens": 5927917,
+    "output_tokens": 11697,
+    "api_call_count": 83
+  }
+}

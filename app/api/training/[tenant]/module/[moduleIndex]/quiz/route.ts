@@ -278,13 +278,20 @@ export async function POST(
   const totalModules = allModules.length;
 
   if (scoredCount === totalModules) {
-    const nextSessionStatus = transitionSession(session.status, "all-modules-scored");
+    const freshSession = await sessionRepo.findActiveSession(tenantId, employeeId);
+    if (!freshSession || freshSession.id !== session.id) {
+      return NextResponse.json(
+        { error: "conflict", message: "Resource was modified by another request" },
+        { status: 409 },
+      );
+    }
+    const nextSessionStatus = transitionSession(freshSession.status, "all-modules-scored");
     try {
       await sessionRepo.updateSession(
         tenantId,
-        session.id,
+        freshSession.id,
         { status: nextSessionStatus },
-        session.version,
+        freshSession.version,
       );
     } catch (sessionUpdateError) {
       if (sessionUpdateError instanceof VersionConflictError) {

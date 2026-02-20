@@ -549,6 +549,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
   >(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+  const [maxAttempts] = useState<number>(3);
   const firstFocusRef = useRef<HTMLButtonElement | HTMLAnchorElement | null>(null);
 
   // Focus management on state change
@@ -2067,9 +2068,9 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
 
         <p
           style={{ fontSize: "0.875rem", color: "#777", marginTop: "0.75rem" }}
-          aria-label={STRINGS.attemptCounter(attemptNumber, 3)}
+          aria-label={STRINGS.attemptCounter(attemptNumber, maxAttempts)}
         >
-          {STRINGS.attemptCounter(attemptNumber, 3)}
+          {STRINGS.attemptCounter(attemptNumber, maxAttempts)}
         </p>
       </section>
     );

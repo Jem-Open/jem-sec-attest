@@ -128,6 +128,18 @@ export async function generateRemediationCurriculum(
     );
   }
 
+  // Validate that all jobExpectationIndices are within bounds of the jobExpectations array
+  for (const module of llmResult.modules) {
+    for (const idx of module.jobExpectationIndices) {
+      if (idx < 0 || idx >= jobExpectations.length) {
+        throw new RemediationPlanError(
+          `AI planning returned invalid jobExpectationIndex ${idx} (jobExpectations has ${jobExpectations.length} items)`,
+          "planning_failed",
+        );
+      }
+    }
+  }
+
   // Validate that all topicAreas in generated modules align with provided weakAreas
   for (const module of llmResult.modules) {
     const topicAligned = weakAreas.some(

@@ -14,13 +14,13 @@
 
 /**
  * AI-powered free-text response evaluator for security training.
- * Uses generateObject() from AI SDK v6 with a strict Zod schema for
+ * Uses generateText() with Output.object() from AI SDK v6 with a strict Zod schema for
  * deterministic, rubric-based scoring of employee free-text responses.
  * Prompt injection mitigation: XML boundaries, untrusted-data labelling, schema constraint.
  */
 
 import type { LanguageModel } from "ai";
-import { generateObject } from "ai";
+import { Output, generateText } from "ai";
 import { FreeTextEvaluationSchema } from "./schemas.js";
 import type { FreeTextEvaluation } from "./schemas.js";
 
@@ -73,12 +73,12 @@ ${response}
   let result: FreeTextEvaluation;
 
   try {
-    const { object } = await generateObject({
+    const { experimental_output: object } = await generateText({
       model,
-      schema: FreeTextEvaluationSchema,
       system: SYSTEM_PROMPT,
       prompt,
       temperature: 0,
+      experimental_output: Output.object({ schema: FreeTextEvaluationSchema }),
     });
     result = object;
   } catch (error) {

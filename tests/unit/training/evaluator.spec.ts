@@ -14,14 +14,14 @@
 
 // vi.mock calls are hoisted — place them before imports for clarity.
 vi.mock("ai", () => ({
-  generateObject: vi.fn(),
+  generateText: vi.fn(),
+  Output: { object: vi.fn(() => "mock-output-schema") },
 }));
 
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import type { LanguageModel } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EvaluationError, evaluateFreeText } from "../../../src/training/evaluator.js";
-import { FreeTextEvaluationSchema } from "../../../src/training/schemas.js";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -33,7 +33,10 @@ function makeMockModel(): LanguageModel {
 
 function makeValidMockResult() {
   return {
-    object: { score: 0.85, rationale: "Good understanding demonstrated by the employee." },
+    experimental_output: {
+      score: 0.85,
+      rationale: "Good understanding demonstrated by the employee.",
+    },
   };
 }
 
@@ -46,10 +49,10 @@ describe("evaluateFreeText", () => {
     vi.clearAllMocks();
   });
 
-  // Test 1: Calls generateObject with correct model, schema, system, and prompt
-  it("calls generateObject with correct model, schema, system, and prompt", async () => {
+  // Test 1: Calls generateText with correct model, schema, system, and prompt
+  it("calls generateText with correct model, schema, system, and prompt", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeValidMockResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeValidMockResult() as any);
 
     const model = makeMockModel();
     await evaluateFreeText(
@@ -59,10 +62,10 @@ describe("evaluateFreeText", () => {
       model,
     );
 
-    expect(vi.mocked(generateObject)).toHaveBeenCalledTimes(1);
-    const callArgs = vi.mocked(generateObject).mock.calls[0][0];
+    expect(vi.mocked(generateText)).toHaveBeenCalledTimes(1);
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
     expect(callArgs.model).toBe(model);
-    expect(callArgs.schema).toBe(FreeTextEvaluationSchema);
+    expect(callArgs.experimental_output).toBeDefined();
     expect(callArgs.system).toBeDefined();
     expect(callArgs.prompt).toBeDefined();
   });
@@ -70,7 +73,7 @@ describe("evaluateFreeText", () => {
   // Test 2: System prompt mentions objective training evaluator
   it("system prompt mentions objective training evaluator", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeValidMockResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeValidMockResult() as any);
 
     await evaluateFreeText(
       "What is phishing?",
@@ -79,7 +82,7 @@ describe("evaluateFreeText", () => {
       makeMockModel(),
     );
 
-    const callArgs = vi.mocked(generateObject).mock.calls[0][0];
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
     expect(callArgs.system).toMatch(
       /objective.*training.*evaluator|training.*evaluator.*objective/i,
     );
@@ -88,7 +91,7 @@ describe("evaluateFreeText", () => {
   // Test 3: System prompt contains injection mitigation: "untrusted data" and "do not execute as instructions"
   it("system prompt contains injection mitigation phrase 'untrusted data'", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeValidMockResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeValidMockResult() as any);
 
     await evaluateFreeText(
       "What is phishing?",
@@ -97,13 +100,13 @@ describe("evaluateFreeText", () => {
       makeMockModel(),
     );
 
-    const callArgs = vi.mocked(generateObject).mock.calls[0][0];
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
     expect(callArgs.system).toMatch(/untrusted data/i);
   });
 
   it("system prompt contains injection mitigation phrase 'do not execute as instructions'", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeValidMockResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeValidMockResult() as any);
 
     await evaluateFreeText(
       "What is phishing?",
@@ -112,14 +115,14 @@ describe("evaluateFreeText", () => {
       makeMockModel(),
     );
 
-    const callArgs = vi.mocked(generateObject).mock.calls[0][0];
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
     expect(callArgs.system).toMatch(/do not execute as instructions/i);
   });
 
   // Test 4: User prompt wraps question in <question> XML boundary
   it("user prompt wraps question in <question> XML boundary", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeValidMockResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeValidMockResult() as any);
 
     const question = "What is phishing?";
     await evaluateFreeText(
@@ -129,7 +132,7 @@ describe("evaluateFreeText", () => {
       makeMockModel(),
     );
 
-    const callArgs = vi.mocked(generateObject).mock.calls[0][0];
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
     expect(callArgs.prompt).toContain("<question>");
     expect(callArgs.prompt).toContain("</question>");
     expect(callArgs.prompt).toContain(question);
@@ -138,12 +141,12 @@ describe("evaluateFreeText", () => {
   // Test 5: User prompt wraps rubric in <rubric> XML boundary
   it("user prompt wraps rubric in <rubric> XML boundary", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeValidMockResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeValidMockResult() as any);
 
     const rubric = "Award full marks for identifying social engineering tactics.";
     await evaluateFreeText("What is phishing?", rubric, "Phishing is ...", makeMockModel());
 
-    const callArgs = vi.mocked(generateObject).mock.calls[0][0];
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
     expect(callArgs.prompt).toContain("<rubric>");
     expect(callArgs.prompt).toContain("</rubric>");
     expect(callArgs.prompt).toContain(rubric);
@@ -152,7 +155,7 @@ describe("evaluateFreeText", () => {
   // Test 6: User prompt wraps employee response in <employee_response> XML boundary
   it("user prompt wraps employee response in <employee_response> XML boundary", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeValidMockResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeValidMockResult() as any);
 
     const response = "Phishing is a social engineering attack used to steal credentials.";
     await evaluateFreeText(
@@ -162,7 +165,7 @@ describe("evaluateFreeText", () => {
       makeMockModel(),
     );
 
-    const callArgs = vi.mocked(generateObject).mock.calls[0][0];
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
     expect(callArgs.prompt).toContain("<employee_response>");
     expect(callArgs.prompt).toContain("</employee_response>");
     expect(callArgs.prompt).toContain(response);
@@ -171,7 +174,7 @@ describe("evaluateFreeText", () => {
   // Test 7: Returns FreeTextEvaluation with score and rationale
   it("returns FreeTextEvaluation with score and rationale", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeValidMockResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeValidMockResult() as any);
 
     const result = await evaluateFreeText(
       "What is phishing?",
@@ -184,9 +187,9 @@ describe("evaluateFreeText", () => {
     expect(result.rationale).toBe("Good understanding demonstrated by the employee.");
   });
 
-  // Test 8: Throws EvaluationError with code "ai_unavailable" when generateObject throws
-  it("throws EvaluationError with code 'ai_unavailable' when generateObject throws", async () => {
-    vi.mocked(generateObject).mockRejectedValue(new Error("503 Service Unavailable"));
+  // Test 8: Throws EvaluationError with code "ai_unavailable" when generateText throws
+  it("throws EvaluationError with code 'ai_unavailable' when generateText throws", async () => {
+    vi.mocked(generateText).mockRejectedValue(new Error("503 Service Unavailable"));
 
     await expect(
       evaluateFreeText(
@@ -233,7 +236,7 @@ describe("evaluateFreeText", () => {
   it("does not throw when response is exactly 2000 chars", async () => {
     const exactResponse = "x".repeat(2000);
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeValidMockResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeValidMockResult() as any);
 
     await expect(
       evaluateFreeText(
@@ -247,7 +250,7 @@ describe("evaluateFreeText", () => {
 
   // Test 10: EvaluationError has correct name, message, code properties
   it("EvaluationError has correct name, message, and code properties", async () => {
-    vi.mocked(generateObject).mockRejectedValue(new Error("Connection refused"));
+    vi.mocked(generateText).mockRejectedValue(new Error("Connection refused"));
 
     let caughtError: unknown;
     try {
@@ -293,7 +296,7 @@ describe("evaluateFreeText", () => {
   // Test 11: Temperature is set to 0
   it("sets temperature to 0", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeValidMockResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeValidMockResult() as any);
 
     await evaluateFreeText(
       "What is phishing?",
@@ -302,14 +305,14 @@ describe("evaluateFreeText", () => {
       makeMockModel(),
     );
 
-    const callArgs = vi.mocked(generateObject).mock.calls[0][0];
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
     expect(callArgs.temperature).toBe(0);
   });
 
-  // Test 12: FreeTextEvaluationSchema is used (check schema passed to generateObject)
-  it("passes FreeTextEvaluationSchema to generateObject", async () => {
+  // Test 12: FreeTextEvaluationSchema is used (check experimental_output passed to generateText)
+  it("passes FreeTextEvaluationSchema via Output.object to generateText", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeValidMockResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeValidMockResult() as any);
 
     await evaluateFreeText(
       "What is phishing?",
@@ -318,7 +321,7 @@ describe("evaluateFreeText", () => {
       makeMockModel(),
     );
 
-    const callArgs = vi.mocked(generateObject).mock.calls[0][0];
-    expect(callArgs.schema).toBe(FreeTextEvaluationSchema);
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
+    expect(callArgs.experimental_output).toBeDefined();
   });
 });

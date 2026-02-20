@@ -29,7 +29,7 @@ import {
   RemediationPlanError,
   generateRemediationCurriculum,
 } from "@/training/remediation-planner";
-import { SessionRepository } from "@/training/session-repository";
+import { SessionRepository, VersionConflictError } from "@/training/session-repository";
 import { transitionSession } from "@/training/state-machine";
 import type { TrainingModule } from "@/training/types";
 import { NextResponse } from "next/server";
@@ -167,19 +167,30 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
     transitionSession("in-remediation", "remediation-modules-ready");
 
     // 2e. Update the existing session with new curriculum, status, and attemptNumber
-    const updatedSession = await sessionRepo.updateSession(
-      tenantId,
-      failedSession.id,
-      {
-        status: "in-progress",
-        attemptNumber: newAttemptNumber,
-        curriculum: remediationCurriculum,
-        weakAreas: null,
-        aggregateScore: null,
-        completedAt: null,
-      },
-      failedSession.version,
-    );
+    let updatedSession: Awaited<ReturnType<typeof sessionRepo.updateSession>>;
+    try {
+      updatedSession = await sessionRepo.updateSession(
+        tenantId,
+        failedSession.id,
+        {
+          status: "in-progress",
+          attemptNumber: newAttemptNumber,
+          curriculum: remediationCurriculum,
+          weakAreas: null,
+          aggregateScore: null,
+          completedAt: null,
+        },
+        failedSession.version,
+      );
+    } catch (err) {
+      if (err instanceof VersionConflictError) {
+        return NextResponse.json(
+          { error: "conflict", message: "Session was modified by another request" },
+          { status: 409 },
+        );
+      }
+      throw err;
+    }
 
     // 2f. Create new module records for the remediation curriculum
     const now = new Date().toISOString();

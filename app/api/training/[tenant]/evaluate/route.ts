@@ -66,8 +66,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
   // Find all modules
   const modules = await sessionRepo.findModulesBySession(tenantId, session.id);
 
-  // Extract module scores (all must be non-null at this point)
-  const moduleScores = modules.map((m) => m.moduleScore as number);
+  // Extract module scores — all must be non-null before computing aggregate
+  const rawScores = modules.map((m) => m.moduleScore);
+  if (rawScores.some((s) => s === null || s === undefined)) {
+    return NextResponse.json(
+      { error: "conflict", message: "Not all modules have been scored" },
+      { status: 409 },
+    );
+  }
+  const moduleScores = rawScores as number[];
 
   // Compute aggregate score
   const aggregateScore = computeAggregateScore(moduleScores) ?? 0;

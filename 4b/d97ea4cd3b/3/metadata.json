@@ -1,0 +1,43 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "4bd97ea4cd3b",
+  "session_id": "b8ba0973-02c1-4ab3-985e-e995d409d9df",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-20T16:31:51.091886Z",
+  "branch": "005-audit-evidence",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "tests/unit/evidence/evidence-generator.spec.ts",
+    "CLAUDE.md",
+    "app/api/training/[tenant]/abandon/route.ts",
+    "app/api/training/[tenant]/evidence/[sessionId]/generate/route.ts",
+    "specs/005-audit-evidence/research.md",
+    "tests/contract/evidence/evidence-schema.spec.ts",
+    "app/api/training/[tenant]/evaluate/route.ts",
+    "specs/005-audit-evidence/quickstart.md",
+    "src/evidence/evidence-generator.ts",
+    "src/evidence/schemas.ts",
+    "tests/integration/evidence/evidence-workflow.spec.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "5c7ee81fc586",
+  "checkpoint_transcript_start": 1082,
+  "transcript_lines_at_start": 1082,
+  "token_usage": {
+    "input_tokens": 425,
+    "cache_creation_tokens": 155406,
+    "cache_read_tokens": 1998428,
+    "output_tokens": 6649,
+    "api_call_count": 46
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-20T16:31:50.730847Z",
+    "agent_lines": 138,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 138,
+    "agent_percentage": 100
+  },
+  "transcript_path": ".claude/projects/-Users-thamsanqamoyo-Documents-code-jem-open-jem-sec-attest/b8ba0973-02c1-4ab3-985e-e995d409d9df.jsonl"
+}

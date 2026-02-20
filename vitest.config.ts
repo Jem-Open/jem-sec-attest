@@ -52,6 +52,7 @@ export default defineConfig({
         resolve: { alias: { "@": path.resolve(__dirname, "src") } },
         test: {
           name: "unit",
+          globals: true,
           include: ["tests/unit/**/*.spec.ts"],
         },
       },

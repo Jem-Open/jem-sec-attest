@@ -66,6 +66,15 @@ export const AIConfigSchema = z
   })
   .strict();
 
+export const TrainingConfigSchema = z
+  .object({
+    passThreshold: z.number().min(0).max(1).default(0.7),
+    maxAttempts: z.number().int().min(1).max(10).default(3),
+    maxModules: z.number().int().min(1).max(20).default(8),
+    enableRemediation: z.boolean().default(true),
+  })
+  .strict();
+
 export const TenantSettingsSchema = z
   .object({
     branding: z
@@ -92,6 +101,7 @@ export const TenantSettingsSchema = z
       .optional(),
     auth: AuthConfigSchema.optional(),
     ai: AIConfigSchema.optional(),
+    training: TrainingConfigSchema.optional(),
   })
   .strict();
 
@@ -120,3 +130,4 @@ export type OIDCConfigInput = z.input<typeof OIDCConfigSchema>;
 export type OIDCConfigParsed = z.output<typeof OIDCConfigSchema>;
 export type AuthConfigParsed = z.output<typeof AuthConfigSchema>;
 export type AIConfigParsed = z.output<typeof AIConfigSchema>;
+export type TrainingConfigParsed = z.output<typeof TrainingConfigSchema>;

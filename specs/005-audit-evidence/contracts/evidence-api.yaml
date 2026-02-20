@@ -330,11 +330,9 @@ components:
         attemptNumber:
           type: integer
           minimum: 1
-          maximum: 3
         totalAttempts:
           type: integer
           minimum: 1
-          maximum: 3
         status:
           type: string
           enum: [passed, exhausted, abandoned]

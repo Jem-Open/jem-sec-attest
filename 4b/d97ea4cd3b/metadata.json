@@ -1,0 +1,36 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "4bd97ea4cd3b",
+  "strategy": "manual-commit",
+  "branch": "005-audit-evidence",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "CLAUDE.md",
+    "app/api/training/[tenant]/abandon/route.ts",
+    "app/api/training/[tenant]/evaluate/route.ts",
+    "app/api/training/[tenant]/evidence/[sessionId]/generate/route.ts",
+    "specs/005-audit-evidence/quickstart.md",
+    "specs/005-audit-evidence/research.md",
+    "src/evidence/evidence-generator.ts",
+    "src/evidence/schemas.ts",
+    "tests/contract/evidence/evidence-schema.spec.ts",
+    "tests/integration/evidence/evidence-workflow.spec.ts",
+    "tests/unit/evidence/evidence-generator.spec.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/4b/d97ea4cd3b/0/metadata.json",
+      "transcript": "/4b/d97ea4cd3b/0/full.jsonl",
+      "context": "/4b/d97ea4cd3b/0/context.md",
+      "content_hash": "/4b/d97ea4cd3b/0/content_hash.txt",
+      "prompt": "/4b/d97ea4cd3b/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 61,
+    "cache_creation_tokens": 117410,
+    "cache_read_tokens": 2063193,
+    "output_tokens": 7894,
+    "api_call_count": 47
+  }
+}

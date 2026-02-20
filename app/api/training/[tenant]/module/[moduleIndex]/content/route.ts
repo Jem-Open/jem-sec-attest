@@ -235,5 +235,7 @@ export async function POST(
       { error: "internal_error", message: "An unexpected error occurred" },
       { status: 500 },
     );
+  } finally {
+    await adapter.close();
   }
 }

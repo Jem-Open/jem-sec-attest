@@ -83,41 +83,157 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
 
   await storage.initialize();
 
-  // 1. Check for existing active session — 409 if one exists
-  const existingSession = await sessionRepo.findActiveSession(tenantId, employeeId);
-  if (existingSession) {
-    return NextResponse.json(
-      { error: "conflict", message: "An active training session already exists" },
-      { status: 409 },
-    );
-  }
-
-  // Resolve tenant config (needed for both fresh and remediation paths)
-  const snapshot = getSnapshot();
-  const tenant = snapshot?.tenants.get(tenantSlug);
-  if (!tenant) {
-    return NextResponse.json({ error: "not_found", message: "Tenant not found" }, { status: 404 });
-  }
-  const model = resolveModel(tenant);
-  const maxModules = tenant.settings.training?.maxModules ?? 8;
-  const maxAttempts = tenant.settings.training?.maxAttempts ?? 3;
-  const enableRemediation = tenant.settings.training?.enableRemediation ?? true;
-
-  // 2. T022: Check for a failed session with attempts remaining — start remediation
-  const history = await sessionRepo.findSessionHistory(tenantId, employeeId, { limit: 10 });
-  const failedSession =
-    history.find((s) => s.status === "failed" && s.attemptNumber < maxAttempts) ?? null;
-
-  if (failedSession) {
-    // 2a. Remediation must be enabled
-    if (!enableRemediation) {
+  try {
+    // 1. Check for existing active session — 409 if one exists
+    const existingSession = await sessionRepo.findActiveSession(tenantId, employeeId);
+    if (existingSession) {
       return NextResponse.json(
-        { error: "conflict", message: "Remediation is not enabled for this tenant" },
+        { error: "conflict", message: "An active training session already exists" },
         { status: 409 },
       );
     }
 
-    // 2b. Find confirmed role profile — 404 if none
+    // Resolve tenant config (needed for both fresh and remediation paths)
+    const snapshot = getSnapshot();
+    const tenant = snapshot?.tenants.get(tenantSlug);
+    if (!tenant) {
+      return NextResponse.json(
+        { error: "not_found", message: "Tenant not found" },
+        { status: 404 },
+      );
+    }
+    const model = resolveModel(tenant);
+    const maxModules = tenant.settings.training?.maxModules ?? 8;
+    const maxAttempts = tenant.settings.training?.maxAttempts ?? 3;
+    const enableRemediation = tenant.settings.training?.enableRemediation ?? true;
+
+    // 2. T022: Check for a failed session with attempts remaining — start remediation
+    const history = await sessionRepo.findSessionHistory(tenantId, employeeId, { limit: 10 });
+    const failedSession =
+      history.find((s) => s.status === "failed" && s.attemptNumber < maxAttempts) ?? null;
+
+    if (failedSession) {
+      // 2a. Remediation must be enabled
+      if (!enableRemediation) {
+        return NextResponse.json(
+          { error: "conflict", message: "Remediation is not enabled for this tenant" },
+          { status: 409 },
+        );
+      }
+
+      // 2b. Find confirmed role profile — 404 if none
+      const profile = await profileRepo.findByEmployee(tenantId, employeeId);
+      if (!profile) {
+        return NextResponse.json(
+          { error: "not_found", message: "No confirmed role profile found" },
+          { status: 404 },
+        );
+      }
+
+      // 2c. Generate remediation curriculum focused on weak areas
+      const weakAreas = failedSession.weakAreas ?? [];
+      let remediationCurriculum: Awaited<ReturnType<typeof generateRemediationCurriculum>>;
+      try {
+        remediationCurriculum = await generateRemediationCurriculum(
+          weakAreas,
+          profile,
+          { maxModules },
+          model,
+        );
+      } catch (error) {
+        if (error instanceof RemediationPlanError) {
+          if (error.code === "ai_unavailable") {
+            return NextResponse.json(
+              { error: "ai_unavailable", message: "AI service temporarily unavailable" },
+              { status: 503 },
+            );
+          }
+          return NextResponse.json(
+            { error: "planning_failed", message: error.message },
+            { status: 422 },
+          );
+        }
+        return NextResponse.json(
+          { error: "internal_error", message: "An unexpected error occurred" },
+          { status: 500 },
+        );
+      }
+
+      // 2d. Increment attemptNumber and transition the failed session through remediation states
+      const newAttemptNumber = failedSession.attemptNumber + 1;
+
+      // Transition: failed → in-remediation
+      transitionSession(failedSession.status, "remediation-started");
+      // Transition: in-remediation → in-progress
+      transitionSession("in-remediation", "remediation-modules-ready");
+
+      // 2e. Update the existing session with new curriculum, status, and attemptNumber
+      let updatedSession: Awaited<ReturnType<typeof sessionRepo.updateSession>>;
+      try {
+        updatedSession = await sessionRepo.updateSession(
+          tenantId,
+          failedSession.id,
+          {
+            status: "in-progress",
+            attemptNumber: newAttemptNumber,
+            curriculum: remediationCurriculum,
+            weakAreas: null,
+            aggregateScore: null,
+            completedAt: null,
+          },
+          failedSession.version,
+        );
+      } catch (err) {
+        if (err instanceof VersionConflictError) {
+          return NextResponse.json(
+            { error: "conflict", message: "Session was modified by another request" },
+            { status: 409 },
+          );
+        }
+        throw err;
+      }
+
+      // 2f. Create new module records for the remediation curriculum
+      const now = new Date().toISOString();
+      const remediationModuleData = remediationCurriculum.modules.map((m, i) => ({
+        tenantId,
+        sessionId: failedSession.id,
+        moduleIndex: i,
+        title: m.title,
+        topicArea: m.topicArea,
+        jobExpectationIndices: m.jobExpectationIndices,
+        status: "locked" as const,
+        content: null,
+        scenarioResponses: [],
+        quizAnswers: [],
+        moduleScore: null,
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+      }));
+
+      const remediationModules = await sessionRepo.createModules(tenantId, remediationModuleData);
+
+      // 2g. Log remediation audit event
+      await logRemediationInitiated(
+        storage,
+        tenantId,
+        employeeId,
+        failedSession.id,
+        newAttemptNumber,
+        weakAreas.length,
+        weakAreas,
+      );
+
+      // 2h. Return 201 with updated session + new modules
+      return NextResponse.json(
+        { session: updatedSession, modules: remediationModules.map(stripServerFields) },
+        { status: 201 },
+      );
+    }
+
+    // 3. No active session and no failed session with attempts remaining — fresh session
+    // Find confirmed role profile — 404 if none
     const profile = await profileRepo.findByEmployee(tenantId, employeeId);
     if (!profile) {
       return NextResponse.json(
@@ -126,18 +242,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
       );
     }
 
-    // 2c. Generate remediation curriculum focused on weak areas
-    const weakAreas = failedSession.weakAreas ?? [];
-    let remediationCurriculum: Awaited<ReturnType<typeof generateRemediationCurriculum>>;
+    // 4. Generate curriculum via AI
+    let curriculum: Awaited<ReturnType<typeof generateCurriculum>>;
     try {
-      remediationCurriculum = await generateRemediationCurriculum(
-        weakAreas,
-        profile,
-        { maxModules },
-        model,
-      );
+      curriculum = await generateCurriculum(profile, { maxModules }, model);
     } catch (error) {
-      if (error instanceof RemediationPlanError) {
+      if (error instanceof CurriculumGenerationError) {
         if (error.code === "ai_unavailable") {
           return NextResponse.json(
             { error: "ai_unavailable", message: "AI service temporarily unavailable" },
@@ -145,7 +255,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
           );
         }
         return NextResponse.json(
-          { error: "planning_failed", message: error.message },
+          { error: "generation_failed", message: error.message },
           { status: 422 },
         );
       }
@@ -155,45 +265,30 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
       );
     }
 
-    // 2d. Increment attemptNumber and transition the failed session through remediation states
-    const newAttemptNumber = failedSession.attemptNumber + 1;
-
-    // Transition: failed → in-remediation
-    transitionSession(failedSession.status, "remediation-started");
-    // Transition: in-remediation → in-progress
-    transitionSession("in-remediation", "remediation-modules-ready");
-
-    // 2e. Update the existing session with new curriculum, status, and attemptNumber
-    let updatedSession: Awaited<ReturnType<typeof sessionRepo.updateSession>>;
-    try {
-      updatedSession = await sessionRepo.updateSession(
-        tenantId,
-        failedSession.id,
-        {
-          status: "in-progress",
-          attemptNumber: newAttemptNumber,
-          curriculum: remediationCurriculum,
-          weakAreas: null,
-          aggregateScore: null,
-          completedAt: null,
-        },
-        failedSession.version,
-      );
-    } catch (err) {
-      if (err instanceof VersionConflictError) {
-        return NextResponse.json(
-          { error: "conflict", message: "Session was modified by another request" },
-          { status: 409 },
-        );
-      }
-      throw err;
-    }
-
-    // 2f. Create new module records for the remediation curriculum
+    // 5. Create session record
     const now = new Date().toISOString();
-    const remediationModuleData = remediationCurriculum.modules.map((m, i) => ({
+    const session = await sessionRepo.createSession(tenantId, {
       tenantId,
-      sessionId: failedSession.id,
+      employeeId,
+      roleProfileId: profile.id,
+      roleProfileVersion: profile.version,
+      configHash: snapshot?.configHash ?? "unknown",
+      appVersion: process.env.APP_VERSION ?? "unknown",
+      status: "in-progress",
+      attemptNumber: 1,
+      curriculum,
+      aggregateScore: null,
+      weakAreas: null,
+      version: 1,
+      createdAt: now,
+      updatedAt: now,
+      completedAt: null,
+    });
+
+    // 6. Create module records for each curriculum module
+    const moduleData = curriculum.modules.map((m, i) => ({
+      tenantId,
+      sessionId: session.id,
       moduleIndex: i,
       title: m.title,
       topicArea: m.topicArea,
@@ -208,112 +303,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
       updatedAt: now,
     }));
 
-    const remediationModules = await sessionRepo.createModules(tenantId, remediationModuleData);
+    const modules = await sessionRepo.createModules(tenantId, moduleData);
 
-    // 2g. Log remediation audit event
-    await logRemediationInitiated(
+    // 7. Log audit event
+    await logSessionStarted(
       storage,
       tenantId,
       employeeId,
-      failedSession.id,
-      newAttemptNumber,
-      weakAreas.length,
-      weakAreas,
+      session.id,
+      1,
+      profile.version,
+      snapshot?.configHash ?? "unknown",
     );
 
-    // 2h. Return 201 with updated session + new modules
-    return NextResponse.json(
-      { session: updatedSession, modules: remediationModules.map(stripServerFields) },
-      { status: 201 },
-    );
+    // 8. Return 201 with session + modules
+    return NextResponse.json({ session, modules: modules.map(stripServerFields) }, { status: 201 });
+  } finally {
+    await storage.close();
   }
-
-  // 3. No active session and no failed session with attempts remaining — fresh session
-  // Find confirmed role profile — 404 if none
-  const profile = await profileRepo.findByEmployee(tenantId, employeeId);
-  if (!profile) {
-    return NextResponse.json(
-      { error: "not_found", message: "No confirmed role profile found" },
-      { status: 404 },
-    );
-  }
-
-  // 4. Generate curriculum via AI
-  let curriculum: Awaited<ReturnType<typeof generateCurriculum>>;
-  try {
-    curriculum = await generateCurriculum(profile, { maxModules }, model);
-  } catch (error) {
-    if (error instanceof CurriculumGenerationError) {
-      if (error.code === "ai_unavailable") {
-        return NextResponse.json(
-          { error: "ai_unavailable", message: "AI service temporarily unavailable" },
-          { status: 503 },
-        );
-      }
-      return NextResponse.json(
-        { error: "generation_failed", message: error.message },
-        { status: 422 },
-      );
-    }
-    return NextResponse.json(
-      { error: "internal_error", message: "An unexpected error occurred" },
-      { status: 500 },
-    );
-  }
-
-  // 5. Create session record
-  const now = new Date().toISOString();
-  const session = await sessionRepo.createSession(tenantId, {
-    tenantId,
-    employeeId,
-    roleProfileId: profile.id,
-    roleProfileVersion: profile.version,
-    configHash: snapshot?.configHash ?? "unknown",
-    appVersion: process.env.APP_VERSION ?? "unknown",
-    status: "in-progress",
-    attemptNumber: 1,
-    curriculum,
-    aggregateScore: null,
-    weakAreas: null,
-    version: 1,
-    createdAt: now,
-    updatedAt: now,
-    completedAt: null,
-  });
-
-  // 6. Create module records for each curriculum module
-  const moduleData = curriculum.modules.map((m, i) => ({
-    tenantId,
-    sessionId: session.id,
-    moduleIndex: i,
-    title: m.title,
-    topicArea: m.topicArea,
-    jobExpectationIndices: m.jobExpectationIndices,
-    status: "locked" as const,
-    content: null,
-    scenarioResponses: [],
-    quizAnswers: [],
-    moduleScore: null,
-    version: 1,
-    createdAt: now,
-    updatedAt: now,
-  }));
-
-  const modules = await sessionRepo.createModules(tenantId, moduleData);
-
-  // 7. Log audit event
-  await logSessionStarted(
-    storage,
-    tenantId,
-    employeeId,
-    session.id,
-    1,
-    profile.version,
-    snapshot?.configHash ?? "unknown",
-  );
-
-  // 8. Return 201 with session + modules
-  return NextResponse.json({ session, modules: modules.map(stripServerFields) }, { status: 201 });
 }
 
 // ---------------------------------------------------------------------------
@@ -338,46 +345,50 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
 
   await storage.initialize();
 
-  // Parse query parameters
-  const url = new URL(request.url);
-  const isHistory = url.searchParams.get("history") === "true";
+  try {
+    // Parse query parameters
+    const url = new URL(request.url);
+    const isHistory = url.searchParams.get("history") === "true";
 
-  // T030: History mode — return all sessions with their modules
-  if (isHistory) {
-    const sessions = await sessionRepo.findSessionHistory(tenantId, employeeId);
-    const sessionsWithModules = await Promise.all(
-      sessions.map(async (sess) => {
-        const modules = await sessionRepo.findModulesBySession(tenantId, sess.id);
-        const clientModules = modules.map(stripServerFields);
-        return { session: sess, modules: clientModules };
-      }),
-    );
-    return NextResponse.json(sessionsWithModules);
+    // T030: History mode — return all sessions with their modules
+    if (isHistory) {
+      const sessions = await sessionRepo.findSessionHistory(tenantId, employeeId);
+      const sessionsWithModules = await Promise.all(
+        sessions.map(async (sess) => {
+          const modules = await sessionRepo.findModulesBySession(tenantId, sess.id);
+          const clientModules = modules.map(stripServerFields);
+          return { session: sess, modules: clientModules };
+        }),
+      );
+      return NextResponse.json(sessionsWithModules);
+    }
+
+    // T014: Default mode — return active or most recent session
+    let session = await sessionRepo.findActiveSession(tenantId, employeeId);
+    if (!session) {
+      const history = await sessionRepo.findSessionHistory(tenantId, employeeId, { limit: 1 });
+      session = history[0] ?? null;
+    }
+
+    if (!session) {
+      return NextResponse.json(
+        { error: "not_found", message: "No training session found" },
+        { status: 404 },
+      );
+    }
+
+    // 2. Find modules for this session
+    const modules = await sessionRepo.findModulesBySession(tenantId, session.id);
+
+    // 3. Strip server-only fields (correct answers, rubrics) from module content
+    const clientModules = modules.map(stripServerFields);
+
+    // 4. Read maxAttempts from tenant config so the UI can display accurate attempt counts
+    const tenantConfig = getSnapshot()?.tenants.get(tenantSlug);
+    const maxAttempts = tenantConfig?.settings.training?.maxAttempts ?? 3;
+
+    return NextResponse.json({ session, modules: clientModules, maxAttempts });
+  } finally {
+    await storage.close();
   }
-
-  // T014: Default mode — return active or most recent session
-  let session = await sessionRepo.findActiveSession(tenantId, employeeId);
-  if (!session) {
-    const history = await sessionRepo.findSessionHistory(tenantId, employeeId, { limit: 1 });
-    session = history[0] ?? null;
-  }
-
-  if (!session) {
-    return NextResponse.json(
-      { error: "not_found", message: "No training session found" },
-      { status: 404 },
-    );
-  }
-
-  // 2. Find modules for this session
-  const modules = await sessionRepo.findModulesBySession(tenantId, session.id);
-
-  // 3. Strip server-only fields (correct answers, rubrics) from module content
-  const clientModules = modules.map(stripServerFields);
-
-  // 4. Read maxAttempts from tenant config so the UI can display accurate attempt counts
-  const tenantConfig = getSnapshot()?.tenants.get(tenantSlug);
-  const maxAttempts = tenantConfig?.settings.training?.maxAttempts ?? 3;
-
-  return NextResponse.json({ session, modules: clientModules, maxAttempts });
 }

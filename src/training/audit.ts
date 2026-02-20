@@ -32,18 +32,22 @@ export async function logSessionStarted(
   roleProfileVersion: number,
   configHash: string,
 ): Promise<void> {
-  await storage.create(tenantId, COLLECTION, {
-    eventType: "training-session-started",
-    tenantId,
-    employeeId,
-    timestamp: new Date().toISOString(),
-    metadata: {
-      sessionId,
-      attemptNumber,
-      roleProfileVersion,
-      configHash,
-    },
-  });
+  try {
+    await storage.create(tenantId, COLLECTION, {
+      eventType: "training-session-started",
+      tenantId,
+      employeeId,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        sessionId,
+        attemptNumber,
+        roleProfileVersion,
+        configHash,
+      },
+    });
+  } catch (error) {
+    console.error("Audit logging failed (logSessionStarted):", error);
+  }
 }
 
 export async function logModuleCompleted(
@@ -55,18 +59,22 @@ export async function logModuleCompleted(
   moduleTitle: string,
   moduleScore: number,
 ): Promise<void> {
-  await storage.create(tenantId, COLLECTION, {
-    eventType: "training-module-completed",
-    tenantId,
-    employeeId,
-    timestamp: new Date().toISOString(),
-    metadata: {
-      sessionId,
-      moduleIndex,
-      moduleTitle,
-      moduleScore,
-    },
-  });
+  try {
+    await storage.create(tenantId, COLLECTION, {
+      eventType: "training-module-completed",
+      tenantId,
+      employeeId,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        sessionId,
+        moduleIndex,
+        moduleTitle,
+        moduleScore,
+      },
+    });
+  } catch (error) {
+    console.error("Audit logging failed (logModuleCompleted):", error);
+  }
 }
 
 export async function logQuizSubmitted(
@@ -79,19 +87,23 @@ export async function logQuizSubmitted(
   mcCount: number,
   freeTextCount: number,
 ): Promise<void> {
-  await storage.create(tenantId, COLLECTION, {
-    eventType: "training-quiz-submitted",
-    tenantId,
-    employeeId,
-    timestamp: new Date().toISOString(),
-    metadata: {
-      sessionId,
-      moduleIndex,
-      questionCount,
-      mcCount,
-      freeTextCount,
-    },
-  });
+  try {
+    await storage.create(tenantId, COLLECTION, {
+      eventType: "training-quiz-submitted",
+      tenantId,
+      employeeId,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        sessionId,
+        moduleIndex,
+        questionCount,
+        mcCount,
+        freeTextCount,
+      },
+    });
+  } catch (error) {
+    console.error("Audit logging failed (logQuizSubmitted):", error);
+  }
 }
 
 export async function logEvaluationCompleted(
@@ -103,18 +115,22 @@ export async function logEvaluationCompleted(
   aggregateScore: number,
   passed: boolean,
 ): Promise<void> {
-  await storage.create(tenantId, COLLECTION, {
-    eventType: "training-evaluation-completed",
-    tenantId,
-    employeeId,
-    timestamp: new Date().toISOString(),
-    metadata: {
-      sessionId,
-      attemptNumber,
-      aggregateScore,
-      passed,
-    },
-  });
+  try {
+    await storage.create(tenantId, COLLECTION, {
+      eventType: "training-evaluation-completed",
+      tenantId,
+      employeeId,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        sessionId,
+        attemptNumber,
+        aggregateScore,
+        passed,
+      },
+    });
+  } catch (error) {
+    console.error("Audit logging failed (logEvaluationCompleted):", error);
+  }
 }
 
 export async function logRemediationInitiated(
@@ -126,18 +142,22 @@ export async function logRemediationInitiated(
   weakAreaCount: number,
   weakAreas: string[],
 ): Promise<void> {
-  await storage.create(tenantId, COLLECTION, {
-    eventType: "training-remediation-initiated",
-    tenantId,
-    employeeId,
-    timestamp: new Date().toISOString(),
-    metadata: {
-      sessionId,
-      attemptNumber,
-      weakAreaCount,
-      weakAreas,
-    },
-  });
+  try {
+    await storage.create(tenantId, COLLECTION, {
+      eventType: "training-remediation-initiated",
+      tenantId,
+      employeeId,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        sessionId,
+        attemptNumber,
+        weakAreaCount,
+        weakAreas,
+      },
+    });
+  } catch (error) {
+    console.error("Audit logging failed (logRemediationInitiated):", error);
+  }
 }
 
 export async function logSessionAbandoned(
@@ -149,18 +169,22 @@ export async function logSessionAbandoned(
   modulesCompleted: number,
   totalModules: number,
 ): Promise<void> {
-  await storage.create(tenantId, COLLECTION, {
-    eventType: "training-session-abandoned",
-    tenantId,
-    employeeId,
-    timestamp: new Date().toISOString(),
-    metadata: {
-      sessionId,
-      attemptNumber,
-      modulesCompleted,
-      totalModules,
-    },
-  });
+  try {
+    await storage.create(tenantId, COLLECTION, {
+      eventType: "training-session-abandoned",
+      tenantId,
+      employeeId,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        sessionId,
+        attemptNumber,
+        modulesCompleted,
+        totalModules,
+      },
+    });
+  } catch (error) {
+    console.error("Audit logging failed (logSessionAbandoned):", error);
+  }
 }
 
 export async function logSessionExhausted(
@@ -171,15 +195,19 @@ export async function logSessionExhausted(
   finalScore: number,
   totalAttempts: number,
 ): Promise<void> {
-  await storage.create(tenantId, COLLECTION, {
-    eventType: "training-session-exhausted",
-    tenantId,
-    employeeId,
-    timestamp: new Date().toISOString(),
-    metadata: {
-      sessionId,
-      finalScore,
-      totalAttempts,
-    },
-  });
+  try {
+    await storage.create(tenantId, COLLECTION, {
+      eventType: "training-session-exhausted",
+      tenantId,
+      employeeId,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        sessionId,
+        finalScore,
+        totalAttempts,
+      },
+    });
+  } catch (error) {
+    console.error("Audit logging failed (logSessionExhausted):", error);
+  }
 }

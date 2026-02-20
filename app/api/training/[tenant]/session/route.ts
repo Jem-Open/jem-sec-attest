@@ -35,14 +35,6 @@ import type { TrainingModule } from "@/training/types";
 import { NextResponse } from "next/server";
 
 // ---------------------------------------------------------------------------
-// Shared storage / repos (module-level singletons, as per existing patterns)
-// ---------------------------------------------------------------------------
-
-const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
-const profileRepo = new ProfileRepository(storage);
-const sessionRepo = new SessionRepository(storage);
-
-// ---------------------------------------------------------------------------
 // Helper — strip server-only fields from module content before sending
 // ---------------------------------------------------------------------------
 
@@ -83,6 +75,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
       { status: 401 },
     );
   }
+
+  // Initialise repositories per-request to avoid connection sharing
+  const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
+  const profileRepo = new ProfileRepository(storage);
+  const sessionRepo = new SessionRepository(storage);
 
   await storage.initialize();
 
@@ -335,6 +332,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
     );
   }
 
+  // Initialise repositories per-request to avoid connection sharing
+  const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
+  const sessionRepo = new SessionRepository(storage);
+
   await storage.initialize();
 
   // Parse query parameters
@@ -374,5 +375,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
   // 3. Strip server-only fields (correct answers, rubrics) from module content
   const clientModules = modules.map(stripServerFields);
 
-  return NextResponse.json({ session, modules: clientModules });
+  // 4. Read maxAttempts from tenant config so the UI can display accurate attempt counts
+  const tenantConfig = getSnapshot()?.tenants.get(tenantSlug);
+  const maxAttempts = tenantConfig?.settings.training?.maxAttempts ?? 3;
+
+  return NextResponse.json({ session, modules: clientModules, maxAttempts });
 }

@@ -181,12 +181,21 @@ export const ScenarioSubmissionSchema = z
 export const QuizSubmissionSchema = z.object({
   answers: z
     .array(
-      z.object({
-        questionId: z.string().min(1),
-        responseType: ResponseTypeSchema,
-        selectedOption: z.string().optional(),
-        freeTextResponse: z.string().max(2000).optional(),
-      }),
+      z
+        .object({
+          questionId: z.string().min(1),
+          responseType: ResponseTypeSchema,
+          selectedOption: z.string().optional(),
+          freeTextResponse: z.string().max(2000).optional(),
+        })
+        .refine(
+          (data) => data.responseType !== "multiple-choice" || data.selectedOption !== undefined,
+          { message: "selectedOption is required for multiple-choice responses" },
+        )
+        .refine(
+          (data) => data.responseType !== "free-text" || data.freeTextResponse !== undefined,
+          { message: "freeTextResponse is required for free-text responses" },
+        ),
     )
     .min(1),
 });

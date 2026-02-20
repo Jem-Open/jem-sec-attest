@@ -168,6 +168,15 @@ export async function POST(
       let llmRationale: string | undefined;
 
       if (answer.responseType === "multiple-choice") {
+        if (answer.selectedOption === undefined) {
+          return NextResponse.json(
+            {
+              error: "validation_error",
+              message: `selectedOption is required for multiple-choice question '${answer.questionId}'`,
+            },
+            { status: 400 },
+          );
+        }
         const correctOption = question.options?.find((o) => o.correct)?.key;
         if (!correctOption) {
           return NextResponse.json(
@@ -178,7 +187,7 @@ export async function POST(
             { status: 500 },
           );
         }
-        score = scoreMcAnswer(answer.selectedOption ?? "", correctOption);
+        score = scoreMcAnswer(answer.selectedOption, correctOption);
       } else {
         // free-text — model is guaranteed to be set when hasFreeText is true
         const evaluation = await evaluateFreeText(

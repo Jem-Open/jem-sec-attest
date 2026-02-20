@@ -231,6 +231,12 @@ interface TrainingSessionResponse {
   createdAt?: string;
 }
 
+interface SessionApiResponse {
+  session: TrainingSessionResponse;
+  modules: ModuleSummary[];
+  maxAttempts?: number;
+}
+
 interface HistoryEntry {
   session: TrainingSessionResponse;
   modules: ModuleSummary[];
@@ -549,7 +555,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
   >(null);
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
-  const [maxAttempts] = useState<number>(3);
+  const [maxAttempts, setMaxAttempts] = useState<number>(3);
   const firstFocusRef = useRef<HTMLButtonElement | HTMLAnchorElement | null>(null);
 
   // Focus management on state change
@@ -590,13 +596,13 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
           throw new Error(body.message ?? `Unexpected error (${res.status})`);
         }
 
-        const data = (await res.json()) as {
-          session: TrainingSessionResponse;
-          modules: ModuleSummary[];
-        };
+        const data = (await res.json()) as SessionApiResponse;
 
         setSession(data.session);
         setModules(data.modules);
+        if (data.maxAttempts !== undefined) {
+          setMaxAttempts(data.maxAttempts);
+        }
 
         const derived = derivePageState(data.session, data.modules);
         setPageState(derived);
@@ -637,10 +643,15 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
           triggerEvaluate(tenant);
         }
 
-        // T023: For failed sessions loaded on mount, assume remediation may be available.
-        // The server will return 409 if remediation is not enabled or attempts are exhausted.
+        // T023: For failed sessions loaded on mount, offer remediation only if attempts
+        // remain. The server is the authority (it returns 409 if remediation is disabled),
+        // but we avoid showing the button at all when we already know attempts are
+        // exhausted from the session data.
         if (derived === "failed-review" && evaluateNextAction === null) {
-          setEvaluateNextAction("remediation-available");
+          const resolvedMaxAttempts = data.maxAttempts ?? 3;
+          if (data.session.attemptNumber < resolvedMaxAttempts) {
+            setEvaluateNextAction("remediation-available");
+          }
         }
       } catch {
         if (!cancelled) {
@@ -672,12 +683,12 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
         setPageState("error");
         return;
       }
-      const data = (await res.json()) as {
-        session: TrainingSessionResponse;
-        modules: ModuleSummary[];
-      };
+      const data = (await res.json()) as SessionApiResponse;
       setSession(data.session);
       setModules(data.modules);
+      if (data.maxAttempts !== undefined) {
+        setMaxAttempts(data.maxAttempts);
+      }
       const derived = derivePageState(data.session, data.modules);
       setPageState(derived);
 

@@ -1,0 +1,26 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "3ef0f9be5f6d",
+  "strategy": "manual-commit",
+  "branch": "004-training-workflow",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "app/api/training/[tenant]/module/[moduleIndex]/content/route.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/3e/f0f9be5f6d/0/metadata.json",
+      "transcript": "/3e/f0f9be5f6d/0/full.jsonl",
+      "context": "/3e/f0f9be5f6d/0/context.md",
+      "content_hash": "/3e/f0f9be5f6d/0/content_hash.txt",
+      "prompt": "/3e/f0f9be5f6d/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 117,
+    "cache_creation_tokens": 141946,
+    "cache_read_tokens": 5927917,
+    "output_tokens": 11697,
+    "api_call_count": 83
+  }
+}

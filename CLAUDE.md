@@ -1,37 +1,93 @@
-# jem-sec-attest Development Guidelines
+# jem-sec-attest
 
-Auto-generated from all feature plans. Last updated: 2026-02-16
+Multi-tenant security attestation training platform.
 
-## Active Technologies
-- TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), React 19.x, `openid-client` v6.x, `iron-session` v8.x, `ai` v6.x (Vercel AI SDK), existing: `zod` v4.x, `yaml` v2.x, `better-sqlite3` v11.x, `safe-stable-stringify`, `dotenv` (002-employee-sso-auth)
-- better-sqlite3 (existing adapter) for employees, audit events; iron-session encrypted cookies for sessions (002-employee-sso-auth)
-- TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), React 19.x, `ai` v6.x (Vercel AI SDK), `zod` v4.x, `better-sqlite3` v11.x, `iron-session` v8.x (003-training-intake)
-- SQLite via existing `StorageAdapter` — collection `"role_profiles"` in `records` table (003-training-intake)
-- TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), React 19.x, `ai` v6.x (Vercel AI SDK), `zod` v4.x, `iron-session` v8.x, `better-sqlite3` v11.x (004-training-workflow)
-- SQLite via existing `StorageAdapter` — new collections: `training_sessions`, `training_modules`, `audit_events` (existing) (004-training-workflow)
+## Tech Stack
 
-- TypeScript 5.x (strict mode), Node.js 20+ + `yaml` (parsing), `zod` (validation), `safe-stable-stringify` (deterministic hashing), `better-sqlite3` (local storage), `dotenv` (env loading) (001-multi-tenant-config)
+- **Language**: TypeScript 5.9 (strict mode), Node.js 20.9+
+- **Framework**: Next.js 16.x (App Router), React 19.x
+- **Package manager**: pnpm
+- **Linter/Formatter**: Biome (2-space indent, double quotes, semicolons, 100 line width)
+- **Tests**: Vitest with projects: `unit`, `integration`, `contract`
+- **Storage**: SQLite via `better-sqlite3` through `StorageAdapter` interface
+- **AI**: Vercel AI SDK v6 (`ai` package) — `generateObject()` with Zod schemas
+- **Auth**: `openid-client` v6.x (OIDC), `iron-session` v8.x (encrypted cookies)
+- **Validation**: Zod v4.x
+- **Config**: YAML tenant configs, `dotenv` for env vars
 
 ## Project Structure
 
 ```text
 src/
+  config/          # Multi-tenant YAML config loading
+  tenant/          # Tenant types and resolution
+  auth/            # OIDC authentication adapters
+  intake/          # Role profile generation (AI-powered)
+  training/        # Training workflow state machine
+  storage/         # StorageAdapter interface + SQLite adapter
+app/
+  api/
+    auth/[tenant]/       # signin, callback, signout
+    intake/[tenant]/     # profile, generate, confirm
+    training/[tenant]/   # session, module content/quiz/scenario, evaluate, abandon
+  [tenant]/              # Tenant-scoped pages
+  layout.tsx
 tests/
+  unit/            # Mocked dependencies, fast
+  integration/     # Real SQLite, multiple modules
+  contract/        # API contract validation
+  fixtures/        # Shared test data
 ```
 
 ## Commands
 
-npm test && npm run lint
+```bash
+pnpm test                   # Run all tests (unit + integration + contract)
+pnpm test:unit              # Unit tests only
+pnpm test:integration       # Integration tests only
+pnpm test:coverage          # Tests with coverage report (80% threshold)
+pnpm lint                   # Biome check
+pnpm lint:fix               # Biome auto-fix
+pnpm type-check             # tsc --noEmit
+pnpm build                  # Production build
+pnpm dev                    # Development server
+```
 
 ## Code Style
 
-TypeScript 5.x (strict mode), Node.js 20+: Follow standard conventions
+- **Biome** enforces: import sorting, no unused vars/imports, no explicit `any`, `useConst`
+- **Path alias**: `@/*` maps to `./src/*`
+- **Route files** (`app/api/`): Use `@/` alias imports **without** `.js` extension
+- **Source files** (`src/`): Use `.js` extension in relative imports
+- **Apache 2.0 license headers** on all source files
+- **Pre-commit hooks** (lefthook): lint + type-check run automatically
 
-## Recent Changes
-- 004-training-workflow: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), React 19.x, `ai` v6.x (Vercel AI SDK), `zod` v4.x, `iron-session` v8.x, `better-sqlite3` v11.x
-- 003-training-intake: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), React 19.x, `ai` v6.x (Vercel AI SDK), `zod` v4.x, `better-sqlite3` v11.x, `iron-session` v8.x
-- 002-employee-sso-auth: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), React 19.x, `openid-client` v6.x, `iron-session` v8.x, `ai` v6.x (Vercel AI SDK), existing: `zod` v4.x, `yaml` v2.x, `better-sqlite3` v11.x, `safe-stable-stringify`, `dotenv`
+## Testing
 
+- Vitest globals (`describe`, `it`, `expect`, `vi`) are available without import — configured per-project
+- **Mock pattern**: Use `vi.hoisted()` for mock objects referenced inside `vi.mock()` factories:
+  ```typescript
+  const { mockRepo } = vi.hoisted(() => {
+    const mockRepo = { findById: vi.fn() };
+    return { mockRepo };
+  });
+  vi.mock("@/training/session-repository", () => ({
+    SessionRepository: vi.fn().mockImplementation(() => mockRepo),
+  }));
+  ```
+- Route files create `new SQLiteAdapter()` at module scope — tests must use the `vi.hoisted()` pattern above
 
-<!-- MANUAL ADDITIONS START -->
-<!-- MANUAL ADDITIONS END -->
+## Environment
+
+Copy `.env.example` to `.env`. Required variables:
+
+- `SESSION_SECRET` — minimum 32 characters for iron-session encryption
+- `ANTHROPIC_API_KEY` (or `OPENAI_API_KEY` / `AZURE_OPENAI_API_KEY`) — at least one AI provider key
+- Per-tenant webhook secrets (e.g., `ACME_WEBHOOK_SECRET`)
+
+## Gotchas
+
+- **pnpm, not npm** — all commands use pnpm; `npm test` works but `pnpm test` is canonical
+- **Biome tabs vs spaces** — run `npx biome check --write <file>` after creating files to fix formatting
+- **Integration tests need globals** — vitest `globals: true` must be set per-project in `vitest.config.ts`, not just at root level
+- **Tenant isolation** — every API route validates `[tenant]` param against loaded config; storage queries must filter by tenant

@@ -3,7 +3,7 @@
   "checkpoint_id": "4bd97ea4cd3b",
   "strategy": "manual-commit",
   "branch": "005-audit-evidence",
-  "checkpoints_count": 1,
+  "checkpoints_count": 2,
   "files_touched": [
     "CLAUDE.md",
     "app/api/training/[tenant]/abandon/route.ts",
@@ -24,13 +24,20 @@
       "context": "/4b/d97ea4cd3b/0/context.md",
       "content_hash": "/4b/d97ea4cd3b/0/content_hash.txt",
       "prompt": "/4b/d97ea4cd3b/0/prompt.txt"
+    },
+    {
+      "metadata": "/4b/d97ea4cd3b/1/metadata.json",
+      "transcript": "/4b/d97ea4cd3b/1/full.jsonl",
+      "context": "/4b/d97ea4cd3b/1/context.md",
+      "content_hash": "/4b/d97ea4cd3b/1/content_hash.txt",
+      "prompt": "/4b/d97ea4cd3b/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 61,
-    "cache_creation_tokens": 117410,
-    "cache_read_tokens": 2063193,
-    "output_tokens": 7894,
-    "api_call_count": 47
+    "input_tokens": 82,
+    "cache_creation_tokens": 222738,
+    "cache_read_tokens": 2454041,
+    "output_tokens": 10755,
+    "api_call_count": 59
   }
 }

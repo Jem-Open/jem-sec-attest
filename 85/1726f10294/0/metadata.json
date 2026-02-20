@@ -1,0 +1,35 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "851726f10294",
+  "session_id": "3049af27-4f41-4ad2-baab-bb101ed150da",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-20T13:20:10.306498Z",
+  "branch": "004-training-workflow",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "app/api/training/[tenant]/module/[moduleIndex]/quiz/route.ts",
+    "app/api/training/[tenant]/session/route.ts",
+    "src/training/schemas.ts",
+    "app/[tenant]/training/page.tsx"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "b692b03df4e0",
+  "transcript_identifier_at_start": "bbe1130d-6b7d-43bf-a710-5c5b6189e91a",
+  "token_usage": {
+    "input_tokens": 61,
+    "cache_creation_tokens": 117410,
+    "cache_read_tokens": 2063193,
+    "output_tokens": 7894,
+    "api_call_count": 47
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-20T13:20:09.953562Z",
+    "agent_lines": 0,
+    "human_added": 34,
+    "human_modified": 28,
+    "human_removed": 0,
+    "total_committed": 34,
+    "agent_percentage": 0
+  },
+  "transcript_path": ".claude/projects/-Users-thamsanqamoyo-Documents-code-jem-open-jem-sec-attest/3049af27-4f41-4ad2-baab-bb101ed150da.jsonl"
+}

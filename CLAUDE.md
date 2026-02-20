@@ -91,3 +91,10 @@ Copy `.env.example` to `.env`. Required variables:
 - **Biome tabs vs spaces** — run `npx biome check --write <file>` after creating files to fix formatting
 - **Integration tests need globals** — vitest `globals: true` must be set per-project in `vitest.config.ts`, not just at root level
 - **Tenant isolation** — every API route validates `[tenant]` param against loaded config; storage queries must filter by tenant
+
+## Active Technologies
+- TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), Zod v4.x, `better-sqlite3`, `crypto` (Node.js built-in) (005-audit-evidence)
+- SQLite via `StorageAdapter` interface — new `"evidence"` collection (005-audit-evidence)
+
+## Recent Changes
+- 005-audit-evidence: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), Zod v4.x, `better-sqlite3`, `crypto` (Node.js built-in)

@@ -1,0 +1,39 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "fa736520330b",
+  "session_id": "46ad8813-eb9c-4fd7-9a50-b4ccaaaf6722",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-20T09:49:41.886946Z",
+  "branch": "004-training-workflow",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "app/[tenant]/training/page.tsx",
+    "app/api/training/[tenant]/evaluate/route.ts",
+    "app/api/training/[tenant]/module/[moduleIndex]/quiz/route.ts",
+    "app/api/training/[tenant]/session/route.ts",
+    "src/training/evaluator.ts",
+    "src/training/remediation-planner.ts",
+    "tests/unit/training/evaluator.spec.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "81f3bfaec224",
+  "checkpoint_transcript_start": 1297,
+  "transcript_lines_at_start": 1297,
+  "token_usage": {
+    "input_tokens": 502,
+    "cache_creation_tokens": 419969,
+    "cache_read_tokens": 10928546,
+    "output_tokens": 34186,
+    "api_call_count": 136
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-20T09:49:40.77736Z",
+    "agent_lines": 101,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 101,
+    "agent_percentage": 100
+  },
+  "transcript_path": ".claude/projects/-Users-thamsanqamoyo-Documents-code-jem-open-jem-sec-attest/46ad8813-eb9c-4fd7-9a50-b4ccaaaf6722.jsonl"
+}

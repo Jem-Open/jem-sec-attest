@@ -1,0 +1,33 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "0fb3cda263d5",
+  "session_id": "b8ba0973-02c1-4ab3-985e-e995d409d9df",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-20T17:02:49.008173Z",
+  "branch": "005-audit-evidence",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "specs/005-audit-evidence/contracts/evidence-api.yaml"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "5c7ee81fc586",
+  "checkpoint_transcript_start": 1082,
+  "transcript_lines_at_start": 1082,
+  "token_usage": {
+    "input_tokens": 425,
+    "cache_creation_tokens": 155406,
+    "cache_read_tokens": 1998428,
+    "output_tokens": 6649,
+    "api_call_count": 46
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-20T17:02:48.640997Z",
+    "agent_lines": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 0,
+    "agent_percentage": 0
+  },
+  "transcript_path": ".claude/projects/-Users-thamsanqamoyo-Documents-code-jem-open-jem-sec-attest/b8ba0973-02c1-4ab3-985e-e995d409d9df.jsonl"
+}

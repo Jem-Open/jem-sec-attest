@@ -3,7 +3,7 @@
   "checkpoint_id": "0fb3cda263d5",
   "strategy": "manual-commit",
   "branch": "005-audit-evidence",
-  "checkpoints_count": 1,
+  "checkpoints_count": 3,
   "files_touched": [
     "specs/005-audit-evidence/contracts/evidence-api.yaml"
   ],
@@ -14,13 +14,20 @@
       "context": "/0f/b3cda263d5/0/context.md",
       "content_hash": "/0f/b3cda263d5/0/content_hash.txt",
       "prompt": "/0f/b3cda263d5/0/prompt.txt"
+    },
+    {
+      "metadata": "/0f/b3cda263d5/1/metadata.json",
+      "transcript": "/0f/b3cda263d5/1/full.jsonl",
+      "context": "/0f/b3cda263d5/1/context.md",
+      "content_hash": "/0f/b3cda263d5/1/content_hash.txt",
+      "prompt": "/0f/b3cda263d5/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 61,
-    "cache_creation_tokens": 117410,
-    "cache_read_tokens": 2063193,
-    "output_tokens": 7894,
-    "api_call_count": 47
+    "input_tokens": 94,
+    "cache_creation_tokens": 276764,
+    "cache_read_tokens": 2846360,
+    "output_tokens": 10853,
+    "api_call_count": 68
   }
 }

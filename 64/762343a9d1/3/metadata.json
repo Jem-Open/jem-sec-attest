@@ -1,0 +1,35 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "64762343a9d1",
+  "session_id": "99dcebbb-a473-4d8e-bf3a-40958c35c3b8",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-21T07:45:45.548712Z",
+  "branch": "005-audit-evidence",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "specs/005-audit-evidence/data-model.md",
+    "specs/005-audit-evidence/quickstart.md",
+    "specs/005-audit-evidence/tasks.md",
+    "src/evidence/schemas.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "d3241077802e",
+  "transcript_identifier_at_start": "e2cd7d60-aab0-448a-a233-b78d9e28310b",
+  "token_usage": {
+    "input_tokens": 20,
+    "cache_creation_tokens": 59147,
+    "cache_read_tokens": 727876,
+    "output_tokens": 6775,
+    "api_call_count": 16
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-21T07:45:45.504349Z",
+    "agent_lines": 6,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 6,
+    "agent_percentage": 100
+  },
+  "transcript_path": ".claude/projects/-Users-thamsanqamoyo-Documents-code-jem-open-jem-sec-attest/99dcebbb-a473-4d8e-bf3a-40958c35c3b8.jsonl"
+}

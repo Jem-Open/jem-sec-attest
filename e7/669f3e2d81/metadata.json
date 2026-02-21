@@ -3,7 +3,7 @@
   "checkpoint_id": "e7669f3e2d81",
   "strategy": "manual-commit",
   "branch": "006-pdf-evidence-export",
-  "checkpoints_count": 4,
+  "checkpoints_count": 5,
   "files_touched": [
     "CLAUDE.md",
     "app/api/training/[tenant]/evidence/[sessionId]/pdf/route.ts",
@@ -50,13 +50,20 @@
       "context": "/e7/669f3e2d81/3/context.md",
       "content_hash": "/e7/669f3e2d81/3/content_hash.txt",
       "prompt": "/e7/669f3e2d81/3/prompt.txt"
+    },
+    {
+      "metadata": "/e7/669f3e2d81/4/metadata.json",
+      "transcript": "/e7/669f3e2d81/4/full.jsonl",
+      "context": "/e7/669f3e2d81/4/context.md",
+      "content_hash": "/e7/669f3e2d81/4/content_hash.txt",
+      "prompt": "/e7/669f3e2d81/4/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 1495,
-    "cache_creation_tokens": 818308,
-    "cache_read_tokens": 13386993,
-    "output_tokens": 40147,
-    "api_call_count": 169
+    "input_tokens": 1515,
+    "cache_creation_tokens": 877455,
+    "cache_read_tokens": 14114869,
+    "output_tokens": 46922,
+    "api_call_count": 185
   }
 }

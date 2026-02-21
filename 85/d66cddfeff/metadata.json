@@ -1,0 +1,57 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "85d66cddfeff",
+  "strategy": "manual-commit",
+  "branch": "007-evidence-integration",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".env.example",
+    "CLAUDE.md",
+    "app/api/training/[tenant]/evidence/[sessionId]/route.ts",
+    "app/api/training/[tenant]/evidence/route.ts",
+    "config/tenants/example-sprinto.yaml.example",
+    "specs/007-evidence-integration/checklists/requirements.md",
+    "specs/007-evidence-integration/contracts/compliance-provider.ts",
+    "specs/007-evidence-integration/contracts/sprinto-graphql.md",
+    "specs/007-evidence-integration/data-model.md",
+    "specs/007-evidence-integration/plan.md",
+    "specs/007-evidence-integration/quickstart.md",
+    "specs/007-evidence-integration/research.md",
+    "specs/007-evidence-integration/spec.md",
+    "specs/007-evidence-integration/tasks.md",
+    "src/compliance/orchestrator.ts",
+    "src/compliance/providers/sprinto.ts",
+    "src/compliance/schemas.ts",
+    "src/compliance/types.ts",
+    "src/compliance/upload-repository.ts",
+    "src/config/schema.ts",
+    "src/evidence/evidence-generator.ts",
+    "src/tenant/types.ts",
+    "tests/contract/compliance/provider-contract.spec.ts",
+    "tests/fixtures/compliance/defaults.yaml",
+    "tests/fixtures/compliance/tenants/no-compliance.yaml",
+    "tests/fixtures/compliance/tenants/sprinto-enabled.yaml",
+    "tests/integration/compliance/config-loading.spec.ts",
+    "tests/integration/compliance/evidence-upload.spec.ts",
+    "tests/unit/compliance/config-validation.spec.ts",
+    "tests/unit/compliance/orchestrator.spec.ts",
+    "tests/unit/compliance/sprinto-provider.spec.ts",
+    "tests/unit/compliance/upload-repository.spec.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/85/d66cddfeff/0/metadata.json",
+      "transcript": "/85/d66cddfeff/0/full.jsonl",
+      "context": "/85/d66cddfeff/0/context.md",
+      "content_hash": "/85/d66cddfeff/0/content_hash.txt",
+      "prompt": "/85/d66cddfeff/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 61,
+    "cache_creation_tokens": 117410,
+    "cache_read_tokens": 2063193,
+    "output_tokens": 7894,
+    "api_call_count": 47
+  }
+}

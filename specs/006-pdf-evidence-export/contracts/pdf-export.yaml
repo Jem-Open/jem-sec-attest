@@ -1,0 +1,123 @@
+openapi: 3.1.0
+info:
+  title: PDF Evidence Export API
+  version: 1.0.0
+  description: API endpoint for generating PDF exports of training evidence records.
+
+paths:
+  /api/training/{tenant}/evidence/{sessionId}/pdf:
+    get:
+      operationId: getEvidencePdf
+      summary: Generate PDF export of training evidence
+      description: |
+        Generates a PDF document from the training evidence record for the specified session.
+        Requires the session to have a terminal status (passed, exhausted, or abandoned).
+        The PDF is generated on-demand and not persisted.
+      parameters:
+        - name: tenant
+          in: path
+          required: true
+          schema:
+            type: string
+            minLength: 1
+          description: Tenant slug (must match x-tenant-id header)
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Training session ID
+        - name: x-tenant-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Authenticated tenant ID
+        - name: x-employee-id
+          in: header
+          required: true
+          schema:
+            type: string
+          description: Authenticated employee ID
+        - name: x-employee-role
+          in: header
+          required: false
+          schema:
+            type: string
+            enum: [employee, admin]
+            default: employee
+          description: Employee role (admin required for unrestricted access)
+      responses:
+        "200":
+          description: PDF generated successfully
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename="evidence-acme-emp123-550e8400-e29b-41d4-a716-446655440000.pdf"'
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: unauthorized
+                message: Not authenticated
+        "403":
+          description: Forbidden — employee accessing another employee's evidence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: forbidden
+                message: Access denied
+        "404":
+          description: Evidence record not found for this session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: not_found
+                message: No evidence record found for session
+        "409":
+          description: Session has not reached a terminal state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: conflict
+                message: Evidence can only be exported for completed sessions
+        "500":
+          description: PDF generation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+              example:
+                error: pdf_generation_failed
+                message: Failed to generate PDF document
+
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable error description

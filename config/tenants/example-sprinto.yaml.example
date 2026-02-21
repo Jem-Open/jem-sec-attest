@@ -1,0 +1,34 @@
+# Example tenant configuration with Sprinto compliance integration.
+# Copy this file to a real tenant YAML (e.g., acme-corp.yaml) and update values.
+# See specs/007-evidence-integration/quickstart.md for setup instructions.
+
+name: "Example Corp"
+hostnames:
+  - "example.example.com"
+emailDomains:
+  - "example.com"
+settings:
+  integrations:
+    # Compliance integration — uploads training evidence to Sprinto automatically.
+    # Remove this block entirely to disable compliance integration for this tenant.
+    compliance:
+      # Provider name. Currently only "sprinto" is supported.
+      provider: "sprinto"
+
+      # API key — must be an environment variable reference (${VAR_NAME}).
+      # Generate an API key in Sprinto's admin panel under developer settings.
+      apiKeyRef: "${EXAMPLE_SPRINTO_API_KEY}"
+
+      # Workflow check UUID from Sprinto. Find this in the Sprinto workflow checks
+      # page or via the WorkflowChecksPaginated GraphQL query (use the "pk" field).
+      workflowCheckId: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+
+      # Sprinto API region. Determines which regional endpoint is used.
+      # Options: "us" (default), "eu", "india"
+      region: "us"
+
+      # Retry configuration (all fields optional — defaults shown below).
+      # retry:
+      #   maxAttempts: 5          # Max upload attempts (1-10)
+      #   initialDelayMs: 5000    # First retry delay in ms (1000-60000)
+      #   maxDelayMs: 300000      # Max retry delay cap in ms (5000-600000)

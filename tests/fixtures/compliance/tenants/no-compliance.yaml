@@ -1,0 +1,6 @@
+name: "No Compliance Tenant"
+hostnames:
+  - plain.example.com
+settings:
+  branding:
+    displayName: "Plain Tenant"

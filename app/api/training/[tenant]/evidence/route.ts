@@ -18,6 +18,8 @@
  * Returns paginated evidence summaries for admin/compliance users.
  */
 
+import { ComplianceUploadRepository } from "@/compliance/upload-repository";
+import { getSnapshot } from "@/config/index";
 import { EvidenceRepository } from "@/evidence/evidence-repository";
 import { SQLiteAdapter } from "@/storage/sqlite-adapter";
 import { NextResponse } from "next/server";
@@ -66,20 +68,56 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
       offset,
     });
 
-    // Map to summary format (strip full evidence body)
-    const summaries = items.map((item) => ({
-      id: item.id,
-      sessionId: item.sessionId,
-      employeeId: item.employeeId,
-      schemaVersion: item.schemaVersion,
-      contentHash: item.contentHash,
-      generatedAt: item.generatedAt,
-      outcome: {
-        status: item.evidence.session.status,
-        aggregateScore: item.evidence.outcome.aggregateScore,
-        passed: item.evidence.outcome.passed,
-      },
-    }));
+    // Check if tenant has compliance integration enabled
+    const snapshot = getSnapshot();
+    const tenant = snapshot?.tenants.get(tenantId);
+    const hasCompliance = !!tenant?.settings?.integrations?.compliance;
+
+    // Look up compliance upload status for each evidence item (only if compliance enabled)
+    const uploadRepo = hasCompliance ? new ComplianceUploadRepository(storage) : null;
+
+    const summaries = await Promise.all(
+      items.map(async (item) => {
+        const base = {
+          id: item.id,
+          sessionId: item.sessionId,
+          employeeId: item.employeeId,
+          schemaVersion: item.schemaVersion,
+          contentHash: item.contentHash,
+          generatedAt: item.generatedAt,
+          outcome: {
+            status: item.evidence.session.status,
+            aggregateScore: item.evidence.outcome.aggregateScore,
+            passed: item.evidence.outcome.passed,
+          },
+          complianceUpload: null as {
+            provider: string;
+            status: string;
+            attemptCount: number;
+            lastError: string | null;
+            completedAt: string | null;
+          } | null,
+        };
+
+        if (uploadRepo) {
+          const provider = tenant?.settings?.integrations?.compliance?.provider;
+          if (provider) {
+            const upload = await uploadRepo.findByEvidenceId(tenantId, item.id, provider);
+            if (upload) {
+              base.complianceUpload = {
+                provider: upload.provider,
+                status: upload.status,
+                attemptCount: upload.attemptCount,
+                lastError: upload.lastError,
+                completedAt: upload.completedAt,
+              };
+            }
+          }
+        }
+
+        return base;
+      }),
+    );
 
     return NextResponse.json({ items: summaries, total, limit, offset }, { status: 200 });
   } finally {

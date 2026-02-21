@@ -1,0 +1,34 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "74b82f987d01",
+  "session_id": "7921a5cf-3434-4662-aae6-b074456aad31",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-21T11:17:47.224811Z",
+  "branch": "006-pdf-evidence-export",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "src/evidence/pdf-renderer.ts"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "04fa628c973e",
+  "transcript_identifier_at_start": "fc14ca6a-e77b-4ca6-8f0f-f4d8b0dbacb7",
+  "checkpoint_transcript_start": 32,
+  "transcript_lines_at_start": 32,
+  "token_usage": {
+    "input_tokens": 18,
+    "cache_creation_tokens": 94013,
+    "cache_read_tokens": 488995,
+    "output_tokens": 1240,
+    "api_call_count": 13
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-21T11:17:47.192647Z",
+    "agent_lines": 2,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 2,
+    "agent_percentage": 100
+  },
+  "transcript_path": ".claude/projects/-Users-thamsanqamoyo-Documents-code-jem-open-jem-sec-attest/7921a5cf-3434-4662-aae6-b074456aad31.jsonl"
+}

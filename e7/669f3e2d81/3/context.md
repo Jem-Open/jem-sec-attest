@@ -20,3 +20,33 @@ Untracked files:
 	app/api/training/[tenant]/evidence/[sessionId]/pdf/
 	nonexistent-sessi...
 
+### Prompt 2
+
+# CodeRabbit Code Review
+
+Run an AI-powered code review using CodeRabbit.
+
+## Context
+
+- Current directory: /Users/thamsanqamoyo/Documents/code/jem-open/jem-sec-attest
+- Git repo: true
+Yes
+- Branch: 006-pdf-evidence-export
+- Has changes: Yes
+
+## Instructions
+
+Review code based on: ****
+
+### Prerequisites Check
+
+**Skip these checks if you already verified them earlier in this session.**
+
+Otherwise, run:
+
+```bash
+coderabbit --version 2>/dev/null && coderabbit auth status 2>&1 | head -3
+```
+
+**If C...
+

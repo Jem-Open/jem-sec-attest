@@ -1,12 +1,13 @@
 {
   "cli_version": "0.4.5",
   "checkpoint_id": "85d66cddfeff",
+  "session_id": "eb980fb2-02fd-491f-ba60-bb92037d7dff",
   "strategy": "manual-commit",
+  "created_at": "2026-02-21T21:41:32.671851Z",
   "branch": "007-evidence-integration",
-  "checkpoints_count": 8,
+  "checkpoints_count": 5,
   "files_touched": [
     ".env.example",
-    "CLAUDE.md",
     "app/api/training/[tenant]/evidence/[sessionId]/route.ts",
     "app/api/training/[tenant]/evidence/route.ts",
     "config/tenants/example-sprinto.yaml.example",
@@ -38,48 +39,24 @@
     "tests/unit/compliance/sprinto-provider.spec.ts",
     "tests/unit/compliance/upload-repository.spec.ts"
   ],
-  "sessions": [
-    {
-      "metadata": "/85/d66cddfeff/0/metadata.json",
-      "transcript": "/85/d66cddfeff/0/full.jsonl",
-      "context": "/85/d66cddfeff/0/context.md",
-      "content_hash": "/85/d66cddfeff/0/content_hash.txt",
-      "prompt": "/85/d66cddfeff/0/prompt.txt"
-    },
-    {
-      "metadata": "/85/d66cddfeff/1/metadata.json",
-      "transcript": "/85/d66cddfeff/1/full.jsonl",
-      "context": "/85/d66cddfeff/1/context.md",
-      "content_hash": "/85/d66cddfeff/1/content_hash.txt",
-      "prompt": "/85/d66cddfeff/1/prompt.txt"
-    },
-    {
-      "metadata": "/85/d66cddfeff/2/metadata.json",
-      "transcript": "/85/d66cddfeff/2/full.jsonl",
-      "context": "/85/d66cddfeff/2/context.md",
-      "content_hash": "/85/d66cddfeff/2/content_hash.txt",
-      "prompt": "/85/d66cddfeff/2/prompt.txt"
-    },
-    {
-      "metadata": "/85/d66cddfeff/3/metadata.json",
-      "transcript": "/85/d66cddfeff/3/full.jsonl",
-      "context": "/85/d66cddfeff/3/context.md",
-      "content_hash": "/85/d66cddfeff/3/content_hash.txt",
-      "prompt": "/85/d66cddfeff/3/prompt.txt"
-    },
-    {
-      "metadata": "/85/d66cddfeff/4/metadata.json",
-      "transcript": "/85/d66cddfeff/4/full.jsonl",
-      "context": "/85/d66cddfeff/4/context.md",
-      "content_hash": "/85/d66cddfeff/4/content_hash.txt",
-      "prompt": "/85/d66cddfeff/4/prompt.txt"
-    }
-  ],
+  "agent": "Claude Code",
+  "turn_id": "85dd3ea6bfea",
+  "transcript_identifier_at_start": "f839d22d-8677-4982-8238-c251f5be9a4c",
   "token_usage": {
-    "input_tokens": 3953,
-    "cache_creation_tokens": 1372144,
-    "cache_read_tokens": 22427439,
-    "output_tokens": 63006,
-    "api_call_count": 290
-  }
+    "input_tokens": 3412,
+    "cache_creation_tokens": 880331,
+    "cache_read_tokens": 16752977,
+    "output_tokens": 38652,
+    "api_call_count": 158
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-21T21:41:31.851809Z",
+    "agent_lines": 4076,
+    "human_added": 2,
+    "human_modified": 11,
+    "human_removed": 0,
+    "total_committed": 4089,
+    "agent_percentage": 99.68207385668867
+  },
+  "transcript_path": ".claude/projects/-Users-thamsanqamoyo-Documents-code-jem-open-jem-sec-attest/eb980fb2-02fd-491f-ba60-bb92037d7dff.jsonl"
 }

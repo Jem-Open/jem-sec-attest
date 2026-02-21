@@ -1,0 +1,1316 @@
+## User Input
+
+```text
+Integrate with Sprinto to automatically upload training evidence via API for a configured workflow check.
+The integration must be pluggable so other providers (Drata/Vanta) can be added later without rewriting core logic.
+The integration must be configured via YAML/JSON per tenant and must record success/failure and retries.
+Acceptance criteria: On training completion, evidence is pushed to Sprinto for tenants that enable it; failures are retried and logged; tenants without Sprinto enabled are unaffected.
+```
+
+You **MUST** consider the user input before proceeding (if not empty).
+
+## Outline
+
+The text the user typed after `/speckit.specify` in the triggering message **is** the feature description. Assume you always have it available in this conversation even if `Integrate with Sprinto to automatically upload training evidence via API for a configured workflow check.
+The integration must be pluggable so other providers (Drata/Vanta) can be added later without rewriting core logic.
+The integration must be configured via YAML/JSON per tenant and must record success/failure and retries.
+Acceptance criteria: On training completion, evidence is pushed to Sprinto for tenants that enable it; failures are retried and logged; tenants without Sprinto enabled are unaffected.` appears literally below. Do not ask the user to repeat it unless they provided an empty command.
+
+Given that feature description, do this:
+
+1. **Generate a concise short name** (2-4 words) for the branch:
+   - Analyze the feature description and extract the most meaningful keywords
+   - Create a 2-4 word short name that captures the essence of the feature
+   - Use action-noun format when possible (e.g., "add-user-auth", "fix-payment-bug")
+   - Preserve technical terms and acronyms (OAuth2, API, JWT, etc.)
+   - Keep it concise but descriptive enough to understand the feature at a glance
+   - Examples:
+     - "I want to add user authentication" → "user-auth"
+     - "Implement OAuth2 integration for the API" → "oauth2-api-integration"
+     - "Create a dashboard for analytics" → "analytics-dashboard"
+     - "Fix payment processing timeout bug" → "fix-payment-timeout"
+
+2. **Check for existing branches before creating new one**:
+
+   a. First, fetch all remote branches to ensure we have the latest information:
+
+      ```bash
+      git fetch --all --prune
+      ```
+
+   b. Find the highest feature number across all sources for the short-name:
+      - Remote branches: `git ls-remote --heads origin | grep -E 'refs/heads/[0-9]+-<short-name>$'`
+      - Local branches: `git branch | grep -E '^[* ]*[0-9]+-<short-name>$'`
+      - Specs directories: Check for directories matching `specs/[0-9]+-<short-name>`
+
+   c. Determine the next available number:
+      - Extract all numbers from all three sources
+      - Find the highest number N
+      - Use N+1 for the new branch number
+
+   d. Run the script `.specify/scripts/bash/create-new-feature.sh --json "Integrate with Sprinto to automatically upload training evidence via API for a configured workflow check.
+The integration must be pluggable so other providers (Drata/Vanta) can be added later without rewriting core logic.
+The integration must be configured via YAML/JSON per tenant and must record success/failure and retries.
+Acceptance criteria: On training completion, evidence is pushed to Sprinto for tenants that enable it; failures are retried and logged; tenants without Sprinto enabled are unaffected."` with the calculated number and short-name:
+      - Pass `--number N+1` and `--short-name "your-short-name"` along with the feature description
+      - Bash example: `.specify/scripts/bash/create-new-feature.sh --json "Integrate with Sprinto to automatically upload training evidence via API for a configured workflow check.
+The integration must be pluggable so other providers (Drata/Vanta) can be added later without rewriting core logic.
+The integration must be configured via YAML/JSON per tenant and must record success/failure and retries.
+Acceptance criteria: On training completion, evidence is pushed to Sprinto for tenants that enable it; failures are retried and logged; tenants without Sprinto enabled are unaffected." --json --number 5 --short-name "user-auth" "Add user authentication"`
+      - PowerShell example: `.specify/scripts/bash/create-new-feature.sh --json "Integrate with Sprinto to automatically upload training evidence via API for a configured workflow check.
+The integration must be pluggable so other providers (Drata/Vanta) can be added later without rewriting core logic.
+The integration must be configured via YAML/JSON per tenant and must record success/failure and retries.
+Acceptance criteria: On training completion, evidence is pushed to Sprinto for tenants that enable it; failures are retried and logged; tenants without Sprinto enabled are unaffected." -Json -Number 5 -ShortName "user-auth" "Add user authentication"`
+
+   **IMPORTANT**:
+   - Check all three sources (remote branches, local branches, specs directories) to find the highest number
+   - Only match branches/directories with the exact short-name pattern
+   - If no existing branches/directories found with this short-name, start with number 1
+   - You must only ever run this script once per feature
+   - The JSON is provided in the terminal as output - always refer to it to get the actual content you're looking for
+   - The JSON output will contain BRANCH_NAME and SPEC_FILE paths
+   - For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot")
+
+3. Load `.specify/templates/spec-template.md` to understand required sections.
+
+4. Follow this execution flow:
+
+    1. Parse user description from Input
+       If empty: ERROR "No feature description provided"
+    2. Extract key concepts from description
+       Identify: actors, actions, data, constraints
+    3. For unclear aspects:
+       - Make informed guesses based on context and industry standards
+       - Only mark with [NEEDS CLARIFICATION: specific question] if:
+         - The choice significantly impacts feature scope or user experience
+         - Multiple reasonable interpretations exist with different implications
+         - No reasonable default exists
+       - **LIMIT: Maximum 3 [NEEDS CLARIFICATION] markers total**
+       - Prioritize clarifications by impact: scope > security/privacy > user experience > technical details
+    4. Fill User Scenarios & Testing section
+       If no clear user flow: ERROR "Cannot determine user scenarios"
+    5. Generate Functional Requirements
+       Each requirement must be testable
+       Use reasonable defaults for unspecified details (document assumptions in Assumptions section)
+    6. Define Success Criteria
+       Create measurable, technology-agnostic outcomes
+       Include both quantitative metrics (time, performance, volume) and qualitative measures (user satisfaction, task completion)
+       Each criterion must be verifiable without implementation details
+    7. Identify Key Entities (if data involved)
+    8. Return: SUCCESS (spec ready for planning)
+
+5. Write the specification to SPEC_FILE using the template structure, replacing placeholders with concrete details derived from the feature description (arguments) while preserving section order and headings.
+
+6. **Specification Quality Validation**: After writing the initial spec, validate it against quality criteria:
+
+   a. **Create Spec Quality Checklist**: Generate a checklist file at `FEATURE_DIR/checklists/requirements.md` using the checklist template structure with these validation items:
+
+      ```markdown
+      # Specification Quality Checklist: [FEATURE NAME]
+      
+      **Purpose**: Validate specification completeness and quality before proceeding to planning
+      **Created**: [DATE]
+      **Feature**: [Link to spec.md]
+      
+      ## Content Quality
+      
+      - [ ] No implementation details (languages, frameworks, APIs)
+      - [ ] Focused on user value and business needs
+      - [ ] Written for non-technical stakeholders
+      - [ ] All mandatory sections completed
+      
+      ## Requirement Completeness
+      
+      - [ ] No [NEEDS CLARIFICATION] markers remain
+      - [ ] Requirements are testable and unambiguous
+      - [ ] Success criteria are measurable
+      - [ ] Success criteria are technology-agnostic (no implementation details)
+      - [ ] All acceptance scenarios are defined
+      - [ ] Edge cases are identified
+      - [ ] Scope is clearly bounded
+      - [ ] Dependencies and assumptions identified
+      
+      ## Feature Readiness
+      
+      - [ ] All functional requirements have clear acceptance criteria
+      - [ ] User scenarios cover primary flows
+      - [ ] Feature meets measurable outcomes defined in Success Criteria
+      - [ ] No implementation details leak into specification
+      
+      ## Notes
+      
+      - Items marked incomplete require spec updates before `/speckit.clarify` or `/speckit.plan`
+      ```
+
+   b. **Run Validation Check**: Review the spec against each checklist item:
+      - For each item, determine if it passes or fails
+      - Document specific issues found (quote relevant spec sections)
+
+   c. **Handle Validation Results**:
+
+      - **If all items pass**: Mark checklist complete and proceed to step 6
+
+      - **If items fail (excluding [NEEDS CLARIFICATION])**:
+        1. List the failing items and specific issues
+        2. Update the spec to address each issue
+        3. Re-run validation until all items pass (max 3 iterations)
+        4. If still failing after 3 iterations, document remaining issues in checklist notes and warn user
+
+      - **If [NEEDS CLARIFICATION] markers remain**:
+        1. Extract all [NEEDS CLARIFICATION: ...] markers from the spec
+        2. **LIMIT CHECK**: If more than 3 markers exist, keep only the 3 most critical (by scope/security/UX impact) and make informed guesses for the rest
+        3. For each clarification needed (max 3), present options to user in this format:
+
+           ```markdown
+           ## Question [N]: [Topic]
+           
+           **Context**: [Quote relevant spec section]
+           
+           **What we need to know**: [Specific question from NEEDS CLARIFICATION marker]
+           
+           **Suggested Answers**:
+           
+           | Option | Answer | Implications |
+           |--------|--------|--------------|
+           | A      | [First suggested answer] | [What this means for the feature] |
+           | B      | [Second suggested answer] | [What this means for the feature] |
+           | C      | [Third suggested answer] | [What this means for the feature] |
+           | Custom | Provide your own answer | [Explain how to provide custom input] |
+           
+           **Your choice**: _[Wait for user response]_
+           ```
+
+        4. **CRITICAL - Table Formatting**: Ensure markdown tables are properly formatted:
+           - Use consistent spacing with pipes aligned
+           - Each cell should have spaces around content: `| Content |` not `|Content|`
+           - Header separator must have at least 3 dashes: `|--------|`
+           - Test that the table renders correctly in markdown preview
+        5. Number questions sequentially (Q1, Q2, Q3 - max 3 total)
+        6. Present all questions together before waiting for responses
+        7. Wait for user to respond with their choices for all questions (e.g., "Q1: A, Q2: Custom - [details], Q3: B")
+        8. Update the spec by replacing each [NEEDS CLARIFICATION] marker with the user's selected or provided answer
+        9. Re-run validation after all clarifications are resolved
+
+   d. **Update Checklist**: After each validation iteration, update the checklist file with current pass/fail status
+
+7. Report completion with branch name, spec file path, checklist results, and readiness for the next phase (`/speckit.clarify` or `/speckit.plan`).
+
+**NOTE:** The script creates and checks out the new branch and initializes the spec file before writing.
+
+## General Guidelines
+
+## Quick Guidelines
+
+- Focus on **WHAT** users need and **WHY**.
+- Avoid HOW to implement (no tech stack, APIs, code structure).
+- Written for business stakeholders, not developers.
+- DO NOT create any checklists that are embedded in the spec. That will be a separate command.
+
+### Section Requirements
+
+- **Mandatory sections**: Must be completed for every feature
+- **Optional sections**: Include only when relevant to the feature
+- When a section doesn't apply, remove it entirely (don't leave as "N/A")
+
+### For AI Generation
+
+When creating this spec from a user prompt:
+
+1. **Make informed guesses**: Use context, industry standards, and common patterns to fill gaps
+2. **Document assumptions**: Record reasonable defaults in the Assumptions section
+3. **Limit clarifications**: Maximum 3 [NEEDS CLARIFICATION] markers - use only for critical decisions that:
+   - Significantly impact feature scope or user experience
+   - Have multiple reasonable interpretations with different implications
+   - Lack any reasonable default
+4. **Prioritize clarifications**: scope > security/privacy > user experience > technical details
+5. **Think like a tester**: Every vague requirement should fail the "testable and unambiguous" checklist item
+6. **Common areas needing clarification** (only if no reasonable default exists):
+   - Feature scope and boundaries (include/exclude specific use cases)
+   - User types and permissions (if multiple conflicting interpretations possible)
+   - Security/compliance requirements (when legally/financially significant)
+
+**Examples of reasonable defaults** (don't ask about these):
+
+- Data retention: Industry-standard practices for the domain
+- Performance targets: Standard web/mobile app expectations unless specified
+- Error handling: User-friendly messages with appropriate fallbacks
+- Authentication method: Standard session-based or OAuth2 for web apps
+- Integration patterns: RESTful APIs unless specified otherwise
+
+### Success Criteria Guidelines
+
+Success criteria must be:
+
+1. **Measurable**: Include specific metrics (time, percentage, count, rate)
+2. **Technology-agnostic**: No mention of frameworks, languages, databases, or tools
+3. **User-focused**: Describe outcomes from user/business perspective, not system internals
+4. **Verifiable**: Can be tested/validated without knowing implementation details
+
+**Good examples**:
+
+- "Users can complete checkout in under 3 minutes"
+- "System supports 10,000 concurrent users"
+- "95% of searches return results in under 1 second"
+- "Task completion rate improves by 40%"
+
+**Bad examples** (implementation-focused):
+
+- "API response time is under 200ms" (too technical, use "Users see results instantly")
+- "Database can handle 1000 TPS" (implementation detail, use user-facing metric)
+- "React components render efficiently" (framework-specific)
+- "Redis cache hit rate above 80%" (technology-specific)
+
+---
+
+## User Input
+
+```text
+
+```
+
+You **MUST** consider the user input before proceeding (if not empty).
+
+## Outline
+
+Goal: Detect and reduce ambiguity or missing decision points in the active feature specification and record the clarifications directly in the spec file.
+
+Note: This clarification workflow is expected to run (and be completed) BEFORE invoking `/speckit.plan`. If the user explicitly states they are skipping clarification (e.g., exploratory spike), you may proceed, but must warn that downstream rework risk increases.
+
+Execution steps:
+
+1. Run `.specify/scripts/bash/check-prerequisites.sh --json --paths-only` from repo root **once** (combined `--json --paths-only` mode / `-Json -PathsOnly`). Parse minimal JSON payload fields:
+   - `FEATURE_DIR`
+   - `FEATURE_SPEC`
+   - (Optionally capture `IMPL_PLAN`, `TASKS` for future chained flows.)
+   - If JSON parsing fails, abort and instruct user to re-run `/speckit.specify` or verify feature branch environment.
+   - For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+
+2. Load the current spec file. Perform a structured ambiguity & coverage scan using this taxonomy. For each category, mark status: Clear / Partial / Missing. Produce an internal coverage map used for prioritization (do not output raw map unless no questions will be asked).
+
+   Functional Scope & Behavior:
+   - Core user goals & success criteria
+   - Explicit out-of-scope declarations
+   - User roles / personas differentiation
+
+   Domain & Data Model:
+   - Entities, attributes, relationships
+   - Identity & uniqueness rules
+   - Lifecycle/state transitions
+   - Data volume / scale assumptions
+
+   Interaction & UX Flow:
+   - Critical user journeys / sequences
+   - Error/empty/loading states
+   - Accessibility or localization notes
+
+   Non-Functional Quality Attributes:
+   - Performance (latency, throughput targets)
+   - Scalability (horizontal/vertical, limits)
+   - Reliability & availability (uptime, recovery expectations)
+   - Observability (logging, metrics, tracing signals)
+   - Security & privacy (authN/Z, data protection, threat assumptions)
+   - Compliance / regulatory constraints (if any)
+
+   Integration & External Dependencies:
+   - External services/APIs and failure modes
+   - Data import/export formats
+   - Protocol/versioning assumptions
+
+   Edge Cases & Failure Handling:
+   - Negative scenarios
+   - Rate limiting / throttling
+   - Conflict resolution (e.g., concurrent edits)
+
+   Constraints & Tradeoffs:
+   - Technical constraints (language, storage, hosting)
+   - Explicit tradeoffs or rejected alternatives
+
+   Terminology & Consistency:
+   - Canonical glossary terms
+   - Avoided synonyms / deprecated terms
+
+   Completion Signals:
+   - Acceptance criteria testability
+   - Measurable Definition of Done style indicators
+
+   Misc / Placeholders:
+   - TODO markers / unresolved decisions
+   - Ambiguous adjectives ("robust", "intuitive") lacking quantification
+
+   For each category with Partial or Missing status, add a candidate question opportunity unless:
+   - Clarification would not materially change implementation or validation strategy
+   - Information is better deferred to planning phase (note internally)
+
+3. Generate (internally) a prioritized queue of candidate clarification questions (maximum 5). Do NOT output them all at once. Apply these constraints:
+    - Maximum of 10 total questions across the whole session.
+    - Each question must be answerable with EITHER:
+       - A short multiple‑choice selection (2–5 distinct, mutually exclusive options), OR
+       - A one-word / short‑phrase answer (explicitly constrain: "Answer in <=5 words").
+    - Only include questions whose answers materially impact architecture, data modeling, task decomposition, test design, UX behavior, operational readiness, or compliance validation.
+    - Ensure category coverage balance: attempt to cover the highest impact unresolved categories first; avoid asking two low-impact questions when a single high-impact area (e.g., security posture) is unresolved.
+    - Exclude questions already answered, trivial stylistic preferences, or plan-level execution details (unless blocking correctness).
+    - Favor clarifications that reduce downstream rework risk or prevent misaligned acceptance tests.
+    - If more than 5 categories remain unresolved, select the top 5 by (Impact * Uncertainty) heuristic.
+
+4. Sequential questioning loop (interactive):
+    - Present EXACTLY ONE question at a time.
+    - For multiple‑choice questions:
+       - **Analyze all options** and determine the **most suitable option** based on:
+          - Best practices for the project type
+          - Common patterns in similar implementations
+          - Risk reduction (security, performance, maintainability)
+          - Alignment with any explicit project goals or constraints visible in the spec
+       - Present your **recommended option prominently** at the top with clear reasoning (1-2 sentences explaining why this is the best choice).
+       - Format as: `**Recommended:** Option [X] - <reasoning>`
+       - Then render all options as a Markdown table:
+
+       | Option | Description |
+       |--------|-------------|
+       | A | <Option A description> |
+       | B | <Option B description> |
+       | C | <Option C description> (add D/E as needed up to 5) |
+       | Short | Provide a different short answer (<=5 words) (Include only if free-form alternative is appropriate) |
+
+       - After the table, add: `You can reply with the option letter (e.g., "A"), accept the recommendation by saying "yes" or "recommended", or provide your own short answer.`
+    - For short‑answer style (no meaningful discrete options):
+       - Provide your **suggested answer** based on best practices and context.
+       - Format as: `**Suggested:** <your proposed answer> - <brief reasoning>`
+       - Then output: `Format: Short answer (<=5 words). You can accept the suggestion by saying "yes" or "suggested", or provide your own answer.`
+    - After the user answers:
+       - If the user replies with "yes", "recommended", or "suggested", use your previously stated recommendation/suggestion as the answer.
+       - Otherwise, validate the answer maps to one option or fits the <=5 word constraint.
+       - If ambiguous, ask for a quick disambiguation (count still belongs to same question; do not advance).
+       - Once satisfactory, record it in working memory (do not yet write to disk) and move to the next queued question.
+    - Stop asking further questions when:
+       - All critical ambiguities resolved early (remaining queued items become unnecessary), OR
+       - User signals completion ("done", "good", "no more"), OR
+       - You reach 5 asked questions.
+    - Never reveal future queued questions in advance.
+    - If no valid questions exist at start, immediately report no critical ambiguities.
+
+5. Integration after EACH accepted answer (incremental update approach):
+    - Maintain in-memory representation of the spec (loaded once at start) plus the raw file contents.
+    - For the first integrated answer in this session:
+       - Ensure a `## Clarifications` section exists (create it just after the highest-level contextual/overview section per the spec template if missing).
+       - Under it, create (if not present) a `### Session YYYY-MM-DD` subheading for today.
+    - Append a bullet line immediately after acceptance: `- Q: <question> → A: <final answer>`.
+    - Then immediately apply the clarification to the most appropriate section(s):
+       - Functional ambiguity → Update or add a bullet in Functional Requirements.
+       - User interaction / actor distinction → Update User Stories or Actors subsection (if present) with clarified role, constraint, or scenario.
+       - Data shape / entities → Update Data Model (add fields, types, relationships) preserving ordering; note added constraints succinctly.
+       - Non-functional constraint → Add/modify measurable criteria in Non-Functional / Quality Attributes section (convert vague adjective to metric or explicit target).
+       - Edge case / negative flow → Add a new bullet under Edge Cases / Error Handling (or create such subsection if template provides placeholder for it).
+       - Terminology conflict → Normalize term across spec; retain original only if necessary by adding `(formerly referred to as "X")` once.
+    - If the clarification invalidates an earlier ambiguous statement, replace that statement instead of duplicating; leave no obsolete contradictory text.
+    - Save the spec file AFTER each integration to minimize risk of context loss (atomic overwrite).
+    - Preserve formatting: do not reorder unrelated sections; keep heading hierarchy intact.
+    - Keep each inserted clarification minimal and testable (avoid narrative drift).
+
+6. Validation (performed after EACH write plus final pass):
+   - Clarifications session contains exactly one bullet per accepted answer (no duplicates).
+   - Total asked (accepted) questions ≤ 5.
+   - Updated sections contain no lingering vague placeholders the new answer was meant to resolve.
+   - No contradictory earlier statement remains (scan for now-invalid alternative choices removed).
+   - Markdown structure valid; only allowed new headings: `## Clarifications`, `### Session YYYY-MM-DD`.
+   - Terminology consistency: same canonical term used across all updated sections.
+
+7. Write the updated spec back to `FEATURE_SPEC`.
+
+8. Report completion (after questioning loop ends or early termination):
+   - Number of questions asked & answered.
+   - Path to updated spec.
+   - Sections touched (list names).
+   - Coverage summary table listing each taxonomy category with Status: Resolved (was Partial/Missing and addressed), Deferred (exceeds question quota or better suited for planning), Clear (already sufficient), Outstanding (still Partial/Missing but low impact).
+   - If any Outstanding or Deferred remain, recommend whether to proceed to `/speckit.plan` or run `/speckit.clarify` again later post-plan.
+   - Suggested next command.
+
+Behavior rules:
+
+- If no meaningful ambiguities found (or all potential questions would be low-impact), respond: "No critical ambiguities detected worth formal clarification." and suggest proceeding.
+- If spec file missing, instruct user to run `/speckit.specify` first (do not create a new spec here).
+- Never exceed 5 total asked questions (clarification retries for a single question do not count as new questions).
+- Avoid speculative tech stack questions unless the absence blocks functional clarity.
+- Respect user early termination signals ("stop", "done", "proceed").
+- If no questions asked due to full coverage, output a compact coverage summary (all categories Clear) then suggest advancing.
+- If quota reached with unresolved high-impact categories remaining, explicitly flag them under Deferred with rationale.
+
+Context for prioritization:
+
+---
+
+B
+
+---
+
+## User Input
+
+```text
+
+```
+
+You **MUST** consider the user input before proceeding (if not empty).
+
+## Outline
+
+1. **Setup**: Run `.specify/scripts/bash/setup-plan.sh --json` from repo root and parse JSON for FEATURE_SPEC, IMPL_PLAN, SPECS_DIR, BRANCH. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+
+2. **Load context**: Read FEATURE_SPEC and `.specify/memory/constitution.md`. Load IMPL_PLAN template (already copied).
+
+3. **Execute plan workflow**: Follow the structure in IMPL_PLAN template to:
+   - Fill Technical Context (mark unknowns as "NEEDS CLARIFICATION")
+   - Fill Constitution Check section from constitution
+   - Evaluate gates (ERROR if violations unjustified)
+   - Phase 0: Generate research.md (resolve all NEEDS CLARIFICATION)
+   - Phase 1: Generate data-model.md, contracts/, quickstart.md
+   - Phase 1: Update agent context by running the agent script
+   - Re-evaluate Constitution Check post-design
+
+4. **Stop and report**: Command ends after Phase 2 planning. Report branch, IMPL_PLAN path, and generated artifacts.
+
+## Phases
+
+### Phase 0: Outline & Research
+
+1. **Extract unknowns from Technical Context** above:
+   - For each NEEDS CLARIFICATION → research task
+   - For each dependency → best practices task
+   - For each integration → patterns task
+
+2. **Generate and dispatch research agents**:
+
+   ```text
+   For each unknown in Technical Context:
+     Task: "Research {unknown} for {feature context}"
+   For each technology choice:
+     Task: "Find best practices for {tech} in {domain}"
+   ```
+
+3. **Consolidate findings** in `research.md` using format:
+   - Decision: [what was chosen]
+   - Rationale: [why chosen]
+   - Alternatives considered: [what else evaluated]
+
+**Output**: research.md with all NEEDS CLARIFICATION resolved
+
+### Phase 1: Design & Contracts
+
+**Prerequisites:** `research.md` complete
+
+1. **Extract entities from feature spec** → `data-model.md`:
+   - Entity name, fields, relationships
+   - Validation rules from requirements
+   - State transitions if applicable
+
+2. **Generate API contracts** from functional requirements:
+   - For each user action → endpoint
+   - Use standard REST/GraphQL patterns
+   - Output OpenAPI/GraphQL schema to `/contracts/`
+
+3. **Agent context update**:
+   - Run `.specify/scripts/bash/update-agent-context.sh claude`
+   - These scripts detect which AI agent is in use
+   - Update the appropriate agent-specific context file
+   - Add only new technology from current plan
+   - Preserve manual additions between markers
+
+**Output**: data-model.md, /contracts/*, quickstart.md, agent-specific file
+
+## Key rules
+
+- Use absolute paths
+- ERROR on gate failures or unresolved clarifications
+
+---
+
+1
+
+---
+
+## User Input
+
+```text
+
+```
+
+You **MUST** consider the user input before proceeding (if not empty).
+
+## Outline
+
+1. **Setup**: Run `.specify/scripts/bash/check-prerequisites.sh --json` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+
+2. **Load design documents**: Read from FEATURE_DIR:
+   - **Required**: plan.md (tech stack, libraries, structure), spec.md (user stories with priorities)
+   - **Optional**: data-model.md (entities), contracts/ (API endpoints), research.md (decisions), quickstart.md (test scenarios)
+   - Note: Not all projects have all documents. Generate tasks based on what's available.
+
+3. **Execute task generation workflow**:
+   - Load plan.md and extract tech stack, libraries, project structure
+   - Load spec.md and extract user stories with their priorities (P1, P2, P3, etc.)
+   - If data-model.md exists: Extract entities and map to user stories
+   - If contracts/ exists: Map endpoints to user stories
+   - If research.md exists: Extract decisions for setup tasks
+   - Generate tasks organized by user story (see Task Generation Rules below)
+   - Generate dependency graph showing user story completion order
+   - Create parallel execution examples per user story
+   - Validate task completeness (each user story has all needed tasks, independently testable)
+
+4. **Generate tasks.md**: Use `.specify/templates/tasks-template.md` as structure, fill with:
+   - Correct feature name from plan.md
+   - Phase 1: Setup tasks (project initialization)
+   - Phase 2: Foundational tasks (blocking prerequisites for all user stories)
+   - Phase 3+: One phase per user story (in priority order from spec.md)
+   - Each phase includes: story goal, independent test criteria, tests (if requested), implementation tasks
+   - Final Phase: Polish & cross-cutting concerns
+   - All tasks must follow the strict checklist format (see Task Generation Rules below)
+   - Clear file paths for each task
+   - Dependencies section showing story completion order
+   - Parallel execution examples per story
+   - Implementation strategy section (MVP first, incremental delivery)
+
+5. **Report**: Output path to generated tasks.md and summary:
+   - Total task count
+   - Task count per user story
+   - Parallel opportunities identified
+   - Independent test criteria for each story
+   - Suggested MVP scope (typically just User Story 1)
+   - Format validation: Confirm ALL tasks follow the checklist format (checkbox, ID, labels, file paths)
+
+Context for task generation: 
+
+The tasks.md should be immediately executable - each task must be specific enough that an LLM can complete it without additional context.
+
+## Task Generation Rules
+
+**CRITICAL**: Tasks MUST be organized by user story to enable independent implementation and testing.
+
+**Tests are OPTIONAL**: Only generate test tasks if explicitly requested in the feature specification or if user requests TDD approach.
+
+### Checklist Format (REQUIRED)
+
+Every task MUST strictly follow this format:
+
+```text
+- [ ] [TaskID] [P?] [Story?] Description with file path
+```
+
+**Format Components**:
+
+1. **Checkbox**: ALWAYS start with `- [ ]` (markdown checkbox)
+2. **Task ID**: Sequential number (T001, T002, T003...) in execution order
+3. **[P] marker**: Include ONLY if task is parallelizable (different files, no dependencies on incomplete tasks)
+4. **[Story] label**: REQUIRED for user story phase tasks only
+   - Format: [US1], [US2], [US3], etc. (maps to user stories from spec.md)
+   - Setup phase: NO story label
+   - Foundational phase: NO story label  
+   - User Story phases: MUST have story label
+   - Polish phase: NO story label
+5. **Description**: Clear action with exact file path
+
+**Examples**:
+
+- ✅ CORRECT: `- [ ] T001 Create project structure per implementation plan`
+- ✅ CORRECT: `- [ ] T005 [P] Implement authentication middleware in src/middleware/auth.py`
+- ✅ CORRECT: `- [ ] T012 [P] [US1] Create User model in src/models/user.py`
+- ✅ CORRECT: `- [ ] T014 [US1] Implement UserService in src/services/user_service.py`
+- ❌ WRONG: `- [ ] Create User model` (missing ID and Story label)
+- ❌ WRONG: `T001 [US1] Create model` (missing checkbox)
+- ❌ WRONG: `- [ ] [US1] Create User model` (missing Task ID)
+- ❌ WRONG: `- [ ] T001 [US1] Create model` (missing file path)
+
+### Task Organization
+
+1. **From User Stories (spec.md)** - PRIMARY ORGANIZATION:
+   - Each user story (P1, P2, P3...) gets its own phase
+   - Map all related components to their story:
+     - Models needed for that story
+     - Services needed for that story
+     - Endpoints/UI needed for that story
+     - If tests requested: Tests specific to that story
+   - Mark story dependencies (most stories should be independent)
+
+2. **From Contracts**:
+   - Map each contract/endpoint → to the user story it serves
+   - If tests requested: Each contract → contract test task [P] before implementation in that story's phase
+
+3. **From Data Model**:
+   - Map each entity to the user story(ies) that need it
+   - If entity serves multiple stories: Put in earliest story or Setup phase
+   - Relationships → service layer tasks in appropriate story phase
+
+4. **From Setup/Infrastructure**:
+   - Shared infrastructure → Setup phase (Phase 1)
+   - Foundational/blocking tasks → Foundational phase (Phase 2)
+   - Story-specific setup → within that story's phase
+
+### Phase Structure
+
+- **Phase 1**: Setup (project initialization)
+- **Phase 2**: Foundational (blocking prerequisites - MUST complete before user stories)
+- **Phase 3+**: User Stories in priority order (P1, P2, P3...)
+  - Within each story: Tests (if requested) → Models → Services → Endpoints → Integration
+  - Each phase should be a complete, independently testable increment
+- **Final Phase**: Polish & Cross-Cutting Concerns
+
+---
+
+## User Input
+
+```text
+
+```
+
+You **MUST** consider the user input before proceeding (if not empty).
+
+## Outline
+
+1. Run `.specify/scripts/bash/check-prerequisites.sh --json --require-tasks --include-tasks` from repo root and parse FEATURE_DIR and AVAILABLE_DOCS list. All paths must be absolute. For single quotes in args like "I'm Groot", use escape syntax: e.g 'I'\''m Groot' (or double-quote if possible: "I'm Groot").
+
+2. **Check checklists status** (if FEATURE_DIR/checklists/ exists):
+   - Scan all checklist files in the checklists/ directory
+   - For each checklist, count:
+     - Total items: All lines matching `- [ ]` or `- [X]` or `- [x]`
+     - Completed items: Lines matching `- [X]` or `- [x]`
+     - Incomplete items: Lines matching `- [ ]`
+   - Create a status table:
+
+     ```text
+     | Checklist | Total | Completed | Incomplete | Status |
+     |-----------|-------|-----------|------------|--------|
+     | ux.md     | 12    | 12        | 0          | ✓ PASS |
+     | test.md   | 8     | 5         | 3          | ✗ FAIL |
+     | security.md | 6   | 6         | 0          | ✓ PASS |
+     ```
+
+   - Calculate overall status:
+     - **PASS**: All checklists have 0 incomplete items
+     - **FAIL**: One or more checklists have incomplete items
+
+   - **If any checklist is incomplete**:
+     - Display the table with incomplete item counts
+     - **STOP** and ask: "Some checklists are incomplete. Do you want to proceed with implementation anyway? (yes/no)"
+     - Wait for user response before continuing
+     - If user says "no" or "wait" or "stop", halt execution
+     - If user says "yes" or "proceed" or "continue", proceed to step 3
+
+   - **If all checklists are complete**:
+     - Display the table showing all checklists passed
+     - Automatically proceed to step 3
+
+3. Load and analyze the implementation context:
+   - **REQUIRED**: Read tasks.md for the complete task list and execution plan
+   - **REQUIRED**: Read plan.md for tech stack, architecture, and file structure
+   - **IF EXISTS**: Read data-model.md for entities and relationships
+   - **IF EXISTS**: Read contracts/ for API specifications and test requirements
+   - **IF EXISTS**: Read research.md for technical decisions and constraints
+   - **IF EXISTS**: Read quickstart.md for integration scenarios
+
+4. **Project Setup Verification**:
+   - **REQUIRED**: Create/verify ignore files based on actual project setup:
+
+   **Detection & Creation Logic**:
+   - Check if the following command succeeds to determine if the repository is a git repo (create/verify .gitignore if so):
+
+     ```sh
+     git rev-parse --git-dir 2>/dev/null
+     ```
+
+   - Check if Dockerfile* exists or Docker in plan.md → create/verify .dockerignore
+   - Check if .eslintrc* exists → create/verify .eslintignore
+   - Check if eslint.config.* exists → ensure the config's `ignores` entries cover required patterns
+   - Check if .prettierrc* exists → create/verify .prettierignore
+   - Check if .npmrc or package.json exists → create/verify .npmignore (if publishing)
+   - Check if terraform files (*.tf) exist → create/verify .terraformignore
+   - Check if .helmignore needed (helm charts present) → create/verify .helmignore
+
+   **If ignore file already exists**: Verify it contains essential patterns, append missing critical patterns only
+   **If ignore file missing**: Create with full pattern set for detected technology
+
+   **Common Patterns by Technology** (from plan.md tech stack):
+   - **Node.js/JavaScript/TypeScript**: `node_modules/`, `dist/`, `build/`, `*.log`, `.env*`
+   - **Python**: `__pycache__/`, `*.pyc`, `.venv/`, `venv/`, `dist/`, `*.egg-info/`
+   - **Java**: `target/`, `*.class`, `*.jar`, `.gradle/`, `build/`
+   - **C#/.NET**: `bin/`, `obj/`, `*.user`, `*.suo`, `packages/`
+   - **Go**: `*.exe`, `*.test`, `vendor/`, `*.out`
+   - **Ruby**: `.bundle/`, `log/`, `tmp/`, `*.gem`, `vendor/bundle/`
+   - **PHP**: `vendor/`, `*.log`, `*.cache`, `*.env`
+   - **Rust**: `target/`, `debug/`, `release/`, `*.rs.bk`, `*.rlib`, `*.prof*`, `.idea/`, `*.log`, `.env*`
+   - **Kotlin**: `build/`, `out/`, `.gradle/`, `.idea/`, `*.class`, `*.jar`, `*.iml`, `*.log`, `.env*`
+   - **C++**: `build/`, `bin/`, `obj/`, `out/`, `*.o`, `*.so`, `*.a`, `*.exe`, `*.dll`, `.idea/`, `*.log`, `.env*`
+   - **C**: `build/`, `bin/`, `obj/`, `out/`, `*.o`, `*.a`, `*.so`, `*.exe`, `Makefile`, `config.log`, `.idea/`, `*.log`, `.env*`
+   - **Swift**: `.build/`, `DerivedData/`, `*.swiftpm/`, `Packages/`
+   - **R**: `.Rproj.user/`, `.Rhistory`, `.RData`, `.Ruserdata`, `*.Rproj`, `packrat/`, `renv/`
+   - **Universal**: `.DS_Store`, `Thumbs.db`, `*.tmp`, `*.swp`, `.vscode/`, `.idea/`
+
+   **Tool-Specific Patterns**:
+   - **Docker**: `node_modules/`, `.git/`, `Dockerfile*`, `.dockerignore`, `*.log*`, `.env*`, `coverage/`
+   - **ESLint**: `node_modules/`, `dist/`, `build/`, `coverage/`, `*.min.js`
+   - **Prettier**: `node_modules/`, `dist/`, `build/`, `coverage/`, `package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`
+   - **Terraform**: `.terraform/`, `*.tfstate*`, `*.tfvars`, `.terraform.lock.hcl`
+   - **Kubernetes/k8s**: `*.secret.yaml`, `secrets/`, `.kube/`, `kubeconfig*`, `*.key`, `*.crt`
+
+5. Parse tasks.md structure and extract:
+   - **Task phases**: Setup, Tests, Core, Integration, Polish
+   - **Task dependencies**: Sequential vs parallel execution rules
+   - **Task details**: ID, description, file paths, parallel markers [P]
+   - **Execution flow**: Order and dependency requirements
+
+6. Execute implementation following the task plan:
+   - **Phase-by-phase execution**: Complete each phase before moving to the next
+   - **Respect dependencies**: Run sequential tasks in order, parallel tasks [P] can run together  
+   - **Follow TDD approach**: Execute test tasks before their corresponding implementation tasks
+   - **File-based coordination**: Tasks affecting the same files must run sequentially
+   - **Validation checkpoints**: Verify each phase completion before proceeding
+
+7. Implementation execution rules:
+   - **Setup first**: Initialize project structure, dependencies, configuration
+   - **Tests before code**: If you need to write tests for contracts, entities, and integration scenarios
+   - **Core development**: Implement models, services, CLI commands, endpoints
+   - **Integration work**: Database connections, middleware, logging, external services
+   - **Polish and validation**: Unit tests, performance optimization, documentation
+
+8. Progress tracking and error handling:
+   - Report progress after each completed task
+   - Halt execution if any non-parallel task fails
+   - For parallel tasks [P], continue with successful tasks, report failed ones
+   - Provide clear error messages with context for debugging
+   - Suggest next steps if implementation cannot proceed
+   - **IMPORTANT** For completed tasks, make sure to mark the task off as [X] in the tasks file.
+
+9. Completion validation:
+   - Verify all required tasks are completed
+   - Check that implemented features match the original specification
+   - Validate that tests pass and coverage meets requirements
+   - Confirm the implementation follows the technical plan
+   - Report final status with summary of completed work
+
+Note: This command assumes a complete task breakdown exists in tasks.md. If tasks are incomplete or missing, suggest running `/speckit.tasks` first to regenerate the task list.
+
+---
+
+This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.
+
+Analysis:
+Let me chronologically analyze the conversation:
+
+1. User invoked `/speckit.specify` with a feature description about integrating with Sprinto for evidence upload
+2. I generated feature branch 007-evidence-integration, wrote spec.md with 4 user stories, requirements, success criteria
+3. User invoked `/speckit.clarify` - I asked 1 question about retry execution model, user chose "B" (in-process retries)
+4. User invoked `/speckit.plan` - I researched Sprinto API (discovered it's GraphQL, not REST), explored codebase, generated plan.md, research.md, data-model.md, contracts/, quickstart.md
+5. User sent `/speckit.implement` while plan was running, then `/coderabbit:review` 
+6. I asked user whether to run `/speckit.tasks` first, user chose option "1"
+7. I ran `/speckit.tasks` generating 24 tasks across 7 phases
+8. Then proceeded to `/speckit.implement` - executing tasks phase by phase
+
+Current state: I was in Phase 7 (Polish) running type-check when errors were found. I need to fix 7 TypeScript errors before continuing.
+
+Key errors from `pnpm type-check`:
+1. `compliance` property not recognized on integrations type in route files and orchestrator (4 instances)
+2. Buffer not assignable to BlobPart in sprinto.ts
+3. RetryConfigSchema.optional().default({}) - empty object not valid default for Zod
+4. ComplianceUploadRecord doesn't satisfy Record<string, unknown> constraint in upload-repository.ts
+
+Let me trace through all the files created and modified.
+
+Summary:
+1. Primary Request and Intent:
+   The user invoked a series of speckit commands to design and implement a compliance evidence integration feature:
+   - `/speckit.specify` — Create a feature spec for integrating with Sprinto to automatically upload training evidence via API
+   - `/speckit.clarify` — Refine the spec (1 question asked: retry model → user chose "B" in-process retries)
+   - `/speckit.plan` — Generate implementation plan with research, data model, contracts
+   - `/speckit.tasks` → `/speckit.implement` — User chose option "1" to generate tasks then implement
+   - `/coderabbit:review` — User also requested this but it hasn't been addressed yet
+
+   The feature requirements: pluggable provider architecture (Sprinto first, Drata/Vanta later), per-tenant YAML config, record success/failure/retries, fire-and-forget from training completion flow.
+
+2. Key Technical Concepts:
+   - **Sprinto API is GraphQL** (not REST) — uses `UploadWorkflowCheckEvidence` mutation with multipart file upload (PDF)
+   - **GraphQL multipart request spec** — FormData with operations, map, and file parts
+   - **Regional endpoints**: us/eu/india for Sprinto
+   - **Auth**: `api-key` HTTP header (static API key)
+   - **In-process retries** with exponential backoff + jitter (not persistent queue)
+   - **ComplianceProvider interface** — pluggable adapter pattern matching existing architecture
+   - **StorageAdapter** — SQLite via better-sqlite3, new `compliance_uploads` collection
+   - **Fire-and-forget** pattern — dispatchUpload called after evidenceRepo.create() with `.catch()`
+   - **Tenant config schema** — `.strict()` Zod objects requiring explicit field additions
+   - **vi.hoisted() pattern** for mocks in Vitest tests
+   - **Apache 2.0 license headers** on all source files
+   - **Biome** for formatting (2-space indent, double quotes, semicolons)
+   - **.spec.ts** extension for test files (not .test.ts)
+   - **@/ alias** imports in route files, `.js` extension in src/ relative imports
+
+3. Files and Code Sections:
+
+   **NEW FILES CREATED:**
+
+   - `src/compliance/types.ts` — ComplianceProvider interface, UploadResult discriminated union, ComplianceProviderConfig, ComplianceUploadRecord types
+   
+   - `src/compliance/schemas.ts` — Zod schemas: ComplianceUploadSchema, RetryConfigSchema, ComplianceConfigSchema (provider enum, apiKeyRef with ${VAR} regex, workflowCheckId UUID, region enum)
+     - **HAS TYPE ERROR**: `retry: RetryConfigSchema.optional().default({})` — empty object doesn't satisfy the required defaults type
+   
+   - `src/compliance/upload-repository.ts` — ComplianceUploadRepository with create, findByEvidenceId, findById, update, listByTenant methods
+     - **HAS TYPE ERROR**: `ComplianceUploadRecord` uses readonly interface properties which doesn't satisfy `Record<string, unknown>` constraint on StorageAdapter.update()
+   
+   - `src/compliance/providers/sprinto.ts` — SprintoProvider implementing ComplianceProvider: getSprintoEndpoint(), GraphQL multipart upload, error classification (retryable vs non-retryable)
+     - **HAS TYPE ERROR**: `new Blob([pdfBuffer])` — Buffer not assignable to BlobPart
+   
+   - `src/compliance/orchestrator.ts` — dispatchUpload() function: checks tenant config, idempotency check, creates pending record, renders PDF, retry loop with exponential backoff + jitter, updates status
+     - **HAS TYPE ERROR**: `tenant?.settings?.integrations?.compliance` — TypeScript doesn't see `compliance` on the integrations type
+
+   - `config/tenants/example-sprinto.yaml.example` — Example tenant YAML with compliance config block
+   
+   - `tests/unit/compliance/config-validation.spec.ts` — 16 tests for ComplianceConfigSchema and TenantConfigSchema with compliance
+   - `tests/unit/compliance/sprinto-provider.spec.ts` — 21 tests for SprintoProvider (written by subagent)
+   - `tests/unit/compliance/orchestrator.spec.ts` — 12 tests for dispatchUpload (written by subagent)
+   - `tests/unit/compliance/upload-repository.spec.ts` — 18 tests for ComplianceUploadRepository (written by subagent)
+   - `tests/contract/compliance/provider-contract.spec.ts` — 7 contract tests (written by subagent)
+   - `tests/integration/compliance/evidence-upload.spec.ts` — 10 integration tests (written by subagent)
+   - `tests/integration/compliance/config-loading.spec.ts` — 3 integration tests for config loading with compliance fixtures
+   - `tests/fixtures/compliance/defaults.yaml` — Test fixture defaults
+   - `tests/fixtures/compliance/tenants/sprinto-enabled.yaml` — Fixture with compliance config
+   - `tests/fixtures/compliance/tenants/no-compliance.yaml` — Fixture without compliance
+
+   **MODIFIED FILES:**
+
+   - `src/config/schema.ts` — Added `import { ComplianceConfigSchema }` and added `compliance: ComplianceConfigSchema.optional()` to integrations object
+     ```typescript
+     integrations: z
+       .object({
+         webhookUrl: z.string().optional(),
+         ssoProvider: z.string().optional(),
+         compliance: ComplianceConfigSchema.optional(),
+       })
+       .strict()
+       .optional(),
+     ```
+     - **KEY ISSUE**: The TypeScript type inference doesn't propagate through to `Tenant.settings.integrations.compliance` because the type flows through config loading/snapshot. The 4 TS2339 errors about `compliance` not existing on the integrations type stem from this.
+
+   - `src/evidence/evidence-generator.ts` — Added import of `dispatchUpload` and fire-and-forget call after evidenceRepo.create():
+     ```typescript
+     import { dispatchUpload } from "../compliance/orchestrator.js";
+     // ... after line 140 (record creation):
+     dispatchUpload(tenantId, record.id, storage).catch((err) =>
+       console.error("Compliance upload dispatch failed:", err),
+     );
+     ```
+
+   - `app/api/training/[tenant]/evidence/route.ts` — Added compliance upload status to evidence list response (imports ComplianceUploadRepository, getSnapshot; looks up upload records per evidence item)
+
+   - `app/api/training/[tenant]/evidence/[sessionId]/route.ts` — Added compliance upload details to evidence detail response
+
+   - `.env.example` — Added Sprinto API key placeholder comments
+
+   **SPEC/PLAN FILES:**
+   - `specs/007-evidence-integration/spec.md` — Full feature spec with 4 user stories, clarifications section
+   - `specs/007-evidence-integration/plan.md` — Implementation plan with constitution check, project structure
+   - `specs/007-evidence-integration/research.md` — Sprinto API research (GraphQL, multipart, regional endpoints)
+   - `specs/007-evidence-integration/data-model.md` — ComplianceUpload entity, ComplianceIntegrationConfig
+   - `specs/007-evidence-integration/contracts/compliance-provider.ts` — Design artifact for provider interface
+   - `specs/007-evidence-integration/contracts/sprinto-graphql.md` — Sprinto API contract details
+   - `specs/007-evidence-integration/quickstart.md` — Setup guide
+   - `specs/007-evidence-integration/tasks.md` — 24 tasks across 7 phases (T001-T016 marked [x], T017-T024 pending)
+   - `specs/007-evidence-integration/checklists/requirements.md` — All 16 items passed
+
+4. Errors and fixes:
+   - **macOS grep -P not supported**: When finding feature branch numbers, used `sed -E` instead of `grep -P` (PCRE)
+   - **Biome lint errors in evidence-upload.spec.ts**: 
+     - `process.env["TEST_KEY"]` → fixed to `process.env.TEST_KEY` (useLiteralKeys)
+     - `delete process.env["TEST_KEY"]` → fixed to `process.env.TEST_KEY = undefined` (noDelete + useLiteralKeys)
+   - **TypeScript errors (7 total, UNFIXED)**:
+     1. `TS2339: Property 'compliance' does not exist on type '{ webhookUrl?: string | undefined; ssoProvider?: string | undefined; }'` — appears in 4 files (orchestrator.ts, both evidence route files). The tenant type inference doesn't include the new compliance field.
+     2. `TS2322: Type 'Buffer' is not assignable to type 'BlobPart'` in sprinto.ts line 161 — `new Blob([pdfBuffer])` incompatibility
+     3. `TS2769: No overload matches this call` in schemas.ts line 76 — `RetryConfigSchema.optional().default({})` empty object can't satisfy the default value type
+     4. `TS2344: Type 'ComplianceUploadRecord' does not satisfy constraint 'Record<string, unknown>'` in upload-repository.ts line 67 — readonly interface properties don't satisfy the Record constraint
+
+5. Problem Solving:
+   - Discovered Sprinto uses GraphQL (not REST as initially assumed in spec) — adapted the entire provider implementation
+   - Resolved the config schema extension approach: `.strict()` on integrations object requires adding the field to the Zod schema
+   - Chose to put the dispatch hook in `generateEvidenceForSession()` rather than the evaluate route for better separation of concerns
+   - Currently blocked on 7 TypeScript errors that need fixing before tests can run
+
+6. All user messages:
+   - `/speckit.specify Integrate with Sprinto to automatically upload training evidence via API for a configured workflow check...` (initial feature description with acceptance criteria)
+   - `/speckit.clarify` (no additional input)
+   - `B` (chose in-process retries for retry execution model)
+   - `/speckit.plan` (no additional input)
+   - `/speckit.implement` (sent while plan was running)
+   - `/coderabbit:review` (sent while plan was running)
+   - `1` (chose option 1: run /speckit.tasks first, then /speckit.implement)
+
+7. Pending Tasks:
+   - Fix 7 TypeScript errors from `pnpm type-check` (currently blocking)
+   - T017-T021: Mark test task checkboxes in tasks.md (tests written by subagents)
+   - T022: Biome formatting (partially done, need re-run after fixes)
+   - T023: Type-check pass (currently failing)
+   - T024: Run `pnpm test` to verify all tests pass
+   - Mark Phase 7 task as completed
+   - Address the `/coderabbit:review` command the user sent
+
+8. Current Work:
+   Executing Phase 7 (Polish) of `/speckit.implement`. Ran `pnpm type-check` (T023) which revealed 7 TypeScript errors that need fixing. The errors are in:
+   - `src/compliance/schemas.ts:76` — RetryConfigSchema default
+   - `src/compliance/upload-repository.ts:67` — Record constraint
+   - `src/compliance/providers/sprinto.ts:161` — Buffer/BlobPart
+   - `src/compliance/orchestrator.ts:105` — compliance property access
+   - `app/api/training/[tenant]/evidence/route.ts:74,103` — compliance property access
+   - `app/api/training/[tenant]/evidence/[sessionId]/route.ts:67` — compliance property access
+
+9. Optional Next Step:
+   Fix the 7 TypeScript errors from `pnpm type-check`. The specific fixes needed:
+   1. **schemas.ts**: Change `RetryConfigSchema.optional().default({})` to use a proper default with all required fields, e.g., `.default({ maxAttempts: 5, initialDelayMs: 5000, maxDelayMs: 300000 })`
+   2. **upload-repository.ts**: Cast or use type assertion for the `ComplianceUploadRecord` to satisfy `Record<string, unknown>` constraint on StorageAdapter.update()
+   3. **sprinto.ts**: Convert Buffer to Uint8Array before passing to Blob: `new Blob([new Uint8Array(pdfBuffer)])` 
+   4. **orchestrator.ts + route files (4 errors)**: Cast the compliance config access or use a type-safe approach. The issue is that `tenant?.settings?.integrations?.compliance` isn't recognized because the Tenant type flows through `ConfigSnapshot` which may not reflect the schema extension. May need to cast: `(tenant?.settings?.integrations as any)?.compliance`
+
+   After fixing these, run `pnpm type-check` again, then `pnpm test` (T024), then mark Phase 7 complete and address the `/coderabbit:review` command.
+
+If you need specific details from before compaction (like exact code snippets, error messages, or content you generated), read the full transcript at: /Users/thamsanqamoyo/.REDACTED.jsonl
+Please continue the conversation from where we left off without asking the user any further questions. Continue with the last task that you were asked to work on.
+
+---
+
+# CodeRabbit Code Review
+
+Run an AI-powered code review using CodeRabbit.
+
+## Context
+
+- Current directory: /Users/thamsanqamoyo/Documents/code/jem-open/jem-sec-attest
+- Git repo: true
+Yes
+- Branch: 007-evidence-integration
+- Has changes: Yes
+
+## Instructions
+
+Review code based on: ****
+
+### Prerequisites Check
+
+**Skip these checks if you already verified them earlier in this session.**
+
+Otherwise, run:
+
+```bash
+coderabbit --version 2>/dev/null && coderabbit auth status 2>&1 | head -3
+```
+
+**If CLI not found**, tell user:
+> CodeRabbit CLI is not installed. Run in your terminal:
+>
+> ```bash
+> curl -fsSL https://cli.coderabbit.ai/install.sh | sh
+> ```
+>
+> Then restart your shell and try again.
+
+**If "Not logged in"**, tell user:
+> You need to authenticate. Run in your terminal:
+>
+> ```bash
+> coderabbit auth login
+> ```
+>
+> Then try again.
+
+### Run Review
+
+Once prerequisites are met:
+
+```bash
+coderabbit review --plain -t <type>
+```
+
+Where `<type>` from ``:
+
+- `all` (default) - All changes
+- `committed` - Committed changes only
+- `uncommitted` - Uncommitted only
+
+Add `--base <branch>` if specified.
+
+### Present Results
+
+Group findings by severity:
+
+1. **Critical** - Security, bugs
+2. **Suggestions** - Improvements
+3. **Positive** - What's good
+
+Offer to apply fixes if `codegenInstructions` are present.
+
+---
+
+## Context
+
+- Current git status: On branch 007-evidence-integration
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   .env.example
+	modified:   CLAUDE.md
+	modified:   app/api/training/[tenant]/evidence/[sessionId]/route.ts
+	modified:   app/api/training/[tenant]/evidence/route.ts
+	modified:   src/config/schema.ts
+	modified:   src/evidence/evidence-generator.ts
+	modified:   src/tenant/types.ts
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	config/tenants/example-sprinto.yaml.example
+	nonexistent-session-id
+	specs/007-evidence-integration/
+	src/compliance/
+	tests/contract/compliance/
+	tests/fixtures/compliance/
+	tests/integration/compliance/
+	tests/unit/compliance/
+
+no changes added to commit (use "git add" and/or "git commit -a")
+- Current git diff (staged and unstaged changes): diff --git a/.env.example b/.env.example
+index ca2bd59..e1c5aad 100644
+--- a/.env.example
++++ b/.env.example
+@@ -18,6 +18,11 @@ REDACTED
+ # OPENAI_API_KEY=your-openai-api-key-here
+ # AZURE_OPENAI_API_KEY=your-azure-openai-api-key-here
+ 
++# Sprinto compliance integration API keys (per tenant, optional)
++# Required only for tenants with compliance.provider: "sprinto" in their YAML config.
++# REDACTED
++# REDACTED
++
+ # Vercel AI Gateway URL (optional, defaults to direct provider access)
+ # AI_GATEWAY_URL=https://ai-gateway.vercel.sh/v1
+ 
+diff --git a/CLAUDE.md b/CLAUDE.md
+index 7ce05a7..18e535b 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -93,9 +93,10 @@ Copy `.env.example` to `.env`. Required variables:
+ - **Tenant isolation** — every API route validates `[tenant]` param against loaded config; storage queries must filter by tenant
+ 
+ ## Recent Changes
++- 007-evidence-integration: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), pdfkit (existing), node `fetch` (native)
+ - 006-pdf-evidence-export: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), pdfkit (new), Zod v4.x
+ - 005-audit-evidence: Added audit-ready evidence generation subsystem with SHA-256 content hashing, canonical JSON serialization, and SQLite storage via "evidence" collection
+ 
+ ## Active Technologies
+-- TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), pdfkit (new), Zod v4.x (006-pdf-evidence-export)
+-- SQLite via `better-sqlite3` through `StorageAdapter` — read-only access for this feature (006-pdf-evidence-export)
++- TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), pdfkit (existing), node `fetch` (native) (007-evidence-integration)
++- SQLite via `better-sqlite3` through `StorageAdapter` interface — new `compliance_uploads` collection (007-evidence-integration)
+diff --git a/app/api/training/[tenant]/evidence/[sessionId]/route.ts b/app/api/training/[tenant]/evidence/[sessionId]/route.ts
+index 44786a1..5de6019 100644
+--- a/app/api/training/[tenant]/evidence/[sessionId]/route.ts
++++ b/app/api/training/[tenant]/evidence/[sessionId]/route.ts
+@@ -18,6 +18,8 @@
+  * Returns the training evidence record for a given session.
+  */
+ 
++import { ComplianceUploadRepository } from "@/compliance/upload-repository";
++import { getSnapshot } from "@/config/index";
+ import { EvidenceRepository } from "@/evidence/evidence-repository";
+ import { SQLiteAdapter } from "@/storage/sqlite-adapter";
+ import { NextResponse } from "next/server";
+@@ -59,7 +61,34 @@ export async function GET(
+       return NextResponse.json({ error: "forbidden", message: "Access denied" }, { status: 403 });
+     }
+ 
+-    return NextResponse.json(evidence, { status: 200 });
++    // Look up compliance upload status if tenant has compliance enabled
++    const snapshot = getSnapshot();
++    const tenant = snapshot?.tenants.get(tenantId);
++    const complianceProvider = tenant?.settings?.integrations?.compliance?.provider;
++    let complianceUpload = null;
++
++    if (complianceProvider) {
++      const uploadRepo = new ComplianceUploadRepository(storage);
++      const upload = await uploadRepo.findByEvidenceId(tenantId, evidence.id, complianceProvider);
++      if (upload) {
++        complianceUpload = {
++          id: upload.id,
++          provider: upload.provider,
++          status: upload.status,
++          attemptCount: upload.attemptCount,
++          maxAttempts: upload.maxAttempts,
++          providerReferenceId: upload.providerReferenceId,
++          lastError: upload.lastError,
++          lastErrorCode: upload.lastErrorCode,
++          retryable: upload.retryable,
++          createdAt: upload.createdAt,
++          updatedAt: upload.updatedAt,
++          completedAt: upload.completedAt,
++        };
++      }
++    }
++
++    return NextResponse.json({ ...evidence, complianceUpload }, { status: 200 });
+   } finally {
+     await storage.close();
+   }
+diff --git a/app/api/training/[tenant]/evidence/route.ts b/app/api/training/[tenant]/evidence/route.ts
+index 977de17..15f75d8 100644
+--- a/app/api/training/[tenant]/evidence/route.ts
++++ b/app/api/training/[tenant]/evidence/route.ts
+@@ -18,6 +18,8 @@
+  * Returns paginated evidence summaries for admin/compliance users.
+  */
+ 
++import { ComplianceUploadRepository } from "@/compliance/upload-repository";
++import { getSnapshot } from "@/config/index";
+ import { EvidenceRepository } from "@/evidence/evidence-repository";
+ import { SQLiteAdapter } from "@/storage/sqlite-adapter";
+ import { NextResponse } from "next/server";
+@@ -66,20 +68,56 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
+       offset,
+     });
+ 
+-    // Map to summary format (strip full evidence body)
+-    const summaries = items.map((item) => ({
+-      id: item.id,
+-      sessionId: item.sessionId,
+-      employeeId: item.employeeId,
+-      schemaVersion: item.schemaVersion,
+-      contentHash: item.contentHash,
+-      generatedAt: item.generatedAt,
+-      outcome: {
+-        status: item.evidence.session.status,
+-        aggregateScore: item.evidence.outcome.aggregateScore,
+-        passed: item.evidence.outcome.passed,
+-      },
+-    }));
++    // Check if tenant has compliance integration enabled
++    const snapshot = getSnapshot();
++    const tenant = snapshot?.tenants.get(tenantId);
++    const hasCompliance = !!tenant?.settings?.integrations?.compliance;
++
++    // Look up compliance upload status for each evidence item (only if compliance enabled)
++    const uploadRepo = hasCompliance ? new ComplianceUploadRepository(storage) : null;
++
++    const summaries = await Promise.all(
++      items.map(async (item) => {
++        const base = {
++          id: item.id,
++          sessionId: item.sessionId,
++          employeeId: item.employeeId,
++          schemaVersion: item.schemaVersion,
++          contentHash: item.contentHash,
++          generatedAt: item.generatedAt,
++          outcome: {
++            status: item.evidence.session.status,
++            aggregateScore: item.evidence.outcome.aggregateScore,
++            passed: item.evidence.outcome.passed,
++          },
++          complianceUpload: null as {
++            provider: string;
++            status: string;
++            attemptCount: number;
++            lastError: string | null;
++            completedAt: string | null;
++          } | null,
++        };
++
++        if (uploadRepo) {
++          const provider = tenant?.settings?.integrations?.compliance?.provider;
++          if (provider) {
++            const upload = await uploadRepo.findByEvidenceId(tenantId, item.id, provider);
++            if (upload) {
++              base.complianceUpload = {
++                provider: upload.provider,
++                status: upload.status,
++                attemptCount: upload.attemptCount,
++                lastError: upload.lastError,
++                completedAt: upload.completedAt,
++              };
++            }
++          }
++        }
++
++        return base;
++      }),
++    );
+ 
+     return NextResponse.json({ items: summaries, total, limit, offset }, { status: 200 });
+   } finally {
+diff --git a/src/config/schema.ts b/src/config/schema.ts
+index 051977d..a904163 100644
+--- a/src/config/schema.ts
++++ b/src/config/schema.ts
+@@ -18,6 +18,7 @@
+  */
+ 
+ import { z } from "zod";
++import { ComplianceConfigSchema } from "../compliance/schemas.js";
+ 
+ export const OIDCConfigSchema = z
+   .object({
+@@ -90,6 +91,7 @@ export const TenantSettingsSchema = z
+       .object({
+         webhookUrl: z.string().optional(),
+         ssoProvider: z.string().optional(),
++        compliance: ComplianceConfigSchema.optional(),
+       })
+       .strict()
+       .optional(),
+diff --git a/src/evidence/evidence-generator.ts b/src/evidence/evidence-generator.ts
+index f8ff921..bfa3d97 100644
+--- a/src/evidence/evidence-generator.ts
++++ b/src/evidence/evidence-generator.ts
+@@ -17,6 +17,7 @@
+  * from a completed (terminal) training session and its modules.
+  */
+ 
++import { dispatchUpload } from "../compliance/orchestrator.js";
+ import { getSnapshot } from "../config/index.js";
+ import { SQLiteAdapter } from "../storage/sqlite-adapter.js";
+ import type { TrainingModule, TrainingSession } from "../training/schemas.js";
+@@ -139,6 +140,17 @@ export async function generateEvidenceForSession(
+       generatedAt: new Date().toISOString(),
+     });
+ 
++    // 8. Dispatch compliance upload (fire-and-forget).
++    // Uses a dedicated storage connection so the caller's connection can close safely.
++    const uploadStorage = new SQLiteAdapter({
++      dbPath: dbPath ?? process.env.DB_PATH ?? "data/jem.db",
++    });
++    uploadStorage
++      .initialize()
++      .then(() => dispatchUpload(tenantId, record.id, uploadStorage))
++      .catch((err) => console.error("Compliance upload dispatch failed:", err))
++      .finally(() => uploadStorage.close());
++
+     return record;
+   } finally {
+     await storage.close();
+diff --git a/src/tenant/types.ts b/src/tenant/types.ts
+index dffb8e1..5492403 100644
+--- a/src/tenant/types.ts
++++ b/src/tenant/types.ts
+@@ -16,6 +16,8 @@
+  * Validated tenant configuration types.
+  */
+ 
++import type { ComplianceConfig } from "../compliance/schemas.js";
++
+ export interface TenantSettings {
+   branding?: {
+     logoUrl?: string;
+@@ -26,6 +28,7 @@ export interface TenantSettings {
+   integrations?: {
+     webhookUrl?: string;
+     ssoProvider?: string;
++    compliance?: ComplianceConfig;
+   };
+   retention?: {
+     days?: number;
+- Current branch: 007-evidence-integration
+
+## Your task
+
+Based on the above changes:
+
+1. Create a new branch if on main
+2. Create a single commit with an appropriate message
+3. Push the branch to origin
+4. Create a pull request using `gh pr create`
+5. You have the capability to call multiple tools in a single response. You MUST do all of the above in a single message. Do not use any other tools or do anything else. Do not send any other text or messages besides these tool calls.

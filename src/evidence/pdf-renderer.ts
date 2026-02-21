@@ -170,9 +170,10 @@ function renderModuleSummaryTable(doc: PDFKit.PDFDocument, evidence: TrainingEvi
   doc.font("Helvetica-Bold").fontSize(FONT_SIZE_SMALL);
   let x = startX;
   const headers: string[] = ["#", "Title", "Topic Area", "Score"];
+  const headerY = doc.y;
   for (let i = 0; i < headers.length; i++) {
     const w = colWidths[i] ?? 0;
-    doc.text(headers[i] ?? "", x, doc.y, { width: w, continued: false });
+    doc.text(headers[i] ?? "", x, headerY, { width: w, continued: false });
     x += w;
   }
   doc.moveDown(0.3);

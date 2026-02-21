@@ -48,7 +48,7 @@ Called from existing terminal state routes after the session transition succeeds
 
 ```typescript
 // In evaluate/route.ts, after session update succeeds:
-generateEvidenceForSession(storage, tenantId, sessionId).catch((err) =>
+generateEvidenceForSession(tenantId, sessionId).catch((err) =>
   console.error("Evidence generation failed:", err)
 );
 ```

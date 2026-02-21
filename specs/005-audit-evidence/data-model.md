@@ -52,8 +52,8 @@ The canonical payload within `TrainingEvidence.evidence`. All audit-relevant dat
 | `sessionId` | string (UUID) | Training session ID |
 | `employeeId` | string | Employee identifier |
 | `tenantId` | string | Tenant identifier |
-| `attemptNumber` | integer (1-3) | Which attempt this terminal state represents |
-| `totalAttempts` | integer (1-3) | Total attempts made (equals attemptNumber at terminal state) |
+| `attemptNumber` | integer (≥1, tenant-configurable) | Which attempt this terminal state represents |
+| `totalAttempts` | integer (≥1, tenant-configurable) | Total attempts made (equals attemptNumber at terminal state) |
 | `status` | "passed" \| "exhausted" \| "abandoned" | Terminal status |
 | `createdAt` | ISO datetime | Session start time |
 | `completedAt` | ISO datetime \| null | Session completion time (null only if abandoned before evaluation) |

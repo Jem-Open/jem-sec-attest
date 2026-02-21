@@ -33,7 +33,7 @@ export const ResponseTypeSchema = z.enum(["multiple-choice", "free-text"]);
 
 export const AnswerEvidenceSchema = z.object({
   selectedOption: z.string().optional(),
-  freeTextResponse: z.string().optional(),
+  freeTextResponse: z.string().max(2000).optional(),
   score: z.number().min(0).max(1),
   llmRationale: z.string().optional(),
   submittedAt: z.string().datetime(),

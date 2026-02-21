@@ -1,0 +1,46 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "e7669f3e2d81",
+  "session_id": "7921a5cf-3434-4662-aae6-b074456aad31",
+  "strategy": "manual-commit",
+  "created_at": "2026-02-21T09:54:15.603826Z",
+  "branch": "006-pdf-evidence-export",
+  "checkpoints_count": 0,
+  "files_touched": [
+    "specs/006-pdf-evidence-export/spec.md",
+    "package.json",
+    "specs/006-pdf-evidence-export/quickstart.md",
+    "specs/006-pdf-evidence-export/tasks.md",
+    "src/evidence/pdf-renderer.ts",
+    "app/api/training/[tenant]/evidence/[sessionId]/pdf/route.ts",
+    "specs/006-pdf-evidence-export/contracts/pdf-export.yaml",
+    "specs/006-pdf-evidence-export/data-model.md",
+    "CLAUDE.md",
+    "specs/006-pdf-evidence-export/plan.md",
+    "specs/006-pdf-evidence-export/research.md",
+    "src/evidence/schemas.ts",
+    "tests/contract/evidence/pdf-export-api.spec.ts",
+    "tests/unit/evidence/pdf-renderer.spec.ts",
+    "pnpm-lock.yaml",
+    "specs/006-pdf-evidence-export/checklists/requirements.md"
+  ],
+  "agent": "Claude Code",
+  "turn_id": "4fa11f858d46",
+  "token_usage": {
+    "input_tokens": 4,
+    "cache_creation_tokens": 56188,
+    "cache_read_tokens": 63584,
+    "output_tokens": 404,
+    "api_call_count": 3
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-02-21T09:54:15.587966Z",
+    "agent_lines": 1935,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 1935,
+    "agent_percentage": 100
+  },
+  "transcript_path": ".claude/projects/-Users-thamsanqamoyo-Documents-code-jem-open-jem-sec-attest/7921a5cf-3434-4662-aae6-b074456aad31.jsonl"
+}

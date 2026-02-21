@@ -1,0 +1,454 @@
+## Context
+
+- Current git status: On branch 006-pdf-evidence-export
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   CLAUDE.md
+	modified:   package.json
+	modified:   pnpm-lock.yaml
+	modified:   src/evidence/schemas.ts
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	app/api/training/[tenant]/evidence/[sessionId]/pdf/
+	nonexistent-session-id
+	specs/006-pdf-evidence-export/
+	src/evidence/pdf-renderer.ts
+	tests/contract/evidence/pdf-export-api.spec.ts
+	tests/unit/evidence/pdf-renderer.spec.ts
+
+no changes added to commit (use "git add" and/or "git commit -a")
+- Current git diff (staged and unstaged changes): diff --git a/CLAUDE.md b/CLAUDE.md
+index 6bb3c5c..7ce05a7 100644
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -93,4 +93,9 @@ Copy `.env.example` to `.env`. Required variables:
+ - **Tenant isolation** — every API route validates `[tenant]` param against loaded config; storage queries must filter by tenant
+ 
+ ## Recent Changes
++- 006-pdf-evidence-export: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), pdfkit (new), Zod v4.x
+ - 005-audit-evidence: Added audit-ready evidence generation subsystem with SHA-256 content hashing, canonical JSON serialization, and SQLite storage via "evidence" collection
++
++## Active Technologies
++- TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), pdfkit (new), Zod v4.x (006-pdf-evidence-export)
++- SQLite via `better-sqlite3` through `StorageAdapter` — read-only access for this feature (006-pdf-evidence-export)
+diff --git a/package.json b/package.json
+index d30a888..6df5454 100644
+--- a/package.json
++++ b/package.json
+@@ -32,6 +32,7 @@
+     "iron-session": "^8.0.4",
+     "next": "^16.1.6",
+     "openid-client": "^6.8.2",
++    "pdfkit": "^0.17.2",
+     "react": "^19.2.4",
+     "react-dom": "^19.2.4",
+     "safe-stable-stringify": "^2.5.0",
+@@ -42,6 +43,7 @@
+     "@biomejs/biome": "^1.9.4",
+     "@types/better-sqlite3": "^7.6.12",
+     "@types/node": "^22.13.4",
++    "@types/pdfkit": "^0.17.5",
+     "@types/react": "^19.2.14",
+     "@types/react-dom": "^19.2.3",
+     "@vitest/coverage-v8": "^3.0.5",
+diff --git a/pnpm-lock.yaml b/pnpm-lock.yaml
+index 98de6e3..d98b7c7 100644
+--- a/pnpm-lock.yaml
++++ b/pnpm-lock.yaml
+@@ -38,6 +38,9 @@ importers:
+       openid-client:
+         specifier: ^6.8.2
+         version: 6.8.2
++      pdfkit:
++        specifier: ^0.17.2
++        version: 0.17.2
+       react:
+         specifier: ^19.2.4
+         version: 19.2.4
+@@ -63,6 +66,9 @@ importers:
+       '@types/node':
+         specifier: ^22.13.4
+         version: 22.19.11
++      '@types/pdfkit':
++        specifier: ^0.17.5
++        version: 0.17.5
+       '@types/react':
+         specifier: ^19.2.14
+         version: 19.2.14
+@@ -721,6 +727,9 @@ packages:
+   '@types/node@22.19.11':
+     resolution: {integrity: REDACTED}
+ 
++  '@types/pdfkit@0.17.5':
++    resolution: {integrity: REDACTED}
++
+   '@types/react-dom@19.2.3':
+     resolution: {integrity: REDACTED}
+     peerDependencies:
+@@ -804,6 +813,10 @@ packages:
+     resolution: {integrity: REDACTED}
+     engines: {node: 20 || >=22}
+ 
++  base64-js@0.0.8:
++    resolution: {integrity: REDACTED}
++    engines: {node: '>= 0.4'}
++
+   base64-js@1.5.1:
+     resolution: {integrity: REDACTED}
+ 
+@@ -824,6 +837,9 @@ packages:
+     resolution: {integrity: REDACTED}
+     engines: {node: 20 || >=22}
+ 
++  brotli@1.3.3:
++    resolution: {integrity: REDACTED}
++
+   buffer@5.7.1:
+     resolution: {integrity: REDACTED}
+ 
+@@ -848,6 +864,10 @@ packages:
+   client-only@0.0.1:
+     resolution: {integrity: REDACTED}
+ 
++  clone@2.1.2:
++    resolution: {integrity: REDACTED}
++    engines: {node: '>=0.8'}
++
+   color-convert@2.0.1:
+     resolution: {integrity: REDACTED}
+     engines: {node: '>=7.0.0'}
+@@ -863,6 +883,9 @@ packages:
+     resolution: {integrity: REDACTED}
+     engines: {node: '>= 8'}
+ 
++  crypto-js@4.2.0:
++    resolution: {integrity: REDACTED}
++
+   csstype@3.2.3:
+     resolution: {integrity: REDACTED}
+ 
+@@ -891,6 +914,9 @@ packages:
+     resolution: {integrity: REDACTED}
+     engines: {node: '>=8'}
+ 
++  dfa@1.2.0:
++    resolution: {integrity: REDACTED}
++
+   dotenv@16.6.1:
+     resolution: {integrity: REDACTED}
+     engines: {node: '>=12'}
+@@ -930,6 +956,9 @@ packages:
+     resolution: {integrity: REDACTED}
+     engines: {node: '>=12.0.0'}
+ 
++  fast-deep-equal@3.1.3:
++    resolution: {integrity: REDACTED}
++
+   fdir@6.5.0:
+     resolution: {integrity: REDACTED}
+     engines: {node: '>=12.0.0'}
+@@ -942,6 +971,9 @@ packages:
+   file-uri-to-path@1.0.0:
+     resolution: {integrity: REDACTED}
+ 
++  fontkit@2.0.4:
++    resolution: {integrity: REDACTED}
++
+   foreground-child@3.3.1:
+     resolution: {integrity: REDACTED}
+     engines: {node: '>=14'}
+@@ -1016,6 +1048,10 @@ packages:
+   jose@6.1.3:
+     resolution: {integrity: REDACTED}
+ 
++  jpeg-exif@1.1.4:
++    resolution: {integrity: REDACTED}
++    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
++
+   js-tokens@10.0.0:
+     resolution: {integrity: REDACTED}
+ 
+@@ -1079,6 +1115,9 @@ packages:
+     resolution: {integrity: REDACTED}
+     hasBin: true
+ 
++  linebreak@1.1.0:
++    resolution: {integrity: REDACTED}
++
+   loupe@3.2.1:
+     resolution: {integrity: REDACTED}
+ 
+@@ -1161,6 +1200,9 @@ packages:
+   package-json-from-dist@1.0.1:
+     resolution: {integrity: REDACTED}
+ 
++  pako@0.2.9:
++    resolution: {integrity: REDACTED}
++
+   path-key@3.1.1:
+     resolution: {integrity: REDACTED}
+     engines: {node: '>=8'}
+@@ -1176,6 +1218,9 @@ packages:
+     resolution: {integrity: REDACTED}
+     engines: {node: '>= 14.16'}
+ 
++  pdfkit@0.17.2:
++    resolution: {integrity: REDACTED}
++
+   picocolors@1.1.1:
+     resolution: {integrity: REDACTED}
+ 
+@@ -1183,6 +1228,9 @@ packages:
+     resolution: {integrity: REDACTED}
+     engines: {node: '>=12'}
+ 
++  png-js@1.0.0:
++    resolution: {integrity: REDACTED}
++
+   postcss@8.4.31:
+     resolution: {integrity: REDACTED}
+     engines: {node: ^10 || ^12 || >=14}
+@@ -1219,6 +1267,9 @@ packages:
+   resolve-pkg-maps@1.0.0:
+     resolution: {integrity: REDACTED}
+ 
++  restructure@3.0.2:
++    resolution: {integrity: REDACTED}
++
+   rollup@4.57.1:
+     resolution: {integrity: REDACTED}
+     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
+@@ -1328,6 +1379,9 @@ packages:
+     resolution: {integrity: REDACTED}
+     engines: {node: '>=18'}
+ 
++  tiny-inflate@1.0.3:
++    resolution: {integrity: REDACTED}
++
+   tinybench@2.9.0:
+     resolution: {integrity: REDACTED}
+ 
+@@ -1372,6 +1426,12 @@ packages:
+   undici-types@6.21.0:
+     resolution: {integrity: REDACTED}
+ 
++  unicode-properties@1.4.1:
++    resolution: {integrity: REDACTED}
++
++  unicode-trie@2.0.0:
++    resolution: {integrity: REDACTED}
++
+   util-deprecate@1.0.2:
+     resolution: {integrity: REDACTED}
+ 
+@@ -1905,6 +1965,10 @@ snapshots:
+     dependencies:
+       undici-types: 6.21.0
+ 
++  '@types/pdfkit@0.17.5':
++    dependencies:
++      '@types/node': 22.19.11
++
+   '@types/react-dom@19.2.3(@types/react@19.2.14)':
+     dependencies:
+       '@types/react': 19.2.14
+@@ -2004,6 +2068,8 @@ snapshots:
+ 
+   balanced-match@4.0.3: {}
+ 
++  base64-js@0.0.8: {}
++
+   base64-js@1.5.1: {}
+ 
+   baseline-browser-mapping@2.9.19: {}
+@@ -2027,6 +2093,10 @@ snapshots:
+     dependencies:
+       balanced-match: 4.0.3
+ 
++  brotli@1.3.3:
++    dependencies:
++      base64-js: 1.5.1
++
+   buffer@5.7.1:
+     dependencies:
+       base64-js: 1.5.1
+@@ -2050,6 +2120,8 @@ snapshots:
+ 
+   client-only@0.0.1: {}
+ 
++  clone@2.1.2: {}
++
+   color-convert@2.0.1:
+     dependencies:
+       color-name: 1.1.4
+@@ -2064,6 +2136,8 @@ snapshots:
+       shebang-command: 2.0.0
+       which: 2.0.2
+ 
++  crypto-js@4.2.0: {}
++
+   csstype@3.2.3: {}
+ 
+   debug@4.4.3:
+@@ -2080,6 +2154,8 @@ snapshots:
+ 
+   detect-libc@2.1.2: {}
+ 
++  dfa@1.2.0: {}
++
+   dotenv@16.6.1: {}
+ 
+   eastasianwidth@0.2.0: {}
+@@ -2133,12 +2209,26 @@ snapshots:
+ 
+   expect-type@1.3.0: {}
+ 
++  fast-deep-equal@3.1.3: {}
++
+   fdir@6.5.0(picomatch@4.0.3):
+     optionalDependencies:
+       picomatch: 4.0.3
+ 
+   file-uri-to-path@1.0.0: {}
+ 
++  fontkit@2.0.4:
++    dependencies:
++      '@swc/helpers': 0.5.15
++      brotli: 1.3.3
++      clone: 2.1.2
++      dfa: 1.2.0
++      fast-deep-equal: 3.1.3
++      restructure: 3.0.2
++      tiny-inflate: 1.0.3
++      unicode-properties: 1.4.1
++      unicode-trie: 2.0.0
++
+   foreground-child@3.3.1:
+     dependencies:
+       cross-spawn: 7.0.6
+@@ -2215,6 +2305,8 @@ snapshots:
+ 
+   jose@6.1.3: {}
+ 
++  jpeg-exif@1.1.4: {}
++
+   js-tokens@10.0.0: {}
+ 
+   js-tokens@9.0.1: {}
+@@ -2264,6 +2356,11 @@ snapshots:
+       lefthook-windows-arm64: 1.13.6
+       lefthook-windows-x64: 1.13.6
+ 
++  linebreak@1.1.0:
++    dependencies:
++      base64-js: 0.0.8
++      unicode-trie: 2.0.0
++
+   loupe@3.2.1: {}
+ 
+   lru-cache@10.4.3: {}
+@@ -2342,6 +2439,8 @@ snapshots:
+ 
+   package-json-from-dist@1.0.1: {}
+ 
++  pako@0.2.9: {}
++
+   path-key@3.1.1: {}
+ 
+   path-scurry@1.11.1:
+@@ -2353,10 +2452,20 @@ snapshots:
+ 
+   pathval@2.0.1: {}
+ 
++  pdfkit@0.17.2:
++    dependencies:
++      crypto-js: 4.2.0
++      fontkit: 2.0.4
++      jpeg-exif: 1.1.4
++      linebreak: 1.1.0
++      png-js: 1.0.0
++
+   picocolors@1.1.1: {}
+ 
+   picomatch@4.0.3: {}
+ 
++  png-js@1.0.0: {}
++
+   postcss@8.4.31:
+     dependencies:
+       nanoid: 3.3.11
+@@ -2411,6 +2520,8 @@ snapshots:
+ 
+   resolve-pkg-maps@1.0.0: {}
+ 
++  restructure@3.0.2: {}
++
+   rollup@4.57.1:
+     dependencies:
+       '@types/estree': 1.0.8
+@@ -2566,6 +2677,8 @@ snapshots:
+       glob: 10.5.0
+       minimatch: 10.2.2
+ 
++  tiny-inflate@1.0.3: {}
++
+   tinybench@2.9.0: {}
+ 
+   tinyexec@0.3.2: {}
+@@ -2600,6 +2713,16 @@ snapshots:
+ 
+   undici-types@6.21.0: {}
+ 
++  unicode-properties@1.4.1:
++    dependencies:
++      base64-js: 1.5.1
++      unicode-trie: 2.0.0
++
++  unicode-trie@2.0.0:
++    dependencies:
++      pako: 0.2.9
++      tiny-inflate: 1.0.3
++
+   util-deprecate@1.0.2: {}
+ 
+   vite-node@3.2.4(@types/node@22.19.11)(tsx@4.21.0)(yaml@2.8.2):
+diff --git a/src/evidence/schemas.ts b/src/evidence/schemas.ts
+index c35fd4b..40154cf 100644
+--- a/src/evidence/schemas.ts
++++ b/src/evidence/schemas.ts
+@@ -119,11 +119,14 @@ export const OutcomeSummarySchema = z.object({
+ // Evidence body & top-level record
+ // ---------------------------------------------------------------------------
+ 
++export const TrainingTypeSchema = z.enum(["onboarding", "annual", "other"]);
++
+ export const EvidenceBodySchema = z.object({
+   session: SessionSummarySchema,
+   policyAttestation: PolicyAttestationSchema,
+   modules: z.array(ModuleEvidenceSchema),
+   outcome: OutcomeSummarySchema,
++  trainingType: TrainingTypeSchema.optional(),
+ });
+ 
+ export const TrainingEvidenceSchema = z.object({
+@@ -168,6 +171,7 @@ export type ModuleEvidence = z.infer<typeof ModuleEvidenceSchema>;
+ export type SessionSummary = z.infer<typeof SessionSummarySchema>;
+ export type PolicyAttestation = z.infer<typeof PolicyAttestationSchema>;
+ export type OutcomeSummary = z.infer<typeof OutcomeSummarySchema>;
++export type TrainingType = z.infer<typeof TrainingTypeSchema>;
+ export type EvidenceBody = z.infer<typeof EvidenceBodySchema>;
+ export type TrainingEvidence = z.infer<typeof TrainingEvidenceSchema>;
+ export type EvidenceSummary = z.infer<typeof EvidenceSummarySchema>;
+- Current branch: 006-pdf-evidence-export
+
+## Your task
+
+Based on the above changes:
+
+1. Create a new branch if on main
+2. Create a single commit with an appropriate message
+3. Push the branch to origin
+4. Create a pull request using `gh pr create`
+5. You have the capability to call multiple tools in a single response. You MUST do all of the above in a single message. Do not use any other tools or do anything else. Do not send any other text or messages besides these tool calls.

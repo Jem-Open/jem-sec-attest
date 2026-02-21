@@ -17,6 +17,7 @@
  * from a completed (terminal) training session and its modules.
  */
 
+import { dispatchUpload } from "../compliance/orchestrator.js";
 import { getSnapshot } from "../config/index.js";
 import { SQLiteAdapter } from "../storage/sqlite-adapter.js";
 import type { TrainingModule, TrainingSession } from "../training/schemas.js";
@@ -138,6 +139,17 @@ export async function generateEvidenceForSession(
       contentHash,
       generatedAt: new Date().toISOString(),
     });
+
+    // 8. Dispatch compliance upload (fire-and-forget).
+    // Uses a dedicated storage connection so the caller's connection can close safely.
+    const uploadStorage = new SQLiteAdapter({
+      dbPath: dbPath ?? process.env.DB_PATH ?? "data/jem.db",
+    });
+    uploadStorage
+      .initialize()
+      .then(() => dispatchUpload(tenantId, record.id, uploadStorage))
+      .catch((err) => console.error("Compliance upload dispatch failed:", err))
+      .finally(() => uploadStorage.close());
 
     return record;
   } finally {

@@ -18,6 +18,8 @@
  * Returns the training evidence record for a given session.
  */
 
+import { ComplianceUploadRepository } from "@/compliance/upload-repository";
+import { getSnapshot } from "@/config/index";
 import { EvidenceRepository } from "@/evidence/evidence-repository";
 import { SQLiteAdapter } from "@/storage/sqlite-adapter";
 import { NextResponse } from "next/server";
@@ -59,7 +61,34 @@ export async function GET(
       return NextResponse.json({ error: "forbidden", message: "Access denied" }, { status: 403 });
     }
 
-    return NextResponse.json(evidence, { status: 200 });
+    // Look up compliance upload status if tenant has compliance enabled
+    const snapshot = getSnapshot();
+    const tenant = snapshot?.tenants.get(tenantId);
+    const complianceProvider = tenant?.settings?.integrations?.compliance?.provider;
+    let complianceUpload = null;
+
+    if (complianceProvider) {
+      const uploadRepo = new ComplianceUploadRepository(storage);
+      const upload = await uploadRepo.findByEvidenceId(tenantId, evidence.id, complianceProvider);
+      if (upload) {
+        complianceUpload = {
+          id: upload.id,
+          provider: upload.provider,
+          status: upload.status,
+          attemptCount: upload.attemptCount,
+          maxAttempts: upload.maxAttempts,
+          providerReferenceId: upload.providerReferenceId,
+          lastError: upload.lastError,
+          lastErrorCode: upload.lastErrorCode,
+          retryable: upload.retryable,
+          createdAt: upload.createdAt,
+          updatedAt: upload.updatedAt,
+          completedAt: upload.completedAt,
+        };
+      }
+    }
+
+    return NextResponse.json({ ...evidence, complianceUpload }, { status: 200 });
   } finally {
     await storage.close();
   }

@@ -16,6 +16,8 @@
  * Validated tenant configuration types.
  */
 
+import type { ComplianceConfig } from "../compliance/schemas.js";
+
 export interface TenantSettings {
   branding?: {
     logoUrl?: string;
@@ -26,6 +28,7 @@ export interface TenantSettings {
   integrations?: {
     webhookUrl?: string;
     ssoProvider?: string;
+    compliance?: ComplianceConfig;
   };
   retention?: {
     days?: number;

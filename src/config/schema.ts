@@ -18,6 +18,7 @@
  */
 
 import { z } from "zod";
+import { ComplianceConfigSchema } from "../compliance/schemas.js";
 
 export const OIDCConfigSchema = z
   .object({
@@ -90,6 +91,7 @@ export const TenantSettingsSchema = z
       .object({
         webhookUrl: z.string().optional(),
         ssoProvider: z.string().optional(),
+        compliance: ComplianceConfigSchema.optional(),
       })
       .strict()
       .optional(),

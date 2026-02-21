@@ -119,11 +119,14 @@ export const OutcomeSummarySchema = z.object({
 // Evidence body & top-level record
 // ---------------------------------------------------------------------------
 
+export const TrainingTypeSchema = z.enum(["onboarding", "annual", "other"]);
+
 export const EvidenceBodySchema = z.object({
   session: SessionSummarySchema,
   policyAttestation: PolicyAttestationSchema,
   modules: z.array(ModuleEvidenceSchema),
   outcome: OutcomeSummarySchema,
+  trainingType: TrainingTypeSchema.optional(),
 });
 
 export const TrainingEvidenceSchema = z.object({
@@ -168,6 +171,7 @@ export type ModuleEvidence = z.infer<typeof ModuleEvidenceSchema>;
 export type SessionSummary = z.infer<typeof SessionSummarySchema>;
 export type PolicyAttestation = z.infer<typeof PolicyAttestationSchema>;
 export type OutcomeSummary = z.infer<typeof OutcomeSummarySchema>;
+export type TrainingType = z.infer<typeof TrainingTypeSchema>;
 export type EvidenceBody = z.infer<typeof EvidenceBodySchema>;
 export type TrainingEvidence = z.infer<typeof TrainingEvidenceSchema>;
 export type EvidenceSummary = z.infer<typeof EvidenceSummarySchema>;

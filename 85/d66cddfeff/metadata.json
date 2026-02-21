@@ -3,7 +3,7 @@
   "checkpoint_id": "85d66cddfeff",
   "strategy": "manual-commit",
   "branch": "007-evidence-integration",
-  "checkpoints_count": 2,
+  "checkpoints_count": 3,
   "files_touched": [
     ".env.example",
     "CLAUDE.md",
@@ -52,13 +52,20 @@
       "context": "/85/d66cddfeff/1/context.md",
       "content_hash": "/85/d66cddfeff/1/content_hash.txt",
       "prompt": "/85/d66cddfeff/1/prompt.txt"
+    },
+    {
+      "metadata": "/85/d66cddfeff/2/metadata.json",
+      "transcript": "/85/d66cddfeff/2/full.jsonl",
+      "context": "/85/d66cddfeff/2/context.md",
+      "content_hash": "/85/d66cddfeff/2/content_hash.txt",
+      "prompt": "/85/d66cddfeff/2/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 96,
-    "cache_creation_tokens": 277260,
-    "cache_read_tokens": 2948158,
-    "output_tokens": 10930,
-    "api_call_count": 70
+    "input_tokens": 116,
+    "cache_creation_tokens": 336407,
+    "cache_read_tokens": 3676034,
+    "output_tokens": 17705,
+    "api_call_count": 86
   }
 }

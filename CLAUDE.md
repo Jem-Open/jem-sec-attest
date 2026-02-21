@@ -91,3 +91,6 @@ Copy `.env.example` to `.env`. Required variables:
 - **Biome tabs vs spaces** — run `npx biome check --write <file>` after creating files to fix formatting
 - **Integration tests need globals** — vitest `globals: true` must be set per-project in `vitest.config.ts`, not just at root level
 - **Tenant isolation** — every API route validates `[tenant]` param against loaded config; storage queries must filter by tenant
+
+## Recent Changes
+- 005-audit-evidence: Added audit-ready evidence generation subsystem with SHA-256 content hashing, canonical JSON serialization, and SQLite storage via "evidence" collection

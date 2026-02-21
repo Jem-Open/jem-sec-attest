@@ -19,6 +19,7 @@
  */
 
 import { getSnapshot } from "@/config/index";
+import { generateEvidenceForSession } from "@/evidence/evidence-generator";
 import { SQLiteAdapter } from "@/storage/sqlite-adapter";
 import { logEvaluationCompleted, logSessionExhausted } from "@/training/audit";
 import { computeAggregateScore, identifyWeakAreas, isPassing } from "@/training/score-calculator";
@@ -170,6 +171,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
         session.id,
         aggregateScore,
         session.attemptNumber,
+      );
+    }
+
+    // Fire-and-forget evidence generation for terminal states (uses its own storage connection)
+    if (newStatus === "passed" || newStatus === "exhausted") {
+      generateEvidenceForSession(tenantId, session.id).catch((err) =>
+        console.error("Evidence generation failed:", err),
       );
     }
 

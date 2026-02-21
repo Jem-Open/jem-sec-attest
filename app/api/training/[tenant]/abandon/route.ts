@@ -18,6 +18,7 @@
  * Transitions an in-progress or in-remediation session to abandoned.
  */
 
+import { generateEvidenceForSession } from "@/evidence/evidence-generator";
 import { SQLiteAdapter } from "@/storage/sqlite-adapter";
 import { logSessionAbandoned } from "@/training/audit";
 import { SessionRepository, VersionConflictError } from "@/training/session-repository";
@@ -113,7 +114,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
       totalModules,
     );
 
-    // 7. Return 200 with updated session
+    // 7. Fire-and-forget evidence generation (uses its own storage connection)
+    generateEvidenceForSession(tenantId, session.id).catch((err) =>
+      console.error("Evidence generation failed:", err),
+    );
+
+    // 8. Return 200 with updated session
     return NextResponse.json({ session: updatedSession }, { status: 200 });
   } finally {
     await storage.close();

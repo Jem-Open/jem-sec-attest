@@ -1,0 +1,486 @@
+openapi: "3.1.0"
+info:
+  title: Audit Evidence API
+  version: "1.0.0"
+  description: |
+    API endpoints for audit-ready training evidence.
+    All endpoints are scoped to the authenticated tenant via URL parameter.
+
+paths:
+  /api/training/{tenant}/evidence/{sessionId}:
+    get:
+      operationId: getEvidence
+      summary: Retrieve evidence for a completed training session
+      description: |
+        Returns the full evidence record for a given session.
+        - Employees can only retrieve evidence for their own sessions.
+        - Compliance/admin users can retrieve evidence for any session in their tenant.
+        Returns 404 if no evidence exists (session predates feature or generation failed).
+      parameters:
+        - $ref: "#/components/parameters/TenantParam"
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/TenantIdHeader"
+        - $ref: "#/components/parameters/EmployeeIdHeader"
+        - $ref: "#/components/parameters/EmployeeRoleHeader"
+      responses:
+        "200":
+          description: Evidence record found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingEvidence"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Employee attempted to access another employee's evidence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: No evidence found for this session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/training/{tenant}/evidence:
+    get:
+      operationId: listEvidence
+      summary: List evidence records for audit review
+      description: |
+        Returns a paginated list of evidence records for the tenant.
+        Restricted to compliance/admin roles only.
+        Supports filtering by employee ID, date range, and outcome.
+      parameters:
+        - $ref: "#/components/parameters/TenantParam"
+        - $ref: "#/components/parameters/TenantIdHeader"
+        - $ref: "#/components/parameters/EmployeeIdHeader"
+        - $ref: "#/components/parameters/EmployeeRoleHeader"
+        - name: employeeId
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Filter by employee ID
+        - name: outcome
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [passed, exhausted, abandoned]
+          description: Filter by session outcome
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Filter evidence generated on or after this date (ISO 8601)
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+            format: date-time
+          description: Filter evidence generated on or before this date (ISO 8601)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Maximum number of records to return
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of records to skip for pagination
+      responses:
+        "200":
+          description: Paginated list of evidence records
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total, limit, offset]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/EvidenceSummary"
+                  total:
+                    type: integer
+                    description: Total number of matching records
+                  limit:
+                    type: integer
+                  offset:
+                    type: integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Non-admin user attempted to list evidence
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/training/{tenant}/evidence/{sessionId}/generate:
+    post:
+      operationId: generateEvidence
+      summary: Manually trigger evidence generation for a completed session
+      description: |
+        Triggers evidence generation for a session that is in a terminal state
+        but is missing evidence (e.g., after a prior generation failure).
+        Restricted to compliance/admin roles.
+        Idempotent — returns existing evidence if already generated.
+      parameters:
+        - $ref: "#/components/parameters/TenantParam"
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/TenantIdHeader"
+        - $ref: "#/components/parameters/EmployeeIdHeader"
+        - $ref: "#/components/parameters/EmployeeRoleHeader"
+      responses:
+        "200":
+          description: Evidence already existed (idempotent return)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingEvidence"
+        "201":
+          description: Evidence successfully generated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TrainingEvidence"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          description: Non-admin user attempted to trigger generation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Session is not in a terminal state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  parameters:
+    TenantParam:
+      name: tenant
+      in: path
+      required: true
+      schema:
+        type: string
+      description: Tenant slug from URL
+    TenantIdHeader:
+      name: x-tenant-id
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Authenticated tenant ID (must match URL tenant)
+    EmployeeIdHeader:
+      name: x-employee-id
+      in: header
+      required: true
+      schema:
+        type: string
+      description: Authenticated employee ID
+    EmployeeRoleHeader:
+      name: x-employee-role
+      in: header
+      required: false
+      schema:
+        type: string
+        enum: [employee, compliance, admin]
+        default: employee
+      description: Employee role for access control
+
+  responses:
+    Unauthorized:
+      description: Missing or invalid authentication headers
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+
+  schemas:
+    ErrorResponse:
+      type: object
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          description: Machine-readable error code
+        message:
+          type: string
+          description: Human-readable description
+
+    TrainingEvidence:
+      type: object
+      required: [id, tenantId, sessionId, employeeId, schemaVersion, evidence, contentHash, generatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        tenantId:
+          type: string
+        sessionId:
+          type: string
+          format: uuid
+        employeeId:
+          type: string
+        schemaVersion:
+          type: integer
+          minimum: 1
+        evidence:
+          $ref: "#/components/schemas/EvidenceBody"
+        contentHash:
+          type: string
+          description: SHA-256 hex digest of the canonical evidence body
+        generatedAt:
+          type: string
+          format: date-time
+
+    EvidenceSummary:
+      type: object
+      required: [id, sessionId, employeeId, schemaVersion, contentHash, generatedAt, outcome]
+      description: Lightweight evidence record for list responses (without full evidence body)
+      properties:
+        id:
+          type: string
+          format: uuid
+        sessionId:
+          type: string
+          format: uuid
+        employeeId:
+          type: string
+        schemaVersion:
+          type: integer
+        contentHash:
+          type: string
+        generatedAt:
+          type: string
+          format: date-time
+        outcome:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [passed, exhausted, abandoned]
+            aggregateScore:
+              type: number
+              nullable: true
+            passed:
+              type: boolean
+              nullable: true
+
+    EvidenceBody:
+      type: object
+      required: [session, policyAttestation, modules, outcome]
+      properties:
+        session:
+          $ref: "#/components/schemas/SessionSummary"
+        policyAttestation:
+          $ref: "#/components/schemas/PolicyAttestation"
+        modules:
+          type: array
+          items:
+            $ref: "#/components/schemas/ModuleEvidence"
+        outcome:
+          $ref: "#/components/schemas/OutcomeSummary"
+
+    SessionSummary:
+      type: object
+      required: [sessionId, employeeId, tenantId, attemptNumber, totalAttempts, status, createdAt]
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+        employeeId:
+          type: string
+        tenantId:
+          type: string
+        attemptNumber:
+          type: integer
+          minimum: 1
+        totalAttempts:
+          type: integer
+          minimum: 1
+        status:
+          type: string
+          enum: [passed, exhausted, abandoned]
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    PolicyAttestation:
+      type: object
+      required: [configHash, roleProfileId, roleProfileVersion, appVersion, passThreshold, maxAttempts]
+      properties:
+        configHash:
+          type: string
+        roleProfileId:
+          type: string
+        roleProfileVersion:
+          type: integer
+        appVersion:
+          type: string
+        passThreshold:
+          type: number
+        maxAttempts:
+          type: integer
+
+    ModuleEvidence:
+      type: object
+      required: [moduleIndex, title, topicArea, scenarios, quizQuestions]
+      properties:
+        moduleIndex:
+          type: integer
+          minimum: 0
+        title:
+          type: string
+        topicArea:
+          type: string
+        moduleScore:
+          type: number
+          nullable: true
+        scenarios:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScenarioEvidence"
+        quizQuestions:
+          type: array
+          items:
+            $ref: "#/components/schemas/QuizQuestionEvidence"
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    ScenarioEvidence:
+      type: object
+      required: [scenarioId, narrative, responseType, employeeAnswer]
+      properties:
+        scenarioId:
+          type: string
+        narrative:
+          type: string
+        responseType:
+          type: string
+          enum: [multiple-choice, free-text]
+        options:
+          type: array
+          items:
+            type: object
+            required: [key, text]
+            properties:
+              key:
+                type: string
+              text:
+                type: string
+        employeeAnswer:
+          $ref: "#/components/schemas/AnswerEvidence"
+
+    QuizQuestionEvidence:
+      type: object
+      required: [questionId, questionText, responseType, employeeAnswer]
+      properties:
+        questionId:
+          type: string
+        questionText:
+          type: string
+        responseType:
+          type: string
+          enum: [multiple-choice, free-text]
+        options:
+          type: array
+          items:
+            type: object
+            required: [key, text]
+            properties:
+              key:
+                type: string
+              text:
+                type: string
+        employeeAnswer:
+          $ref: "#/components/schemas/AnswerEvidence"
+
+    AnswerEvidence:
+      type: object
+      required: [score, submittedAt]
+      properties:
+        selectedOption:
+          type: string
+        freeTextResponse:
+          type: string
+        score:
+          type: number
+          minimum: 0
+          maximum: 1
+        llmRationale:
+          type: string
+        submittedAt:
+          type: string
+          format: date-time
+
+    OutcomeSummary:
+      type: object
+      required: [passThreshold, moduleScores]
+      properties:
+        aggregateScore:
+          type: number
+          nullable: true
+        passed:
+          type: boolean
+          nullable: true
+        passThreshold:
+          type: number
+        weakAreas:
+          type: array
+          items:
+            type: string
+          nullable: true
+        moduleScores:
+          type: array
+          items:
+            type: object
+            required: [moduleIndex, title]
+            properties:
+              moduleIndex:
+                type: integer
+              title:
+                type: string
+              score:
+                type: number
+                nullable: true

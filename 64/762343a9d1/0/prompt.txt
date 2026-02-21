@@ -1,0 +1,161 @@
+# CodeRabbit Code Review
+
+Run an AI-powered code review using CodeRabbit.
+
+## Context
+
+- Current directory: /Users/thamsanqamoyo/Documents/code/jem-open/jem-sec-attest
+- Git repo: true
+Yes
+- Branch: 005-audit-evidence
+- Has changes: Yes
+
+## Instructions
+
+Review code based on: ****
+
+### Prerequisites Check
+
+**Skip these checks if you already verified them earlier in this session.**
+
+Otherwise, run:
+
+```bash
+coderabbit --version 2>/dev/null && coderabbit auth status 2>&1 | head -3
+```
+
+**If CLI not found**, tell user:
+> CodeRabbit CLI is not installed. Run in your terminal:
+>
+> ```bash
+> curl -fsSL https://cli.coderabbit.ai/install.sh | sh
+> ```
+>
+> Then restart your shell and try again.
+
+**If "Not logged in"**, tell user:
+> You need to authenticate. Run in your terminal:
+>
+> ```bash
+> coderabbit auth login
+> ```
+>
+> Then try again.
+
+### Run Review
+
+Once prerequisites are met:
+
+```bash
+coderabbit review --plain -t <type>
+```
+
+Where `<type>` from ``:
+
+- `all` (default) - All changes
+- `committed` - Committed changes only
+- `uncommitted` - Uncommitted only
+
+Add `--base <branch>` if specified.
+
+### Present Results
+
+Group findings by severity:
+
+1. **Critical** - Security, bugs
+2. **Suggestions** - Improvements
+3. **Positive** - What's good
+
+Offer to apply fixes if `codegenInstructions` are present.
+
+---
+
+yes fix with 1 subagents per issue
+
+---
+
+## Context
+
+- Current git status: On branch 005-audit-evidence
+Your branch is up to date with 'origin/005-audit-evidence'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   specs/005-audit-evidence/data-model.md
+	modified:   specs/005-audit-evidence/quickstart.md
+	modified:   specs/005-audit-evidence/tasks.md
+	modified:   src/evidence/schemas.ts
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	nonexistent-session-id
+
+no changes added to commit (use "git add" and/or "git commit -a")
+- Current git diff (staged and unstaged changes): diff --git a/specs/005-audit-evidence/data-model.md b/specs/005-audit-evidence/data-model.md
+index b9408ff..7ce26f6 100644
+--- a/specs/005-audit-evidence/data-model.md
++++ b/specs/005-audit-evidence/data-model.md
+@@ -52,8 +52,8 @@ The canonical payload within `TrainingEvidence.evidence`. All audit-relevant dat
+ | `sessionId` | string (UUID) | Training session ID |
+ | `employeeId` | string | Employee identifier |
+ | `tenantId` | string | Tenant identifier |
+-| `attemptNumber` | integer (1-3) | Which attempt this terminal state represents |
+-| `totalAttempts` | integer (1-3) | Total attempts made (equals attemptNumber at terminal state) |
++| `attemptNumber` | integer (≥1, tenant-configurable) | Which attempt this terminal state represents |
++| `totalAttempts` | integer (≥1, tenant-configurable) | Total attempts made (equals attemptNumber at terminal state) |
+ | `status` | "passed" \| "exhausted" \| "abandoned" | Terminal status |
+ | `createdAt` | ISO datetime | Session start time |
+ | `completedAt` | ISO datetime \| null | Session completion time (null only if abandoned before evaluation) |
+diff --git a/specs/005-audit-evidence/quickstart.md b/specs/005-audit-evidence/quickstart.md
+index 2f985bc..059db20 100644
+--- a/specs/005-audit-evidence/quickstart.md
++++ b/specs/005-audit-evidence/quickstart.md
+@@ -48,7 +48,7 @@ Called from existing terminal state routes after the session transition succeeds
+ 
+ ```typescript
+ // In evaluate/route.ts, after session update succeeds:
+-generateEvidenceForSession(storage, tenantId, sessionId).catch((err) =>
++generateEvidenceForSession(tenantId, sessionId).catch((err) =>
+   console.error("Evidence generation failed:", err)
+ );
+ ```
+diff --git a/specs/005-audit-evidence/tasks.md b/specs/005-audit-evidence/tasks.md
+index 35c6f26..662f80a 100644
+--- a/specs/005-audit-evidence/tasks.md
++++ b/specs/005-audit-evidence/tasks.md
+@@ -49,8 +49,8 @@
+ 
+ - [x] T007 [US1] Implement evidence generator in `src/evidence/evidence-generator.ts` — export `generateEvidenceForSession(storage: StorageAdapter, tenantId: string, sessionId: string): Promise<TrainingEvidence>` that: (1) loads session via SessionRepository, (2) validates session is in terminal state, (3) checks idempotency (return existing evidence if found), (4) loads all modules via SessionRepository, (5) loads tenant config for passThreshold/maxAttempts, (6) assembles EvidenceBody (session summary, policy attestation from session.configHash/roleProfileId/roleProfileVersion/appVersion, module evidence with question text + scenario narratives + employee answers + scores + rationales stripped of `correct`/`rubric` fields, outcome summary), (7) computes content hash via `computeContentHash`, (8) creates TrainingEvidence record via EvidenceRepository with schemaVersion=1, (9) returns created record; include Apache 2.0 license header
+ - [x] T008 [US1] Create unit test for evidence generator in `tests/unit/evidence/evidence-generator.spec.ts` — use `vi.hoisted()` pattern to mock StorageAdapter, SessionRepository, EvidenceRepository, and config; test: passed session generates complete evidence, exhausted session generates evidence with weak areas, abandoned session generates evidence with partial data, idempotency returns existing record, non-terminal session throws error, content hash matches recomputation, schema version is 1, correct/rubric fields are excluded from evidence, all timestamps are present
+-- [x] T009 [US1] Wire fire-and-forget evidence generation into `app/api/training/[tenant]/evaluate/route.ts` — after successful session update to "passed" or "exhausted" status (after audit logging), call `generateEvidenceForSession(storage, tenantId, sessionId).catch((err) => console.error("Evidence generation failed:", err))` using the same storage instance; import from `@/evidence/evidence-generator`
+-- [x] T010 [US1] Wire fire-and-forget evidence generation into `app/api/training/[tenant]/abandon/route.ts` — after successful session update to "abandoned" status (after audit logging), call `generateEvidenceForSession(storage, tenantId, sessionId).catch((err) => console.error("Evidence generation failed:", err))` using the same storage instance; import from `@/evidence/evidence-generator`
++- [x] T009 [US1] Wire fire-and-forget evidence generation into `app/api/training/[tenant]/evaluate/route.ts` — after successful session update to "passed" or "exhausted" status (after audit logging), call `generateEvidenceForSession(tenantId, sessionId).catch((err) => console.error("Evidence generation failed:", err))`; import from `@/evidence/evidence-generator`
++- [x] T010 [US1] Wire fire-and-forget evidence generation into `app/api/training/[tenant]/abandon/route.ts` — after successful session update to "abandoned" status (after audit logging), call `generateEvidenceForSession(tenantId, sessionId).catch((err) => console.error("Evidence generation failed:", err))`; import from `@/evidence/evidence-generator`
+ 
+ **Checkpoint**: At this point, every session reaching a terminal state automatically generates a hash-verified evidence record. US1+US2 are fully functional. Evidence can be verified by querying the `"evidence"` collection directly.
+ 
+diff --git a/src/evidence/schemas.ts b/src/evidence/schemas.ts
+index b18eeeb..c35fd4b 100644
+--- a/src/evidence/schemas.ts
++++ b/src/evidence/schemas.ts
+@@ -33,7 +33,7 @@ export const ResponseTypeSchema = z.enum(["multiple-choice", "free-text"]);
+ 
+ export const AnswerEvidenceSchema = z.object({
+   selectedOption: z.string().optional(),
+-  freeTextResponse: z.string().optional(),
++  freeTextResponse: z.string().max(2000).optional(),
+   score: z.number().min(0).max(1),
+   llmRationale: z.string().optional(),
+   submittedAt: z.string().datetime(),
+- Current branch: 005-audit-evidence
+
+## Your task
+
+Based on the above changes:
+
+1. Create a new branch if on main
+2. Create a single commit with an appropriate message
+3. Push the branch to origin
+4. Create a pull request using `gh pr create`
+5. You have the capability to call multiple tools in a single response. You MUST do all of the above in a single message. Do not use any other tools or do anything else. Do not send any other text or messages besides these tool calls.

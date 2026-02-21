@@ -1,0 +1,29 @@
+{
+  "cli_version": "0.4.5",
+  "checkpoint_id": "64762343a9d1",
+  "strategy": "manual-commit",
+  "branch": "005-audit-evidence",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "specs/005-audit-evidence/data-model.md",
+    "specs/005-audit-evidence/quickstart.md",
+    "specs/005-audit-evidence/tasks.md",
+    "src/evidence/schemas.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/64/762343a9d1/0/metadata.json",
+      "transcript": "/64/762343a9d1/0/full.jsonl",
+      "context": "/64/762343a9d1/0/context.md",
+      "content_hash": "/64/762343a9d1/0/content_hash.txt",
+      "prompt": "/64/762343a9d1/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 475,
+    "cache_creation_tokens": 71783,
+    "cache_read_tokens": 206533,
+    "output_tokens": 1388,
+    "api_call_count": 8
+  }
+}

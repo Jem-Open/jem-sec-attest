@@ -73,6 +73,12 @@ vi.mock("@/training/audit", () => ({
   logQuizSubmitted: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/audit/audit-logger", () => ({
+  AuditLogger: vi.fn().mockImplementation(() => ({
+    log: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
+
 import { getSnapshot } from "@/config/index";
 import { logModuleCompleted, logQuizSubmitted } from "@/training/audit";
 import { evaluateFreeText } from "@/training/evaluator";

@@ -18,7 +18,9 @@
  * Accepts all quiz answers, scores them, and finalises the training module.
  */
 
+import { AuditLogger } from "@/audit/audit-logger";
 import { getSnapshot } from "@/config/index";
+import { SecretRedactor } from "@/guardrails/secret-redactor";
 import { resolveModel } from "@/intake/ai-model-resolver";
 import { SQLiteAdapter } from "@/storage/sqlite-adapter";
 import { logModuleCompleted, logQuizSubmitted } from "@/training/audit";
@@ -78,6 +80,7 @@ export async function POST(
   // Initialise repositories
   const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
   const sessionRepo = new SessionRepository(storage);
+  const auditLogger = new AuditLogger(storage);
 
   await storage.initialize();
 
@@ -230,15 +233,42 @@ export async function POST(
       );
     }
 
-    // 9. Compute module score
+    // 9. Redact secrets from free-text content before storage (FR-001, FR-002)
+    const redactor = new SecretRedactor();
+    const retentionSnapshot = getSnapshot();
+    const tenantCfg = retentionSnapshot?.tenants.get(tenantId);
+    const transcriptsEnabled =
+      (tenantCfg?.settings?.retention as Record<string, unknown> | undefined)?.transcripts !==
+      undefined
+        ? (
+            (tenantCfg?.settings?.retention as Record<string, unknown>).transcripts as {
+              enabled?: boolean;
+            }
+          )?.enabled !== false
+        : true;
+
+    for (const answer of quizAnswers) {
+      if (answer.freeTextResponse !== undefined) {
+        answer.freeTextResponse = transcriptsEnabled
+          ? redactor.redact(answer.freeTextResponse).text
+          : undefined;
+      }
+      if (answer.llmRationale !== undefined) {
+        answer.llmRationale = transcriptsEnabled
+          ? redactor.redact(answer.llmRationale).text
+          : undefined;
+      }
+    }
+
+    // 10. Compute module score
     const scenarioScores = mod.scenarioResponses.map((r) => r.score);
     const quizScores = quizAnswers.map((a) => a.score);
     const moduleScore = computeModuleScore(scenarioScores, quizScores) ?? 0;
 
-    // 10. Transition module to `scored`
+    // 11. Transition module to `scored`
     const nextModuleStatus = transitionModule(mod.status, "quiz-scored");
 
-    // 11. Update module with quizAnswers and moduleScore
+    // 12. Update module with quizAnswers and moduleScore
     try {
       await sessionRepo.updateModule(
         tenantId,
@@ -260,9 +290,9 @@ export async function POST(
       throw updateError;
     }
 
-    // 12. Log audit events
+    // 13. Log audit events
     await logModuleCompleted(
-      storage,
+      auditLogger,
       tenantId,
       employeeId,
       session.id,
@@ -274,7 +304,7 @@ export async function POST(
     const mcCount = quizAnswers.filter((a) => a.responseType === "multiple-choice").length;
     const freeTextCount = quizAnswers.filter((a) => a.responseType === "free-text").length;
     await logQuizSubmitted(
-      storage,
+      auditLogger,
       tenantId,
       employeeId,
       session.id,
@@ -284,7 +314,7 @@ export async function POST(
       freeTextCount,
     );
 
-    // 13. Check if this is the last module; if so, transition session to `evaluating`
+    // 14. Check if this is the last module; if so, transition session to `evaluating`
     // Fetch the full module list once for the total count, then compute scoredCount
     // optimistically — previously-scored modules plus the one we just transitioned — to
     // avoid a second read that could race with the write we just committed.
@@ -323,7 +353,7 @@ export async function POST(
       }
     }
 
-    // 14. Return 200
+    // 15. Return 200
     return NextResponse.json({
       moduleIndex,
       moduleScore,

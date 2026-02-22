@@ -13,6 +13,7 @@
 // limitations under the License.
 
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { AuditLogger } from "../../../src/audit/audit-logger";
 import {
   createAuthConfigErrorEvent,
   createAuthFailureEvent,
@@ -20,21 +21,11 @@ import {
   createSignOutEvent,
   logAuthEvent,
 } from "../../../src/auth/audit";
-import type { StorageAdapter } from "../../../src/storage/adapter";
 
-function makeStorage(overrides: Partial<StorageAdapter> = {}): StorageAdapter {
+function makeLogger(): AuditLogger {
   return {
-    initialize: vi.fn(),
-    create: vi.fn().mockResolvedValue(undefined),
-    findById: vi.fn(),
-    findMany: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    transaction: vi.fn(),
-    getMetadata: vi.fn(),
-    close: vi.fn(),
-    ...overrides,
-  };
+    log: vi.fn().mockResolvedValue(undefined),
+  } as unknown as AuditLogger;
 }
 
 function makeRequest(headers: Record<string, string> = {}): Request {
@@ -46,9 +37,9 @@ describe("logAuthEvent", () => {
     vi.restoreAllMocks();
   });
 
-  it("calls storage.create with the tenantId as the storage key", async () => {
-    const storage = makeStorage();
-    await logAuthEvent(storage, {
+  it("calls logger.log with the tenantId as the first argument", async () => {
+    const logger = makeLogger();
+    await logAuthEvent(logger, {
       eventType: "sign-in",
       tenantId: "acme-corp",
       employeeId: "emp-001",
@@ -56,14 +47,14 @@ describe("logAuthEvent", () => {
       userAgent: "TestBrowser/1.0",
     });
 
-    expect(storage.create).toHaveBeenCalledOnce();
-    const [tenantArg] = (storage.create as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(logger.log).toHaveBeenCalledOnce();
+    const [tenantArg] = (logger.log as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(tenantArg).toBe("acme-corp");
   });
 
-  it("falls back to __system__ as the storage key when tenantId is null", async () => {
-    const storage = makeStorage();
-    await logAuthEvent(storage, {
+  it("falls back to __system__ when tenantId is null", async () => {
+    const logger = makeLogger();
+    await logAuthEvent(logger, {
       eventType: "auth-failure",
       tenantId: null,
       employeeId: null,
@@ -71,15 +62,15 @@ describe("logAuthEvent", () => {
       userAgent: "TestBrowser/1.0",
     });
 
-    const [tenantArg] = (storage.create as ReturnType<typeof vi.fn>).mock.calls[0];
+    const [tenantArg] = (logger.log as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(tenantArg).toBe("__system__");
   });
 
-  it("stores a valid ISO 8601 timestamp in the persisted record", async () => {
-    const storage = makeStorage();
+  it("passes a valid ISO 8601 timestamp in the event", async () => {
+    const logger = makeLogger();
     const before = new Date().toISOString();
 
-    await logAuthEvent(storage, {
+    await logAuthEvent(logger, {
       eventType: "sign-in",
       tenantId: "acme-corp",
       employeeId: "emp-001",
@@ -88,18 +79,17 @@ describe("logAuthEvent", () => {
     });
 
     const after = new Date().toISOString();
-    const [, , record] = (storage.create as ReturnType<typeof vi.fn>).mock.calls[0];
+    const [, event] = (logger.log as ReturnType<typeof vi.fn>).mock.calls[0];
 
-    expect(typeof record.timestamp).toBe("string");
-    expect(record.timestamp >= before).toBe(true);
-    expect(record.timestamp <= after).toBe(true);
-    // Must be parseable as a date
-    expect(Number.isNaN(Date.parse(record.timestamp as string))).toBe(false);
+    expect(typeof event.timestamp).toBe("string");
+    expect(event.timestamp >= before).toBe(true);
+    expect(event.timestamp <= after).toBe(true);
+    expect(Number.isNaN(Date.parse(event.timestamp as string))).toBe(false);
   });
 
   it("defaults metadata to an empty object when not provided", async () => {
-    const storage = makeStorage();
-    await logAuthEvent(storage, {
+    const logger = makeLogger();
+    await logAuthEvent(logger, {
       eventType: "sign-in",
       tenantId: "acme-corp",
       employeeId: "emp-001",
@@ -107,15 +97,15 @@ describe("logAuthEvent", () => {
       userAgent: "TestBrowser/1.0",
     });
 
-    const [, , record] = (storage.create as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(record.metadata).toEqual({});
+    const [, event] = (logger.log as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(event.metadata).toEqual({});
   });
 
   it("passes through provided metadata without modification", async () => {
-    const storage = makeStorage();
+    const logger = makeLogger();
     const metadata = { idpIssuer: "https://idp.example.com", sessionIndex: "abc-123" };
 
-    await logAuthEvent(storage, {
+    await logAuthEvent(logger, {
       eventType: "sign-in",
       tenantId: "acme-corp",
       employeeId: "emp-001",
@@ -124,27 +114,13 @@ describe("logAuthEvent", () => {
       metadata,
     });
 
-    const [, , record] = (storage.create as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(record.metadata).toEqual(metadata);
+    const [, event] = (logger.log as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(event.metadata).toEqual(metadata);
   });
 
-  it("stores the correct collection name", async () => {
-    const storage = makeStorage();
-    await logAuthEvent(storage, {
-      eventType: "sign-in",
-      tenantId: "acme-corp",
-      employeeId: "emp-001",
-      ipAddress: "1.2.3.4",
-      userAgent: "TestBrowser/1.0",
-    });
-
-    const [, collectionArg] = (storage.create as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(collectionArg).toBe("audit_events");
-  });
-
-  it("persists eventType, tenantId, and employeeId in the record", async () => {
-    const storage = makeStorage();
-    await logAuthEvent(storage, {
+  it("persists eventType and employeeId in the event", async () => {
+    const logger = makeLogger();
+    await logAuthEvent(logger, {
       eventType: "sign-out",
       tenantId: "globex-inc",
       employeeId: "emp-042",
@@ -152,24 +128,9 @@ describe("logAuthEvent", () => {
       userAgent: "curl/7.88",
     });
 
-    const [, , record] = (storage.create as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(record.eventType).toBe("sign-out");
-    expect(record.tenantId).toBe("globex-inc");
-    expect(record.employeeId).toBe("emp-042");
-  });
-
-  it("preserves null tenantId in the stored record even when __system__ is used as key", async () => {
-    const storage = makeStorage();
-    await logAuthEvent(storage, {
-      eventType: "auth-failure",
-      tenantId: null,
-      employeeId: null,
-      ipAddress: "1.2.3.4",
-      userAgent: "TestBrowser/1.0",
-    });
-
-    const [, , record] = (storage.create as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(record.tenantId).toBeNull();
+    const [, event] = (logger.log as ReturnType<typeof vi.fn>).mock.calls[0];
+    expect(event.eventType).toBe("sign-out");
+    expect(event.employeeId).toBe("emp-042");
   });
 });
 

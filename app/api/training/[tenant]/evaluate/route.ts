@@ -18,6 +18,7 @@
  * Computes the final pass/fail decision for a training session in `evaluating` state.
  */
 
+import { AuditLogger } from "@/audit/audit-logger";
 import { getSnapshot } from "@/config/index";
 import { generateEvidenceForSession } from "@/evidence/evidence-generator";
 import { SQLiteAdapter } from "@/storage/sqlite-adapter";
@@ -42,6 +43,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
   // Initialise repositories per-request to avoid connection sharing
   const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
   const sessionRepo = new SessionRepository(storage);
+  const auditLogger = new AuditLogger(storage);
 
   await storage.initialize();
 
@@ -154,7 +156,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
 
     // Audit logging
     await logEvaluationCompleted(
-      storage,
+      auditLogger,
       tenantId,
       employeeId,
       session.id,
@@ -165,7 +167,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
 
     if (newStatus === "exhausted") {
       await logSessionExhausted(
-        storage,
+        auditLogger,
         tenantId,
         employeeId,
         session.id,

@@ -74,6 +74,12 @@ vi.mock("@/training/state-machine", () => ({
   },
 }));
 
+vi.mock("@/audit/audit-logger", () => ({
+  AuditLogger: vi.fn().mockImplementation(() => ({
+    log: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
+
 vi.mock("@/config/index", () => ({
   getSnapshot: vi.fn().mockReturnValue({
     tenants: new Map([

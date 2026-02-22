@@ -30,6 +30,7 @@ export { EmployeeRepository } from "./employee-repository.js";
 export type { EmployeeClaims as EmployeeRepoClaimsInput } from "./employee-repository.js";
 export { createSession, destroySession, getSession } from "./session/session-manager.js";
 export type { SessionData } from "./session/session-manager.js";
+export { AuditLogger } from "../audit/audit-logger.js";
 export {
   createAuthConfigErrorEvent,
   createAuthFailureEvent,

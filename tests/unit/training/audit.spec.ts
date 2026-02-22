@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import type { StorageAdapter } from "@/storage/adapter.js";
+import type { AuditLogger } from "@/audit/audit-logger";
 import {
   logEvaluationCompleted,
   logModuleCompleted,
@@ -24,84 +24,63 @@ import {
 } from "@/training/audit.js";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-function createMockStorage(): StorageAdapter {
+function createMockLogger(): AuditLogger {
   return {
-    initialize: vi.fn(),
-    create: vi.fn().mockResolvedValue({ id: "audit-1" }),
-    findById: vi.fn(),
-    findMany: vi.fn(),
-    update: vi.fn(),
-    delete: vi.fn(),
-    transaction: vi.fn(),
-    getMetadata: vi.fn().mockReturnValue({ adapterName: "mock", adapterVersion: "1.0" }),
-    close: vi.fn(),
-  } as unknown as StorageAdapter;
+    log: vi.fn().mockResolvedValue(undefined),
+  } as unknown as AuditLogger;
 }
 
-const COLLECTION = "audit_events";
 const TENANT_ID = "acme-corp";
 const EMPLOYEE_ID = "emp-001";
 const SESSION_ID = "session-abc";
 
 describe("logSessionStarted", () => {
-  let storage: StorageAdapter;
+  let logger: AuditLogger;
 
   beforeEach(() => {
-    storage = createMockStorage();
+    logger = createMockLogger();
   });
 
-  it("calls storage.create with the audit_events collection", async () => {
-    await logSessionStarted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, "hash-xyz");
+  it("calls logger.log with tenantId and event", async () => {
+    await logSessionStarted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, "hash-xyz");
 
-    expect(storage.create).toHaveBeenCalledOnce();
-    expect(storage.create).toHaveBeenCalledWith(TENANT_ID, COLLECTION, expect.any(Object));
+    expect(logger.log).toHaveBeenCalledOnce();
+    expect(logger.log).toHaveBeenCalledWith(TENANT_ID, expect.any(Object));
   });
 
-  it("passes tenantId as first argument to storage.create", async () => {
-    await logSessionStarted(storage, "globex-inc", EMPLOYEE_ID, SESSION_ID, 1, 2, "hash-xyz");
+  it("passes tenantId as first argument to logger.log", async () => {
+    await logSessionStarted(logger, "globex-inc", EMPLOYEE_ID, SESSION_ID, 1, 2, "hash-xyz");
 
-    expect(storage.create).toHaveBeenCalledWith(
-      "globex-inc",
-      expect.any(String),
-      expect.any(Object),
-    );
+    expect(logger.log).toHaveBeenCalledWith("globex-inc", expect.any(Object));
   });
 
   it("includes correct eventType in event data", async () => {
-    await logSessionStarted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, "hash-xyz");
+    await logSessionStarted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, "hash-xyz");
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0];
-    expect(eventData).toMatchObject({ eventType: "training-session-started" });
+    const [, event] = vi.mocked(logger.log).mock.calls[0];
+    expect(event).toMatchObject({ eventType: "training-session-started" });
   });
 
-  it("includes tenantId and employeeId in event data", async () => {
-    await logSessionStarted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, "hash-xyz");
+  it("includes employeeId in event data", async () => {
+    await logSessionStarted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, "hash-xyz");
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0];
-    expect(eventData).toMatchObject({ tenantId: TENANT_ID, employeeId: EMPLOYEE_ID });
+    const [, event] = vi.mocked(logger.log).mock.calls[0];
+    expect(event).toMatchObject({ employeeId: EMPLOYEE_ID });
   });
 
   it("includes a valid ISO timestamp in event data", async () => {
-    await logSessionStarted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, "hash-xyz");
+    await logSessionStarted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, "hash-xyz");
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
-    expect(typeof eventData.timestamp).toBe("string");
-    expect(() => new Date(eventData.timestamp as string).toISOString()).not.toThrow();
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
+    expect(typeof event.timestamp).toBe("string");
+    expect(() => new Date(event.timestamp as string).toISOString()).not.toThrow();
   });
 
   it("includes correct metadata fields", async () => {
-    await logSessionStarted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, "hash-xyz");
+    await logSessionStarted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, "hash-xyz");
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
-    expect(eventData.metadata).toEqual({
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
+    expect(event.metadata).toEqual({
       sessionId: SESSION_ID,
       attemptNumber: 1,
       roleProfileVersion: 2,
@@ -110,18 +89,14 @@ describe("logSessionStarted", () => {
   });
 
   it("does not include raw content fields in event data", async () => {
-    await logSessionStarted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, "hash-xyz");
+    await logSessionStarted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, "hash-xyz");
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
     const forbidden = ["content", "instructions", "text", "response", "material", "freeText"];
     for (const key of forbidden) {
-      expect(eventData).not.toHaveProperty(key);
+      expect(event).not.toHaveProperty(key);
     }
-    const metadata = eventData.metadata as Record<string, unknown>;
+    const metadata = event.metadata as Record<string, unknown>;
     for (const key of forbidden) {
       expect(metadata).not.toHaveProperty(key);
     }
@@ -129,15 +104,15 @@ describe("logSessionStarted", () => {
 });
 
 describe("logModuleCompleted", () => {
-  let storage: StorageAdapter;
+  let logger: AuditLogger;
 
   beforeEach(() => {
-    storage = createMockStorage();
+    logger = createMockLogger();
   });
 
-  it("calls storage.create with the audit_events collection", async () => {
+  it("calls logger.log with tenantId and event", async () => {
     await logModuleCompleted(
-      storage,
+      logger,
       TENANT_ID,
       EMPLOYEE_ID,
       SESSION_ID,
@@ -146,13 +121,13 @@ describe("logModuleCompleted", () => {
       85,
     );
 
-    expect(storage.create).toHaveBeenCalledOnce();
-    expect(storage.create).toHaveBeenCalledWith(TENANT_ID, COLLECTION, expect.any(Object));
+    expect(logger.log).toHaveBeenCalledOnce();
+    expect(logger.log).toHaveBeenCalledWith(TENANT_ID, expect.any(Object));
   });
 
-  it("passes tenantId as first argument to storage.create", async () => {
+  it("passes tenantId as first argument to logger.log", async () => {
     await logModuleCompleted(
-      storage,
+      logger,
       "globex-inc",
       EMPLOYEE_ID,
       SESSION_ID,
@@ -161,16 +136,12 @@ describe("logModuleCompleted", () => {
       85,
     );
 
-    expect(storage.create).toHaveBeenCalledWith(
-      "globex-inc",
-      expect.any(String),
-      expect.any(Object),
-    );
+    expect(logger.log).toHaveBeenCalledWith("globex-inc", expect.any(Object));
   });
 
   it("includes correct eventType in event data", async () => {
     await logModuleCompleted(
-      storage,
+      logger,
       TENANT_ID,
       EMPLOYEE_ID,
       SESSION_ID,
@@ -179,13 +150,13 @@ describe("logModuleCompleted", () => {
       85,
     );
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0];
-    expect(eventData).toMatchObject({ eventType: "training-module-completed" });
+    const [, event] = vi.mocked(logger.log).mock.calls[0];
+    expect(event).toMatchObject({ eventType: "training-module-completed" });
   });
 
-  it("includes tenantId and employeeId in event data", async () => {
+  it("includes employeeId in event data", async () => {
     await logModuleCompleted(
-      storage,
+      logger,
       TENANT_ID,
       EMPLOYEE_ID,
       SESSION_ID,
@@ -194,13 +165,13 @@ describe("logModuleCompleted", () => {
       85,
     );
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0];
-    expect(eventData).toMatchObject({ tenantId: TENANT_ID, employeeId: EMPLOYEE_ID });
+    const [, event] = vi.mocked(logger.log).mock.calls[0];
+    expect(event).toMatchObject({ employeeId: EMPLOYEE_ID });
   });
 
   it("includes a valid ISO timestamp in event data", async () => {
     await logModuleCompleted(
-      storage,
+      logger,
       TENANT_ID,
       EMPLOYEE_ID,
       SESSION_ID,
@@ -209,18 +180,14 @@ describe("logModuleCompleted", () => {
       85,
     );
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
-    expect(typeof eventData.timestamp).toBe("string");
-    expect(() => new Date(eventData.timestamp as string).toISOString()).not.toThrow();
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
+    expect(typeof event.timestamp).toBe("string");
+    expect(() => new Date(event.timestamp as string).toISOString()).not.toThrow();
   });
 
   it("includes correct metadata fields", async () => {
     await logModuleCompleted(
-      storage,
+      logger,
       TENANT_ID,
       EMPLOYEE_ID,
       SESSION_ID,
@@ -229,12 +196,8 @@ describe("logModuleCompleted", () => {
       85,
     );
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
-    expect(eventData.metadata).toEqual({
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
+    expect(event.metadata).toEqual({
       sessionId: SESSION_ID,
       moduleIndex: 0,
       moduleTitle: "Phishing Awareness",
@@ -244,7 +207,7 @@ describe("logModuleCompleted", () => {
 
   it("does not include raw content fields in event data", async () => {
     await logModuleCompleted(
-      storage,
+      logger,
       TENANT_ID,
       EMPLOYEE_ID,
       SESSION_ID,
@@ -253,16 +216,12 @@ describe("logModuleCompleted", () => {
       85,
     );
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
     const forbidden = ["content", "instructions", "text", "response", "material", "freeText"];
     for (const key of forbidden) {
-      expect(eventData).not.toHaveProperty(key);
+      expect(event).not.toHaveProperty(key);
     }
-    const metadata = eventData.metadata as Record<string, unknown>;
+    const metadata = event.metadata as Record<string, unknown>;
     for (const key of forbidden) {
       expect(metadata).not.toHaveProperty(key);
     }
@@ -270,64 +229,52 @@ describe("logModuleCompleted", () => {
 });
 
 describe("logQuizSubmitted", () => {
-  let storage: StorageAdapter;
+  let logger: AuditLogger;
 
   beforeEach(() => {
-    storage = createMockStorage();
+    logger = createMockLogger();
   });
 
-  it("calls storage.create with the audit_events collection", async () => {
-    await logQuizSubmitted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 0, 5, 3, 2);
+  it("calls logger.log with tenantId and event", async () => {
+    await logQuizSubmitted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 0, 5, 3, 2);
 
-    expect(storage.create).toHaveBeenCalledOnce();
-    expect(storage.create).toHaveBeenCalledWith(TENANT_ID, COLLECTION, expect.any(Object));
+    expect(logger.log).toHaveBeenCalledOnce();
+    expect(logger.log).toHaveBeenCalledWith(TENANT_ID, expect.any(Object));
   });
 
-  it("passes tenantId as first argument to storage.create", async () => {
-    await logQuizSubmitted(storage, "globex-inc", EMPLOYEE_ID, SESSION_ID, 0, 5, 3, 2);
+  it("passes tenantId as first argument to logger.log", async () => {
+    await logQuizSubmitted(logger, "globex-inc", EMPLOYEE_ID, SESSION_ID, 0, 5, 3, 2);
 
-    expect(storage.create).toHaveBeenCalledWith(
-      "globex-inc",
-      expect.any(String),
-      expect.any(Object),
-    );
+    expect(logger.log).toHaveBeenCalledWith("globex-inc", expect.any(Object));
   });
 
   it("includes correct eventType in event data", async () => {
-    await logQuizSubmitted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 0, 5, 3, 2);
+    await logQuizSubmitted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 0, 5, 3, 2);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0];
-    expect(eventData).toMatchObject({ eventType: "training-quiz-submitted" });
+    const [, event] = vi.mocked(logger.log).mock.calls[0];
+    expect(event).toMatchObject({ eventType: "training-quiz-submitted" });
   });
 
-  it("includes tenantId and employeeId in event data", async () => {
-    await logQuizSubmitted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 0, 5, 3, 2);
+  it("includes employeeId in event data", async () => {
+    await logQuizSubmitted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 0, 5, 3, 2);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0];
-    expect(eventData).toMatchObject({ tenantId: TENANT_ID, employeeId: EMPLOYEE_ID });
+    const [, event] = vi.mocked(logger.log).mock.calls[0];
+    expect(event).toMatchObject({ employeeId: EMPLOYEE_ID });
   });
 
   it("includes a valid ISO timestamp in event data", async () => {
-    await logQuizSubmitted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 0, 5, 3, 2);
+    await logQuizSubmitted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 0, 5, 3, 2);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
-    expect(typeof eventData.timestamp).toBe("string");
-    expect(() => new Date(eventData.timestamp as string).toISOString()).not.toThrow();
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
+    expect(typeof event.timestamp).toBe("string");
+    expect(() => new Date(event.timestamp as string).toISOString()).not.toThrow();
   });
 
   it("includes correct metadata fields", async () => {
-    await logQuizSubmitted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 0, 5, 3, 2);
+    await logQuizSubmitted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 0, 5, 3, 2);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
-    expect(eventData.metadata).toEqual({
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
+    expect(event.metadata).toEqual({
       sessionId: SESSION_ID,
       moduleIndex: 0,
       questionCount: 5,
@@ -337,13 +284,9 @@ describe("logQuizSubmitted", () => {
   });
 
   it("does not include raw content fields in event data", async () => {
-    await logQuizSubmitted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 0, 5, 3, 2);
+    await logQuizSubmitted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 0, 5, 3, 2);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
     const forbidden = [
       "content",
       "instructions",
@@ -355,9 +298,9 @@ describe("logQuizSubmitted", () => {
       "questions",
     ];
     for (const key of forbidden) {
-      expect(eventData).not.toHaveProperty(key);
+      expect(event).not.toHaveProperty(key);
     }
-    const metadata = eventData.metadata as Record<string, unknown>;
+    const metadata = event.metadata as Record<string, unknown>;
     for (const key of forbidden) {
       expect(metadata).not.toHaveProperty(key);
     }
@@ -365,64 +308,52 @@ describe("logQuizSubmitted", () => {
 });
 
 describe("logEvaluationCompleted", () => {
-  let storage: StorageAdapter;
+  let logger: AuditLogger;
 
   beforeEach(() => {
-    storage = createMockStorage();
+    logger = createMockLogger();
   });
 
-  it("calls storage.create with the audit_events collection", async () => {
-    await logEvaluationCompleted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 78.5, true);
+  it("calls logger.log with tenantId and event", async () => {
+    await logEvaluationCompleted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 78.5, true);
 
-    expect(storage.create).toHaveBeenCalledOnce();
-    expect(storage.create).toHaveBeenCalledWith(TENANT_ID, COLLECTION, expect.any(Object));
+    expect(logger.log).toHaveBeenCalledOnce();
+    expect(logger.log).toHaveBeenCalledWith(TENANT_ID, expect.any(Object));
   });
 
-  it("passes tenantId as first argument to storage.create", async () => {
-    await logEvaluationCompleted(storage, "globex-inc", EMPLOYEE_ID, SESSION_ID, 1, 78.5, true);
+  it("passes tenantId as first argument to logger.log", async () => {
+    await logEvaluationCompleted(logger, "globex-inc", EMPLOYEE_ID, SESSION_ID, 1, 78.5, true);
 
-    expect(storage.create).toHaveBeenCalledWith(
-      "globex-inc",
-      expect.any(String),
-      expect.any(Object),
-    );
+    expect(logger.log).toHaveBeenCalledWith("globex-inc", expect.any(Object));
   });
 
   it("includes correct eventType in event data", async () => {
-    await logEvaluationCompleted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 78.5, true);
+    await logEvaluationCompleted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 78.5, true);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0];
-    expect(eventData).toMatchObject({ eventType: "training-evaluation-completed" });
+    const [, event] = vi.mocked(logger.log).mock.calls[0];
+    expect(event).toMatchObject({ eventType: "training-evaluation-completed" });
   });
 
-  it("includes tenantId and employeeId in event data", async () => {
-    await logEvaluationCompleted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 78.5, true);
+  it("includes employeeId in event data", async () => {
+    await logEvaluationCompleted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 78.5, true);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0];
-    expect(eventData).toMatchObject({ tenantId: TENANT_ID, employeeId: EMPLOYEE_ID });
+    const [, event] = vi.mocked(logger.log).mock.calls[0];
+    expect(event).toMatchObject({ employeeId: EMPLOYEE_ID });
   });
 
   it("includes a valid ISO timestamp in event data", async () => {
-    await logEvaluationCompleted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 78.5, true);
+    await logEvaluationCompleted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 78.5, true);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
-    expect(typeof eventData.timestamp).toBe("string");
-    expect(() => new Date(eventData.timestamp as string).toISOString()).not.toThrow();
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
+    expect(typeof event.timestamp).toBe("string");
+    expect(() => new Date(event.timestamp as string).toISOString()).not.toThrow();
   });
 
   it("includes correct metadata fields", async () => {
-    await logEvaluationCompleted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 78.5, true);
+    await logEvaluationCompleted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 78.5, true);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
-    expect(eventData.metadata).toEqual({
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
+    expect(event.metadata).toEqual({
       sessionId: SESSION_ID,
       attemptNumber: 1,
       aggregateScore: 78.5,
@@ -431,14 +362,10 @@ describe("logEvaluationCompleted", () => {
   });
 
   it("records failed evaluation correctly", async () => {
-    await logEvaluationCompleted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 2, 42.0, false);
+    await logEvaluationCompleted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 2, 42.0, false);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
-    expect(eventData.metadata).toMatchObject({
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
+    expect(event.metadata).toMatchObject({
       passed: false,
       aggregateScore: 42.0,
       attemptNumber: 2,
@@ -446,13 +373,9 @@ describe("logEvaluationCompleted", () => {
   });
 
   it("does not include raw content fields in event data", async () => {
-    await logEvaluationCompleted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 78.5, true);
+    await logEvaluationCompleted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 78.5, true);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
     const forbidden = [
       "content",
       "instructions",
@@ -463,9 +386,9 @@ describe("logEvaluationCompleted", () => {
       "feedback",
     ];
     for (const key of forbidden) {
-      expect(eventData).not.toHaveProperty(key);
+      expect(event).not.toHaveProperty(key);
     }
-    const metadata = eventData.metadata as Record<string, unknown>;
+    const metadata = event.metadata as Record<string, unknown>;
     for (const key of forbidden) {
       expect(metadata).not.toHaveProperty(key);
     }
@@ -473,79 +396,67 @@ describe("logEvaluationCompleted", () => {
 });
 
 describe("logRemediationInitiated", () => {
-  let storage: StorageAdapter;
+  let logger: AuditLogger;
 
   beforeEach(() => {
-    storage = createMockStorage();
+    logger = createMockLogger();
   });
 
-  it("calls storage.create with the audit_events collection", async () => {
-    await logRemediationInitiated(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, [
+  it("calls logger.log with tenantId and event", async () => {
+    await logRemediationInitiated(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, [
       "Phishing",
       "Password Policy",
     ]);
 
-    expect(storage.create).toHaveBeenCalledOnce();
-    expect(storage.create).toHaveBeenCalledWith(TENANT_ID, COLLECTION, expect.any(Object));
+    expect(logger.log).toHaveBeenCalledOnce();
+    expect(logger.log).toHaveBeenCalledWith(TENANT_ID, expect.any(Object));
   });
 
-  it("passes tenantId as first argument to storage.create", async () => {
-    await logRemediationInitiated(storage, "globex-inc", EMPLOYEE_ID, SESSION_ID, 1, 2, [
+  it("passes tenantId as first argument to logger.log", async () => {
+    await logRemediationInitiated(logger, "globex-inc", EMPLOYEE_ID, SESSION_ID, 1, 2, [
       "Phishing",
     ]);
 
-    expect(storage.create).toHaveBeenCalledWith(
-      "globex-inc",
-      expect.any(String),
-      expect.any(Object),
-    );
+    expect(logger.log).toHaveBeenCalledWith("globex-inc", expect.any(Object));
   });
 
   it("includes correct eventType in event data", async () => {
-    await logRemediationInitiated(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, [
+    await logRemediationInitiated(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, [
       "Phishing",
       "Password Policy",
     ]);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0];
-    expect(eventData).toMatchObject({ eventType: "training-remediation-initiated" });
+    const [, event] = vi.mocked(logger.log).mock.calls[0];
+    expect(event).toMatchObject({ eventType: "training-remediation-initiated" });
   });
 
-  it("includes tenantId and employeeId in event data", async () => {
-    await logRemediationInitiated(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, [
+  it("includes employeeId in event data", async () => {
+    await logRemediationInitiated(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, [
       "Phishing",
       "Password Policy",
     ]);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0];
-    expect(eventData).toMatchObject({ tenantId: TENANT_ID, employeeId: EMPLOYEE_ID });
+    const [, event] = vi.mocked(logger.log).mock.calls[0];
+    expect(event).toMatchObject({ employeeId: EMPLOYEE_ID });
   });
 
   it("includes a valid ISO timestamp in event data", async () => {
-    await logRemediationInitiated(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, [
+    await logRemediationInitiated(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, [
       "Phishing",
       "Password Policy",
     ]);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
-    expect(typeof eventData.timestamp).toBe("string");
-    expect(() => new Date(eventData.timestamp as string).toISOString()).not.toThrow();
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
+    expect(typeof event.timestamp).toBe("string");
+    expect(() => new Date(event.timestamp as string).toISOString()).not.toThrow();
   });
 
   it("includes correct metadata fields including weakAreas topic names", async () => {
     const weakAreas = ["Phishing", "Password Policy"];
-    await logRemediationInitiated(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, weakAreas);
+    await logRemediationInitiated(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, weakAreas);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
-    expect(eventData.metadata).toEqual({
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
+    expect(event.metadata).toEqual({
       sessionId: SESSION_ID,
       attemptNumber: 1,
       weakAreaCount: 2,
@@ -554,18 +465,14 @@ describe("logRemediationInitiated", () => {
   });
 
   it("does not include raw content fields in event data", async () => {
-    await logRemediationInitiated(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 1, ["Phishing"]);
+    await logRemediationInitiated(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 1, ["Phishing"]);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
     const forbidden = ["content", "instructions", "text", "response", "material", "freeText"];
     for (const key of forbidden) {
-      expect(eventData).not.toHaveProperty(key);
+      expect(event).not.toHaveProperty(key);
     }
-    const metadata = eventData.metadata as Record<string, unknown>;
+    const metadata = event.metadata as Record<string, unknown>;
     for (const key of forbidden) {
       expect(metadata).not.toHaveProperty(key);
     }
@@ -573,64 +480,52 @@ describe("logRemediationInitiated", () => {
 });
 
 describe("logSessionAbandoned", () => {
-  let storage: StorageAdapter;
+  let logger: AuditLogger;
 
   beforeEach(() => {
-    storage = createMockStorage();
+    logger = createMockLogger();
   });
 
-  it("calls storage.create with the audit_events collection", async () => {
-    await logSessionAbandoned(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, 5);
+  it("calls logger.log with tenantId and event", async () => {
+    await logSessionAbandoned(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, 5);
 
-    expect(storage.create).toHaveBeenCalledOnce();
-    expect(storage.create).toHaveBeenCalledWith(TENANT_ID, COLLECTION, expect.any(Object));
+    expect(logger.log).toHaveBeenCalledOnce();
+    expect(logger.log).toHaveBeenCalledWith(TENANT_ID, expect.any(Object));
   });
 
-  it("passes tenantId as first argument to storage.create", async () => {
-    await logSessionAbandoned(storage, "globex-inc", EMPLOYEE_ID, SESSION_ID, 1, 2, 5);
+  it("passes tenantId as first argument to logger.log", async () => {
+    await logSessionAbandoned(logger, "globex-inc", EMPLOYEE_ID, SESSION_ID, 1, 2, 5);
 
-    expect(storage.create).toHaveBeenCalledWith(
-      "globex-inc",
-      expect.any(String),
-      expect.any(Object),
-    );
+    expect(logger.log).toHaveBeenCalledWith("globex-inc", expect.any(Object));
   });
 
   it("includes correct eventType in event data", async () => {
-    await logSessionAbandoned(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, 5);
+    await logSessionAbandoned(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, 5);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0];
-    expect(eventData).toMatchObject({ eventType: "training-session-abandoned" });
+    const [, event] = vi.mocked(logger.log).mock.calls[0];
+    expect(event).toMatchObject({ eventType: "training-session-abandoned" });
   });
 
-  it("includes tenantId and employeeId in event data", async () => {
-    await logSessionAbandoned(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, 5);
+  it("includes employeeId in event data", async () => {
+    await logSessionAbandoned(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, 5);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0];
-    expect(eventData).toMatchObject({ tenantId: TENANT_ID, employeeId: EMPLOYEE_ID });
+    const [, event] = vi.mocked(logger.log).mock.calls[0];
+    expect(event).toMatchObject({ employeeId: EMPLOYEE_ID });
   });
 
   it("includes a valid ISO timestamp in event data", async () => {
-    await logSessionAbandoned(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, 5);
+    await logSessionAbandoned(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, 5);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
-    expect(typeof eventData.timestamp).toBe("string");
-    expect(() => new Date(eventData.timestamp as string).toISOString()).not.toThrow();
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
+    expect(typeof event.timestamp).toBe("string");
+    expect(() => new Date(event.timestamp as string).toISOString()).not.toThrow();
   });
 
   it("includes correct metadata fields", async () => {
-    await logSessionAbandoned(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, 5);
+    await logSessionAbandoned(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, 5);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
-    expect(eventData.metadata).toEqual({
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
+    expect(event.metadata).toEqual({
       sessionId: SESSION_ID,
       attemptNumber: 1,
       modulesCompleted: 2,
@@ -639,18 +534,14 @@ describe("logSessionAbandoned", () => {
   });
 
   it("does not include raw content fields in event data", async () => {
-    await logSessionAbandoned(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, 5);
+    await logSessionAbandoned(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 1, 2, 5);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
     const forbidden = ["content", "instructions", "text", "response", "material", "freeText"];
     for (const key of forbidden) {
-      expect(eventData).not.toHaveProperty(key);
+      expect(event).not.toHaveProperty(key);
     }
-    const metadata = eventData.metadata as Record<string, unknown>;
+    const metadata = event.metadata as Record<string, unknown>;
     for (const key of forbidden) {
       expect(metadata).not.toHaveProperty(key);
     }
@@ -658,64 +549,52 @@ describe("logSessionAbandoned", () => {
 });
 
 describe("logSessionExhausted", () => {
-  let storage: StorageAdapter;
+  let logger: AuditLogger;
 
   beforeEach(() => {
-    storage = createMockStorage();
+    logger = createMockLogger();
   });
 
-  it("calls storage.create with the audit_events collection", async () => {
-    await logSessionExhausted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 55.0, 3);
+  it("calls logger.log with tenantId and event", async () => {
+    await logSessionExhausted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 55.0, 3);
 
-    expect(storage.create).toHaveBeenCalledOnce();
-    expect(storage.create).toHaveBeenCalledWith(TENANT_ID, COLLECTION, expect.any(Object));
+    expect(logger.log).toHaveBeenCalledOnce();
+    expect(logger.log).toHaveBeenCalledWith(TENANT_ID, expect.any(Object));
   });
 
-  it("passes tenantId as first argument to storage.create", async () => {
-    await logSessionExhausted(storage, "globex-inc", EMPLOYEE_ID, SESSION_ID, 55.0, 3);
+  it("passes tenantId as first argument to logger.log", async () => {
+    await logSessionExhausted(logger, "globex-inc", EMPLOYEE_ID, SESSION_ID, 55.0, 3);
 
-    expect(storage.create).toHaveBeenCalledWith(
-      "globex-inc",
-      expect.any(String),
-      expect.any(Object),
-    );
+    expect(logger.log).toHaveBeenCalledWith("globex-inc", expect.any(Object));
   });
 
   it("includes correct eventType in event data", async () => {
-    await logSessionExhausted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 55.0, 3);
+    await logSessionExhausted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 55.0, 3);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0];
-    expect(eventData).toMatchObject({ eventType: "training-session-exhausted" });
+    const [, event] = vi.mocked(logger.log).mock.calls[0];
+    expect(event).toMatchObject({ eventType: "training-session-exhausted" });
   });
 
-  it("includes tenantId and employeeId in event data", async () => {
-    await logSessionExhausted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 55.0, 3);
+  it("includes employeeId in event data", async () => {
+    await logSessionExhausted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 55.0, 3);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0];
-    expect(eventData).toMatchObject({ tenantId: TENANT_ID, employeeId: EMPLOYEE_ID });
+    const [, event] = vi.mocked(logger.log).mock.calls[0];
+    expect(event).toMatchObject({ employeeId: EMPLOYEE_ID });
   });
 
   it("includes a valid ISO timestamp in event data", async () => {
-    await logSessionExhausted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 55.0, 3);
+    await logSessionExhausted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 55.0, 3);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
-    expect(typeof eventData.timestamp).toBe("string");
-    expect(() => new Date(eventData.timestamp as string).toISOString()).not.toThrow();
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
+    expect(typeof event.timestamp).toBe("string");
+    expect(() => new Date(event.timestamp as string).toISOString()).not.toThrow();
   });
 
   it("includes correct metadata fields", async () => {
-    await logSessionExhausted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 55.0, 3);
+    await logSessionExhausted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 55.0, 3);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
-    expect(eventData.metadata).toEqual({
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
+    expect(event.metadata).toEqual({
       sessionId: SESSION_ID,
       finalScore: 55.0,
       totalAttempts: 3,
@@ -723,18 +602,14 @@ describe("logSessionExhausted", () => {
   });
 
   it("does not include raw content fields in event data", async () => {
-    await logSessionExhausted(storage, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 55.0, 3);
+    await logSessionExhausted(logger, TENANT_ID, EMPLOYEE_ID, SESSION_ID, 55.0, 3);
 
-    const [, , eventData] = vi.mocked(storage.create).mock.calls[0] as [
-      string,
-      string,
-      Record<string, unknown>,
-    ];
+    const [, event] = vi.mocked(logger.log).mock.calls[0] as [string, Record<string, unknown>];
     const forbidden = ["content", "instructions", "text", "response", "material", "freeText"];
     for (const key of forbidden) {
-      expect(eventData).not.toHaveProperty(key);
+      expect(event).not.toHaveProperty(key);
     }
-    const metadata = eventData.metadata as Record<string, unknown>;
+    const metadata = event.metadata as Record<string, unknown>;
     for (const key of forbidden) {
       expect(metadata).not.toHaveProperty(key);
     }

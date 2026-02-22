@@ -13,20 +13,30 @@
 // limitations under the License.
 
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
+import "./skip-nav.css";
 
 export const metadata: Metadata = {
   title: "jem-sec-attest",
   description: "Multi-tenant security attestation training platform",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const cookieStore = await cookies();
+  const locale = cookieStore.get("locale")?.value ?? "en";
+
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang={locale}>
+      <body>
+        <a href="#main-content" className="skip-nav">
+          Skip to main content
+        </a>
+        {children}
+      </body>
     </html>
   );
 }

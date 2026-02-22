@@ -109,6 +109,12 @@ vi.mock("@/training/state-machine", () => ({
   transitionSession: vi.fn().mockReturnValue("in-progress"),
 }));
 
+vi.mock("@/audit/audit-logger", () => ({
+  AuditLogger: vi.fn().mockImplementation(() => ({
+    log: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
+
 // ---------------------------------------------------------------------------
 // Imports (after all vi.mock calls)
 // ---------------------------------------------------------------------------

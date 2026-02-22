@@ -22,6 +22,7 @@
  */
 
 import crypto from "node:crypto";
+import { AuditLogger } from "@/audit/audit-logger";
 import { OIDCAdapter } from "@/auth/adapters/oidc-adapter";
 import { createAuthFailureEvent, createSignInEvent, logAuthEvent } from "@/auth/audit";
 import { EmployeeRepository } from "@/auth/employee-repository";
@@ -33,6 +34,7 @@ import { NextResponse } from "next/server";
 const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
 const oidcAdapter = new OIDCAdapter();
 const employeeRepo = new EmployeeRepository(storage);
+const auditLogger = new AuditLogger(storage);
 
 export async function GET(request: Request, { params }: { params: Promise<{ tenant: string }> }) {
   const { tenant: tenantSlug } = await params;
@@ -50,7 +52,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
   const result = await oidcAdapter.handleCallback(request, tenant);
 
   if (!result.ok) {
-    await logAuthEvent(storage, createAuthFailureEvent(tenantSlug, result.reason, request));
+    await logAuthEvent(auditLogger, createAuthFailureEvent(tenantSlug, result.reason, request));
     return NextResponse.redirect(
       new URL(`/${tenantSlug}/auth/error?code=${result.reason}`, request.url),
     );
@@ -61,7 +63,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
   // for a domain not matching the tenant, reject with tenant-mismatch.
   if (typeof result.claims.email !== "string" || !result.claims.email) {
     await logAuthEvent(
-      storage,
+      auditLogger,
       createAuthFailureEvent(tenantSlug, "missing-required-claims", request, result.claims.issuer),
     );
     return NextResponse.redirect(
@@ -71,7 +73,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
   const emailParts = result.claims.email.split("@");
   if (emailParts.length !== 2 || !emailParts[1]) {
     await logAuthEvent(
-      storage,
+      auditLogger,
       createAuthFailureEvent(tenantSlug, "missing-required-claims", request, result.claims.issuer),
     );
     return NextResponse.redirect(
@@ -81,7 +83,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
   const emailDomain = emailParts[1];
   if (!validateEmailDomainForTenant(tenant, emailDomain)) {
     await logAuthEvent(
-      storage,
+      auditLogger,
       createAuthFailureEvent(tenantSlug, "tenant-mismatch", request, result.claims.issuer),
     );
     return NextResponse.redirect(
@@ -115,7 +117,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
 
   // Log sign-in audit event
   await logAuthEvent(
-    storage,
+    auditLogger,
     createSignInEvent(tenantSlug, employee.id, result.claims.issuer, request),
   );
 

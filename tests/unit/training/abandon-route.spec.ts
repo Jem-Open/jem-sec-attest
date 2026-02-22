@@ -54,6 +54,12 @@ vi.mock("@/training/audit", () => ({
   logSessionAbandoned: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock("@/audit/audit-logger", () => ({
+  AuditLogger: vi.fn().mockImplementation(() => ({
+    log: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
+
 vi.mock("@/training/state-machine", () => ({
   transitionSession: vi.fn(),
   StateTransitionError: class StateTransitionError extends Error {

@@ -18,15 +18,15 @@
  * FR-006: Returns generic 404 for invalid tenant slugs (enumeration protection).
  */
 
+import { AuditLogger } from "@/audit/audit-logger";
 import { OIDCAdapter } from "@/auth/adapters/oidc-adapter";
 import { createAuthConfigErrorEvent, logAuthEvent } from "@/auth/audit";
 import { validateTenantSlug } from "@/auth/tenant-validation";
+import { SQLiteAdapter } from "@/storage/sqlite-adapter";
 import { NextResponse } from "next/server";
 
-// Storage adapter instance — in production this would be injected
-import { SQLiteAdapter } from "@/storage/sqlite-adapter";
-
 const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
+const auditLogger = new AuditLogger(storage);
 
 const oidcAdapter = new OIDCAdapter();
 
@@ -67,7 +67,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
     const redirectCode = isMissing ? "missing_config" : "invalid_config";
 
     await storage.initialize();
-    await logAuthEvent(storage, createAuthConfigErrorEvent(tenantSlug, auditReason, request));
+    await logAuthEvent(auditLogger, createAuthConfigErrorEvent(tenantSlug, auditReason, request));
 
     return NextResponse.redirect(
       new URL(`/${tenantSlug}/auth/error?code=${redirectCode}`, request.url),

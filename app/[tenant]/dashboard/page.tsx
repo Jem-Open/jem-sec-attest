@@ -15,9 +15,12 @@
 /**
  * Dashboard page — authenticated landing page after sign-in.
  * FR-005: Session-gated access; redirects to sign-in if no valid session.
+ * T031: i18n — all user-facing strings use getTranslation().
  */
 
 import { getSession } from "@/auth/session/session-manager";
+import { getTranslation } from "@/i18n";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage({
@@ -32,8 +35,13 @@ export default async function DashboardPage({
     redirect(`/${tenant}/auth/signin`);
   }
 
+  const cookieStore = await cookies();
+  const locale = cookieStore.get("locale")?.value ?? "en";
+  const t = await getTranslation(locale);
+
   return (
     <main
+      id="main-content"
       style={{
         maxWidth: "800px",
         margin: "2rem auto",
@@ -51,7 +59,9 @@ export default async function DashboardPage({
           borderBottom: "1px solid #eee",
         }}
       >
-        <h1 style={{ fontSize: "1.25rem" }}>Welcome, {session.employee.displayName}</h1>
+        <h1 style={{ fontSize: "1.25rem" }}>
+          {t("dashboard.welcome", { displayName: session.employee.displayName })}
+        </h1>
         <form action={`/api/auth/${tenant}/signout`} method="POST">
           <button
             type="submit"
@@ -64,14 +74,14 @@ export default async function DashboardPage({
               fontSize: "0.875rem",
             }}
           >
-            Sign Out
+            {t("dashboard.signOut")}
           </button>
         </form>
       </header>
       <p style={{ color: "#666", marginBottom: "2rem" }}>
-        Signed in as {session.employee.email} ({tenant})
+        {t("dashboard.signedInAs", { email: session.employee.email, tenant })}
       </p>
-      <nav>
+      <nav aria-label="Training actions">
         <a
           href={`/${tenant}/intake`}
           style={{
@@ -84,7 +94,7 @@ export default async function DashboardPage({
             fontSize: "0.9rem",
           }}
         >
-          Role Profile Intake
+          {t("dashboard.roleProfileIntake")}
         </a>
       </nav>
     </main>

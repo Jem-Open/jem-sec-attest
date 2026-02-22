@@ -1,0 +1,130 @@
+{
+  "auth": {
+    "signInTitle": "Sign in to access your organization",
+    "signInWithSSO": "Sign in with SSO"
+  },
+  "dashboard": {
+    "welcome": "Welcome, {displayName}",
+    "signOut": "Sign Out",
+    "signedInAs": "Signed in as {email} ({tenant})",
+    "roleProfileIntake": "Role Profile Intake"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Error"
+  },
+  "training": {
+    "pageTitle": "Security Training",
+    "loadingSession": "Loading your training session...",
+    "noProfile": "You need to complete your role profile before starting training.",
+    "goToIntake": "Complete Role Profile",
+    "startDescription": "Complete your security training to demonstrate compliance with your organisation's security policies.",
+    "startButton": "Start Training",
+    "startingSession": "Creating your training session...",
+    "curriculumTitle": "Your Training Curriculum",
+    "curriculumSubtitle": "Work through each module in order to complete your training.",
+    "progressLabel": "{scored} of {total} modules completed",
+    "moduleStatusLocked": "Locked",
+    "moduleStatusInProgress": "In Progress",
+    "moduleStatusScored": "Scored",
+    "moduleStatusComplete": "Complete",
+    "startModule": "Click to begin this module",
+    "loadingContent": "Generating module content...",
+    "continueToScenarios": "Continue to Scenarios",
+    "scenario": {
+      "progress": "Scenario {current} of {total}",
+      "submit": "Submit Answer",
+      "submitting": "Submitting...",
+      "scoreLabel": "Your score:",
+      "rationaleLabel": "Feedback:",
+      "next": "Next Scenario",
+      "proceedToQuiz": "Proceed to Quiz"
+    },
+    "quiz": {
+      "title": "Module Quiz",
+      "subtitle": "Answer all questions below, then submit.",
+      "submit": "Submit Quiz",
+      "submitting": "Submitting quiz...",
+      "moduleScoreLabel": "Module score:",
+      "nextModule": "Continue to Next Module"
+    },
+    "freeText": {
+      "placeholder": "Type your answer here...",
+      "label": "Your answer"
+    },
+    "evaluating": {
+      "title": "Evaluating Your Training",
+      "message": "Computing your final score..."
+    },
+    "result": {
+      "title": "Training Complete",
+      "passLabel": "PASSED",
+      "failLabel": "FAILED",
+      "exhaustedLabel": "ATTEMPTS EXHAUSTED",
+      "abandonedLabel": "TRAINING ABANDONED",
+      "scoreLabel": "Your aggregate score:",
+      "moduleBreakdown": "Module Breakdown",
+      "moduleScore": "Score for {title}",
+      "passSymbol": "\u2713",
+      "failSymbol": "\u2717"
+    },
+    "remediation": {
+      "hint": "You did not pass this attempt. If remediation is available, contact your administrator to begin remediation training.",
+      "exhaustedMessage": "You have used all available attempts. Please contact your administrator for assistance.",
+      "abandonedMessage": "This training session was abandoned. Please contact your administrator to restart.",
+      "failedReviewTitle": "Training Result",
+      "failedReviewSubtitle": "You did not pass this attempt.",
+      "attemptCounter": "Attempt {current} of {max}",
+      "weakAreasLabel": "Areas needing improvement:",
+      "startRemediation": "Start Remediation Training",
+      "startingRemediation": "Starting remediation...",
+      "contactAdminMessage": "You have used all available attempts. Please contact your administrator for assistance."
+    },
+    "progress": {
+      "sidebarTitle": "Your Progress",
+      "overall": "{pct}% complete",
+      "attempt": "Attempt {n}",
+      "moduleLocked": "Locked",
+      "moduleInProgress": "In Progress",
+      "moduleScored": "{pct}%",
+      "moduleInProgressLabel": "In progress",
+      "moduleLockedLabel": "Locked",
+      "moduleCompletedScoreLabel": "Completed, score: {pct}%",
+      "moduleCompletedNoScoreLabel": "Completed, score: N/A"
+    },
+    "history": {
+      "viewButton": "View Training History",
+      "backToResult": "Back to Result",
+      "title": "Training History",
+      "loadingMessage": "Loading history...",
+      "emptyMessage": "No previous training sessions found.",
+      "attemptLabel": "Attempt {n}",
+      "dateLabel": "Date:",
+      "scoreLabel": "Score:",
+      "statusLabel": "Status:",
+      "modulesLabel": "Module Breakdown",
+      "errorMessage": "Failed to load training history. Please try again.",
+      "dateFallback": "\u2014"
+    },
+    "abandon": {
+      "button": "Abandon Training",
+      "confirm": "Are you sure? This counts toward your 3-attempt limit.",
+      "abandoning": "Abandoning..."
+    },
+    "conflict": {
+      "banner": "Your training was updated in another tab. Refreshing..."
+    },
+    "error": {
+      "title": "Something went wrong",
+      "retryButton": "Try Again",
+      "loadSession": "Unable to load your training session. Please check your connection and try again.",
+      "startTraining": "Failed to start training. Please try again.",
+      "loadModuleContent": "Failed to load module content. Please try again.",
+      "submitAnswer": "Failed to submit answer. Please try again.",
+      "submitQuiz": "Failed to submit quiz. Please try again.",
+      "evaluateTraining": "Failed to evaluate training. Please try again.",
+      "startRemediation": "Failed to start remediation. Please try again.",
+      "abandonTraining": "Failed to abandon training. Please try again."
+    }
+  }
+}

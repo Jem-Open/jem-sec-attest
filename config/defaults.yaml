@@ -11,6 +11,15 @@ defaults:
     ssoProvider: ""
   retention:
     days: 365
+    transcripts:
+      # When `enabled: false`, free-text responses and LLM rationale are
+      # discarded at write time (scores and selected options are preserved).
+      enabled: true
+      # When set to a positive integer, a scheduled purge job nulls out
+      # transcript fields (freeTextResponse, llmRationale) on completed
+      # training modules older than this many days. Set to `null` to
+      # disable time-based purging. Active sessions are never purged.
+      retentionDays: null
   ai:
     provider: "anthropic"
     model: "claude-sonnet-4-20250514"

@@ -14,6 +14,11 @@ settings:
     advancedReporting: true
   integrations:
     webhookUrl: "${ACME_WEBHOOK_SECRET}"
+  retention:
+    days: 365
+    transcripts:
+      enabled: true
+      retentionDays: 90
   # AI configuration — uses project defaults (Anthropic Claude via Vercel AI Gateway)
   # Uncomment and modify to override for this tenant:
   # ai:

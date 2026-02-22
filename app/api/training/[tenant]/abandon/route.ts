@@ -18,6 +18,7 @@
  * Transitions an in-progress or in-remediation session to abandoned.
  */
 
+import { AuditLogger } from "@/audit/audit-logger";
 import { generateEvidenceForSession } from "@/evidence/evidence-generator";
 import { SQLiteAdapter } from "@/storage/sqlite-adapter";
 import { logSessionAbandoned } from "@/training/audit";
@@ -40,6 +41,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
   // Initialise repositories per-request to avoid connection sharing
   const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
   const sessionRepo = new SessionRepository(storage);
+  const auditLogger = new AuditLogger(storage);
 
   await storage.initialize();
 
@@ -105,7 +107,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
 
     // 6. Log audit event
     await logSessionAbandoned(
-      storage,
+      auditLogger,
       tenantId,
       employeeId,
       session.id,

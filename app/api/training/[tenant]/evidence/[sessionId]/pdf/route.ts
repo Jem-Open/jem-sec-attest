@@ -18,6 +18,7 @@
  * Generates and returns a PDF document from the training evidence record.
  */
 
+import { AuditLogger } from "@/audit/audit-logger";
 import { getSnapshot } from "@/config/index";
 import { EvidenceRepository } from "@/evidence/evidence-repository";
 import { renderEvidencePdf } from "@/evidence/pdf-renderer";
@@ -83,6 +84,14 @@ export async function GET(
       const message = err instanceof Error ? err.message : "Unknown PDF generation error";
       return NextResponse.json({ error: "pdf_generation_failed", message }, { status: 500 });
     }
+
+    const auditLogger = new AuditLogger(storage);
+    await auditLogger.log(tenantId, {
+      eventType: "evidence-exported",
+      employeeId,
+      timestamp: new Date().toISOString(),
+      metadata: { sessionId, format: "pdf", evidenceId: evidence.id },
+    });
 
     const filename = `evidence-${tenantId}-${evidence.employeeId}-${sessionId}.pdf`;
 

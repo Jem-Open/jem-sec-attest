@@ -68,6 +68,12 @@ vi.mock("@/training/score-calculator", () => ({
   computeModuleScore: vi.fn(),
 }));
 
+vi.mock("@/audit/audit-logger", () => ({
+  AuditLogger: vi.fn().mockImplementation(() => ({
+    log: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
+
 import { getSnapshot } from "@/config/index";
 import { evaluateFreeText } from "@/training/evaluator";
 import { scoreMcAnswer } from "@/training/score-calculator";

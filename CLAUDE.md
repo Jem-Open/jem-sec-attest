@@ -93,10 +93,9 @@ Copy `.env.example` to `.env`. Required variables:
 - **Tenant isolation** — every API route validates `[tenant]` param against loaded config; storage queries must filter by tenant
 
 ## Recent Changes
+- 008-guardrails-i18n-a11y: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), React 19.x, Vercel AI SDK v6, Zod v4.x
 - 007-evidence-integration: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), pdfkit (existing), node `fetch` (native)
 - 006-pdf-evidence-export: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), pdfkit (new), Zod v4.x
-- 005-audit-evidence: Added audit-ready evidence generation subsystem with SHA-256 content hashing, canonical JSON serialization, and SQLite storage via "evidence" collection
 
 ## Active Technologies
-- TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), pdfkit (existing), node `fetch` (native) (007-evidence-integration)
-- SQLite via `better-sqlite3` through `StorageAdapter` interface — new `compliance_uploads` collection (007-evidence-integration)
+- TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), React 19.x, Vercel AI SDK v6, Zod v4.x (008-guardrails-i18n-a11y)

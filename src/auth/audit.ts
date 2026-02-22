@@ -19,10 +19,8 @@
  * Uses Next.js after() API for async writes (zero TTFB impact).
  */
 
-import type { StorageAdapter } from "../storage/adapter.js";
+import type { AuditLogger } from "../audit/audit-logger.js";
 import type { AuthEventType } from "./types.js";
-
-const COLLECTION = "audit_events";
 
 export interface AuditEventInput {
   eventType: AuthEventType;
@@ -33,11 +31,10 @@ export interface AuditEventInput {
   metadata?: Record<string, unknown>;
 }
 
-export async function logAuthEvent(storage: StorageAdapter, input: AuditEventInput): Promise<void> {
+export async function logAuthEvent(logger: AuditLogger, input: AuditEventInput): Promise<void> {
   const tenantId = input.tenantId ?? "__system__";
-  await storage.create(tenantId, COLLECTION, {
+  await logger.log(tenantId, {
     eventType: input.eventType,
-    tenantId: input.tenantId,
     employeeId: input.employeeId,
     timestamp: new Date().toISOString(),
     ipAddress: input.ipAddress,

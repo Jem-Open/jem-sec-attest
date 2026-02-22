@@ -19,6 +19,7 @@
  * GET  /api/training/{tenant}/session — get current session state (T014)
  */
 
+import { AuditLogger } from "@/audit/audit-logger";
 import { getSnapshot } from "@/config/index";
 import { resolveModel } from "@/intake/ai-model-resolver";
 import { ProfileRepository } from "@/intake/profile-repository";
@@ -80,6 +81,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
   const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
   const profileRepo = new ProfileRepository(storage);
   const sessionRepo = new SessionRepository(storage);
+  const auditLogger = new AuditLogger(storage);
 
   await storage.initialize();
 
@@ -216,7 +218,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
 
       // 2g. Log remediation audit event
       await logRemediationInitiated(
-        storage,
+        auditLogger,
         tenantId,
         employeeId,
         failedSession.id,
@@ -307,7 +309,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
 
     // 7. Log audit event
     await logSessionStarted(
-      storage,
+      auditLogger,
       tenantId,
       employeeId,
       session.id,

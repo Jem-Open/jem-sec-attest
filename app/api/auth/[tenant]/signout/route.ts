@@ -18,6 +18,7 @@
  * FR-005: Session destruction on sign-out.
  */
 
+import { AuditLogger } from "@/audit/audit-logger";
 import { OIDCAdapter } from "@/auth/adapters/oidc-adapter";
 import { createSignOutEvent, logAuthEvent } from "@/auth/audit";
 import { destroySession, getSession } from "@/auth/session/session-manager";
@@ -27,6 +28,7 @@ import { NextResponse } from "next/server";
 
 const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
 const oidcAdapter = new OIDCAdapter();
+const auditLogger = new AuditLogger(storage);
 
 async function handleSignOut(
   request: Request,
@@ -58,7 +60,7 @@ async function handleSignOut(
   if (employee) {
     // Log sign-out audit event before destroying session
     await logAuthEvent(
-      storage,
+      auditLogger,
       createSignOutEvent(tenantSlug, employee.employeeId, employee.idpIssuer, request),
     );
   }

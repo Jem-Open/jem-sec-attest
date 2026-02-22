@@ -23,6 +23,7 @@
  * - Record ComplianceUpload status to storage
  */
 
+import { AuditLogger } from "../audit/audit-logger.js";
 import { getSnapshot } from "../config/index.js";
 import { EvidenceRepository } from "../evidence/evidence-repository.js";
 import { renderEvidencePdf } from "../evidence/pdf-renderer.js";
@@ -215,6 +216,18 @@ export async function dispatchUpload(
         `[compliance] Upload succeeded for evidence "${evidenceId}" ` +
           `(provider: ${provider.name}, attempts: ${attempt + 1})`,
       );
+      const auditLogger = new AuditLogger(storage);
+      await auditLogger.log(tenantId, {
+        eventType: "integration-push-success",
+        employeeId: null,
+        timestamp: new Date().toISOString(),
+        metadata: {
+          sessionId: evidence.sessionId,
+          provider: provider.name,
+          uploadId: uploadRecord.id,
+          evidenceId,
+        },
+      });
       await updateUploadStatus(uploadRepo, tenantId, lastResult, {
         status: "succeeded",
         attemptCount: attempt + 1,
@@ -253,6 +266,18 @@ export async function dispatchUpload(
     `[compliance] All ${maxAttempts} attempts exhausted for evidence "${evidenceId}" ` +
       `(provider: ${provider.name})`,
   );
+  const auditLoggerFail = new AuditLogger(storage);
+  await auditLoggerFail.log(tenantId, {
+    eventType: "integration-push-failure",
+    employeeId: null,
+    timestamp: new Date().toISOString(),
+    metadata: {
+      sessionId: evidence.sessionId,
+      provider: provider.name,
+      error: lastResult.lastError ?? "All retries exhausted",
+      evidenceId,
+    },
+  });
   await updateUploadStatus(uploadRepo, tenantId, lastResult, {
     status: "failed",
   });

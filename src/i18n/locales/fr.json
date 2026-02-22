@@ -1,0 +1,88 @@
+{
+  "auth": {
+    "signInTitle": "Connectez-vous pour accéder à votre organisation",
+    "signInWithSSO": "Se connecter avec SSO"
+  },
+  "dashboard": {
+    "welcome": "Bienvenue, {displayName}",
+    "signOut": "Déconnexion",
+    "signedInAs": "Connecté en tant que {email} ({tenant})",
+    "roleProfileIntake": "Profil de rôle"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur"
+  },
+  "training": {
+    "pageTitle": "Formation en sécurité",
+    "startButton": "Commencer la formation",
+    "startDescription": "Complétez votre formation en sécurité pour démontrer la conformité aux politiques de sécurité de votre organisation.",
+    "startingSession": "Création de votre session de formation...",
+    "loadingSession": "Chargement de votre session de formation...",
+    "curriculumTitle": "Votre programme de formation",
+    "curriculumSubtitle": "Parcourez chaque module dans l'ordre pour terminer votre formation.",
+    "continueToScenarios": "Passer aux scénarios",
+    "loadingContent": "Génération du contenu du module...",
+    "progressLabel": "{scored} sur {total} modules terminés",
+    "noProfile": "Vous devez compléter votre profil de rôle avant de commencer la formation.",
+    "goToIntake": "Compléter le profil de rôle",
+    "moduleStatusLocked": "Verrouillé",
+    "moduleStatusInProgress": "En cours",
+    "moduleStatusComplete": "Terminé",
+    "scenario": {
+      "submit": "Soumettre la réponse",
+      "submitting": "Envoi en cours...",
+      "scoreLabel": "Votre score :",
+      "rationaleLabel": "Commentaires :",
+      "next": "Scénario suivant",
+      "proceedToQuiz": "Passer au questionnaire",
+      "progress": "Scénario {current} sur {total}"
+    },
+    "quiz": {
+      "title": "Questionnaire du module",
+      "subtitle": "Répondez à toutes les questions ci-dessous, puis soumettez.",
+      "submit": "Soumettre le questionnaire",
+      "submitting": "Envoi du questionnaire...",
+      "moduleScoreLabel": "Score du module :",
+      "nextModule": "Passer au module suivant"
+    },
+    "evaluating": {
+      "title": "Évaluation de votre formation",
+      "message": "Calcul de votre score final..."
+    },
+    "result": {
+      "title": "Formation terminée",
+      "passLabel": "RÉUSSI",
+      "failLabel": "ÉCHOUÉ",
+      "exhaustedLabel": "TENTATIVES ÉPUISÉES",
+      "abandonedLabel": "FORMATION ABANDONNÉE",
+      "scoreLabel": "Votre score global :",
+      "moduleBreakdown": "Détail par module"
+    },
+    "remediation": {
+      "startRemediation": "Commencer la formation de rattrapage",
+      "startingRemediation": "Démarrage du rattrapage...",
+      "failedReviewTitle": "Résultat de la formation",
+      "failedReviewSubtitle": "Vous n'avez pas réussi cette tentative.",
+      "contactAdminMessage": "Vous avez utilisé toutes les tentatives disponibles. Veuillez contacter votre administrateur.",
+      "attemptCounter": "Tentative {current} sur {max}"
+    },
+    "abandon": {
+      "button": "Abandonner la formation",
+      "confirm": "Êtes-vous sûr ? Cela compte dans votre limite de 3 tentatives.",
+      "abandoning": "Abandon en cours..."
+    },
+    "error": {
+      "title": "Une erreur est survenue",
+      "retryButton": "Réessayer"
+    },
+    "history": {
+      "viewButton": "Voir l'historique de formation",
+      "backToResult": "Retour au résultat",
+      "title": "Historique de formation"
+    },
+    "conflict": {
+      "banner": "Votre formation a été mise à jour dans un autre onglet. Actualisation..."
+    }
+  }
+}

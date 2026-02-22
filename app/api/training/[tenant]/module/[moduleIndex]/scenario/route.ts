@@ -19,6 +19,7 @@
  */
 
 import { getSnapshot } from "@/config/index";
+import { SecretRedactor } from "@/guardrails/secret-redactor";
 import { resolveModel } from "@/intake/ai-model-resolver";
 import { SQLiteAdapter } from "@/storage/sqlite-adapter";
 import { EvaluationError, evaluateFreeText } from "@/training/evaluator";
@@ -188,7 +189,29 @@ export async function POST(
       );
     }
 
-    // 9. Build ScenarioResponse record
+    // 9. Redact secrets from free-text content before storage (FR-001, FR-002)
+    const redactor = new SecretRedactor();
+    const redactedFreeText =
+      submission.freeTextResponse !== undefined
+        ? redactor.redact(submission.freeTextResponse).text
+        : undefined;
+    const redactedRationale =
+      llmRationale !== undefined ? redactor.redact(llmRationale).text : undefined;
+
+    // 10. Check transcript retention: if disabled, omit free-text fields
+    const retentionSnapshot = getSnapshot();
+    const tenantCfg = retentionSnapshot?.tenants.get(tenantId);
+    const transcriptsEnabled =
+      (tenantCfg?.settings?.retention as Record<string, unknown> | undefined)?.transcripts !==
+      undefined
+        ? (
+            (tenantCfg?.settings?.retention as Record<string, unknown>).transcripts as {
+              enabled?: boolean;
+            }
+          )?.enabled !== false
+        : true;
+
+    // Build ScenarioResponse record
     const now = new Date().toISOString();
     const scenarioResponse = {
       scenarioId: submission.scenarioId,
@@ -196,30 +219,32 @@ export async function POST(
       ...(submission.selectedOption !== undefined
         ? { selectedOption: submission.selectedOption }
         : {}),
-      ...(submission.freeTextResponse !== undefined
-        ? { freeTextResponse: submission.freeTextResponse }
+      ...(redactedFreeText !== undefined && transcriptsEnabled
+        ? { freeTextResponse: redactedFreeText }
         : {}),
       score,
-      ...(llmRationale !== undefined ? { llmRationale } : {}),
+      ...(redactedRationale !== undefined && transcriptsEnabled
+        ? { llmRationale: redactedRationale }
+        : {}),
       submittedAt: now,
     };
 
-    // 10. Determine next status (transition to scenario-active if currently in learning)
+    // 11. Determine next status (transition to scenario-active if currently in learning)
     let nextStatus: ModuleStatus = mod.status;
     if (mod.status === "learning") {
       nextStatus = transitionModule(mod.status, "start-scenario");
     }
 
-    // 11. Append response
+    // 12. Append response
     const updatedResponses = [...mod.scenarioResponses, scenarioResponse];
 
-    // 12. Determine if all scenarios answered → transition to quiz-active
+    // 13. Determine if all scenarios answered → transition to quiz-active
     const allScenariosAnswered = updatedResponses.length >= mod.content.scenarios.length;
     if (allScenariosAnswered) {
       nextStatus = transitionModule("scenario-active", "scenarios-complete");
     }
 
-    // 13. Update module via sessionRepo.updateModule
+    // 14. Update module via sessionRepo.updateModule
     try {
       await sessionRepo.updateModule(
         tenantId,
@@ -240,7 +265,7 @@ export async function POST(
       throw updateError;
     }
 
-    // 14. Return 200 with result
+    // 15. Return 200 with result
     return NextResponse.json({
       scenarioId: submission.scenarioId,
       score,

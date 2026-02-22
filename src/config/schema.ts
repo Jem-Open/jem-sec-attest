@@ -98,6 +98,13 @@ export const TenantSettingsSchema = z
     retention: z
       .object({
         days: z.number().int().positive().optional(),
+        transcripts: z
+          .object({
+            enabled: z.boolean().default(true),
+            retentionDays: z.number().int().positive().nullable().default(null),
+          })
+          .strict()
+          .optional(),
       })
       .strict()
       .optional(),

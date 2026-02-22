@@ -17,125 +17,14 @@
  * start, curriculum, module-learning, module-scenario, module-quiz, evaluating, result, error.
  * T019: Training page UI and on-mount session hydration.
  * T020: User interactions driving the full training workflow.
- * Constitution VI: All user-facing strings are centralised in STRINGS for i18n readiness.
+ * Constitution VI: All user-facing strings are centralised via i18n hooks.
  */
 
 "use client";
 
+import { useTranslation } from "@/i18n/client";
 import type React from "react";
 import { use, useEffect, useRef, useState } from "react";
-
-// ---------------------------------------------------------------------------
-// String catalog — Constitution VI i18n requirement
-// ---------------------------------------------------------------------------
-
-const STRINGS = {
-  pageTitle: "Security Training",
-  loadingSession: "Loading your training session...",
-  noProfile: "You need to complete your role profile before starting training.",
-  goToIntake: "Complete Role Profile",
-  startDescription:
-    "Complete your security training to demonstrate compliance with your organisation's security policies.",
-  startButton: "Start Training",
-  startingSession: "Creating your training session...",
-  curriculumTitle: "Your Training Curriculum",
-  curriculumSubtitle: "Work through each module in order to complete your training.",
-  progressLabel: (scored: number, total: number) => `${scored} of ${total} modules completed`,
-  moduleStatusLocked: "Locked",
-  moduleStatusInProgress: "In Progress",
-  moduleStatusScored: "Scored",
-  moduleStatusComplete: "Complete",
-  startModule: "Click to begin this module",
-  loadingContent: "Generating module content...",
-  continueToScenarios: "Continue to Scenarios",
-  scenarioProgress: (current: number, total: number) => `Scenario ${current} of ${total}`,
-  submitScenario: "Submit Answer",
-  submittingScenario: "Submitting...",
-  scenarioScoreLabel: "Your score:",
-  scenarioRationaleLabel: "Feedback:",
-  nextScenario: "Next Scenario",
-  proceedToQuiz: "Proceed to Quiz",
-  quizTitle: "Module Quiz",
-  quizSubtitle: "Answer all questions below, then submit.",
-  submitQuiz: "Submit Quiz",
-  submittingQuiz: "Submitting quiz...",
-  moduleScoreLabel: "Module score:",
-  nextModule: "Continue to Next Module",
-  evaluatingTitle: "Evaluating Your Training",
-  evaluatingMessage: "Computing your final score...",
-  resultTitle: "Training Complete",
-  resultPassLabel: "PASSED",
-  resultFailLabel: "FAILED",
-  resultExhaustedLabel: "ATTEMPTS EXHAUSTED",
-  resultAbandonedLabel: "TRAINING ABANDONED",
-  resultScoreLabel: "Your aggregate score:",
-  resultModuleBreakdown: "Module Breakdown",
-  resultModuleScore: (title: string) => `Score for ${title}`,
-  remediationHint:
-    "You did not pass this attempt. If remediation is available, contact your administrator to begin remediation training.",
-  exhaustedMessage:
-    "You have used all available attempts. Please contact your administrator for assistance.",
-  abandonedMessage:
-    "This training session was abandoned. Please contact your administrator to restart.",
-  errorTitle: "Something went wrong",
-  retryButton: "Try Again",
-  freeTextPlaceholder: "Type your answer here...",
-  freeTextLabel: "Your answer",
-  // Progress sidebar (T031)
-  progressSidebarTitle: "Your Progress",
-  progressOverall: (pct: number) => `${pct}% complete`,
-  progressAttempt: (n: number) => `Attempt ${n}`,
-  progressModuleLocked: "Locked",
-  progressModuleInProgress: "In Progress",
-  progressModuleScored: (pct: number) => `${pct}%`,
-  // History view (T031)
-  viewHistoryButton: "View Training History",
-  backToResultButton: "Back to Result",
-  historyTitle: "Training History",
-  historyLoadingMessage: "Loading history...",
-  historyEmptyMessage: "No previous training sessions found.",
-  historyAttemptLabel: (n: number) => `Attempt ${n}`,
-  historyDateLabel: "Date:",
-  historyScoreLabel: "Score:",
-  historyStatusLabel: "Status:",
-  historyModulesLabel: "Module Breakdown",
-  historyErrorMessage: "Failed to load training history. Please try again.",
-  // Abandon training (T033)
-  abandonButton: "Abandon Training",
-  abandonConfirm: "Are you sure? This counts toward your 3-attempt limit.",
-  abandoningSession: "Abandoning...",
-  // Sidebar accessibility labels (T031)
-  progressModuleInProgressLabel: "In progress",
-  progressModuleLockedLabel: "Locked",
-  progressModuleCompletedScoreLabel: (pct: number) => `Completed, score: ${pct}%`,
-  progressModuleCompletedNoScoreLabel: "Completed, score: N/A",
-  // Fallback error messages (shown via setError → renderError)
-  errorLoadSession:
-    "Unable to load your training session. Please check your connection and try again.",
-  errorStartTraining: "Failed to start training. Please try again.",
-  errorLoadModuleContent: "Failed to load module content. Please try again.",
-  errorSubmitAnswer: "Failed to submit answer. Please try again.",
-  errorSubmitQuiz: "Failed to submit quiz. Please try again.",
-  errorEvaluateTraining: "Failed to evaluate training. Please try again.",
-  errorStartRemediation: "Failed to start remediation. Please try again.",
-  errorAbandonTraining: "Failed to abandon training. Please try again.",
-  // Result badge decorative symbols
-  resultPassSymbol: "✓",
-  resultFailSymbol: "✗",
-  // Date fallback
-  historyDateFallback: "—",
-  // Optimistic concurrency conflict (T027)
-  conflictBanner: "Your training was updated in another tab. Refreshing...",
-  // Remediation UI (T023)
-  failedReviewTitle: "Training Result",
-  failedReviewSubtitle: "You did not pass this attempt.",
-  attemptCounter: (current: number, max: number) => `Attempt ${current} of ${max}`,
-  weakAreasLabel: "Areas needing improvement:",
-  startRemediation: "Start Remediation Training",
-  startingRemediation: "Starting remediation...",
-  contactAdminMessage:
-    "You have used all available attempts. Please contact your administrator for assistance.",
-} as const;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -493,22 +382,25 @@ function LoadingSpinner({ light = false }: { light?: boolean }) {
   );
 }
 
-function ModuleStatusBadge({ status }: { status: ModuleStatus }) {
+function ModuleStatusBadge({
+  status,
+  t,
+}: { status: ModuleStatus; t: (key: string, params?: Record<string, string | number>) => string }) {
   const config: Record<ModuleStatus, { label: string; bg: string; color: string }> = {
-    locked: { label: STRINGS.moduleStatusLocked, bg: "#f3f4f6", color: "#6b7280" },
+    locked: { label: t("training.moduleStatusLocked"), bg: "#f3f4f6", color: "#6b7280" },
     "content-generating": {
-      label: STRINGS.moduleStatusInProgress,
+      label: t("training.moduleStatusInProgress"),
       bg: "#dbeafe",
       color: "#1e40af",
     },
-    learning: { label: STRINGS.moduleStatusInProgress, bg: "#dbeafe", color: "#1e40af" },
+    learning: { label: t("training.moduleStatusInProgress"), bg: "#dbeafe", color: "#1e40af" },
     "scenario-active": {
-      label: STRINGS.moduleStatusInProgress,
+      label: t("training.moduleStatusInProgress"),
       bg: "#dbeafe",
       color: "#1e40af",
     },
-    "quiz-active": { label: STRINGS.moduleStatusInProgress, bg: "#dbeafe", color: "#1e40af" },
-    scored: { label: STRINGS.moduleStatusComplete, bg: "#dcfce7", color: "#166534" },
+    "quiz-active": { label: t("training.moduleStatusInProgress"), bg: "#dbeafe", color: "#1e40af" },
+    scored: { label: t("training.moduleStatusComplete"), bg: "#dcfce7", color: "#166534" },
   };
   const { label, bg, color } = config[status];
   return (
@@ -527,6 +419,7 @@ function ModuleStatusBadge({ status }: { status: ModuleStatus }) {
 
 export default function TrainingPage({ params }: { params: Promise<{ tenant: string }> }) {
   const { tenant } = use(params);
+  const { t } = useTranslation();
 
   const [pageState, setPageState] = useState<PageState>("loading-session");
   const [session, setSession] = useState<TrainingSessionResponse | null>(null);
@@ -655,7 +548,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
         }
       } catch {
         if (!cancelled) {
-          setError(STRINGS.errorLoadSession);
+          setError(t("training.error.loadSession"));
           setPageState("error");
         }
       }
@@ -675,11 +568,11 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
   // -------------------------------------------------------------------------
 
   async function refreshSession() {
-    setConflictMessage(STRINGS.conflictBanner);
+    setConflictMessage(t("training.conflict.banner"));
     try {
       const res = await fetch(`/api/training/${tenant}/session`);
       if (!res.ok) {
-        setError(STRINGS.errorLoadSession);
+        setError(t("training.error.loadSession"));
         setPageState("error");
         return;
       }
@@ -737,7 +630,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
       setActiveModuleIndex(0);
       setPageState("curriculum");
     } catch (err) {
-      setError(err instanceof Error ? err.message : STRINGS.errorStartTraining);
+      setError(err instanceof Error ? err.message : t("training.error.startTraining"));
       setPageState("error");
     } finally {
       setIsSubmitting(false);
@@ -770,7 +663,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
       setPageState("module-learning");
     } catch (err) {
       if (isCancelled?.()) return;
-      setError(err instanceof Error ? err.message : STRINGS.errorLoadModuleContent);
+      setError(err instanceof Error ? err.message : t("training.error.loadModuleContent"));
       setPageState("error");
     } finally {
       if (!isCancelled?.()) {
@@ -837,7 +730,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
       setSelectedOption("");
       setFreeTextAnswer("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : STRINGS.errorSubmitAnswer);
+      setError(err instanceof Error ? err.message : t("training.error.submitAnswer"));
       setPageState("error");
     } finally {
       setIsSubmitting(false);
@@ -910,7 +803,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
       );
       setQuizAnswers({});
     } catch (err) {
-      setError(err instanceof Error ? err.message : STRINGS.errorSubmitQuiz);
+      setError(err instanceof Error ? err.message : t("training.error.submitQuiz"));
       setPageState("error");
     } finally {
       setIsSubmitting(false);
@@ -975,7 +868,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
         setPageState("result");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : STRINGS.errorEvaluateTraining);
+      setError(err instanceof Error ? err.message : t("training.error.evaluateTraining"));
       setPageState("error");
     }
   }
@@ -1004,7 +897,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
       setEvaluateNextAction(null);
       setPageState("curriculum");
     } catch (err) {
-      setError(err instanceof Error ? err.message : STRINGS.errorStartRemediation);
+      setError(err instanceof Error ? err.message : t("training.error.startRemediation"));
       setPageState("error");
     } finally {
       setIsSubmitting(false);
@@ -1017,7 +910,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
   }
 
   async function handleAbandonTraining() {
-    const confirmed = window.confirm(STRINGS.abandonConfirm);
+    const confirmed = window.confirm(t("training.abandon.confirm"));
     if (!confirmed) return;
 
     setIsSubmitting(true);
@@ -1032,7 +925,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
       setSession(data.session);
       setPageState("result");
     } catch (err) {
-      setError(err instanceof Error ? err.message : STRINGS.errorAbandonTraining);
+      setError(err instanceof Error ? err.message : t("training.error.abandonTraining"));
       setPageState("error");
     } finally {
       setIsSubmitting(false);
@@ -1052,7 +945,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
       setHistory(data);
       setPageState("history");
     } catch {
-      setError(STRINGS.historyErrorMessage);
+      setError(t("training.history.errorMessage"));
       setPageState("error");
     } finally {
       setIsLoadingHistory(false);
@@ -1074,17 +967,17 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
     const progressPct = total > 0 ? Math.round((scoredCount / total) * 100) : 0;
     return (
       <aside
-        aria-label={STRINGS.progressSidebarTitle}
+        aria-label={t("training.progress.sidebarTitle")}
         style={styles.sidebar as React.CSSProperties}
       >
         <div style={styles.sidebarHeading as React.CSSProperties}>
-          {STRINGS.progressSidebarTitle}
+          {t("training.progress.sidebarTitle")}
         </div>
         <p style={styles.sidebarProgressText as React.CSSProperties}>
-          {STRINGS.progressOverall(progressPct)}
+          {t("training.progress.overall", { pct: progressPct })}
         </p>
         <p style={styles.sidebarProgressText as React.CSSProperties}>
-          {STRINGS.progressAttempt(session.attemptNumber)}
+          {t("training.progress.attempt", { n: session.attemptNumber })}
         </p>
         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
           {modules.map((mod) => {
@@ -1096,11 +989,13 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                   style={{ color: "#166534", fontWeight: 600 }}
                   aria-label={
                     pct != null
-                      ? STRINGS.progressModuleCompletedScoreLabel(pct)
-                      : STRINGS.progressModuleCompletedNoScoreLabel
+                      ? t("training.progress.moduleCompletedScoreLabel", { pct })
+                      : t("training.progress.moduleCompletedNoScoreLabel")
                   }
                 >
-                  {pct != null ? STRINGS.progressModuleScored(pct) : STRINGS.moduleStatusComplete}
+                  {pct != null
+                    ? t("training.progress.moduleScored", { pct })
+                    : t("training.moduleStatusComplete")}
                 </span>
               );
             } else if (
@@ -1112,15 +1007,18 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
               indicator = (
                 <span
                   style={{ color: "#1e40af", display: "flex", alignItems: "center" }}
-                  aria-label={STRINGS.progressModuleInProgressLabel}
+                  aria-label={t("training.progress.moduleInProgressLabel")}
                 >
                   <LoadingSpinner />
                 </span>
               );
             } else {
               indicator = (
-                <span style={{ color: "#9ca3af" }} aria-label={STRINGS.progressModuleLockedLabel}>
-                  {STRINGS.progressModuleLocked}
+                <span
+                  style={{ color: "#9ca3af" }}
+                  aria-label={t("training.progress.moduleLockedLabel")}
+                >
+                  {t("training.progress.moduleLocked")}
                 </span>
               );
             }
@@ -1151,7 +1049,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
       <section aria-labelledby="history-heading">
         <div style={{ display: "flex", alignItems: "center", gap: "1rem", marginBottom: "1rem" }}>
           <h1 id="history-heading" style={styles.heading as React.CSSProperties}>
-            {STRINGS.historyTitle}
+            {t("training.history.title")}
           </h1>
           <button
             type="button"
@@ -1159,18 +1057,20 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
             onClick={handleBackToResult}
             style={styles.secondaryButton as React.CSSProperties}
           >
-            {STRINGS.backToResultButton}
+            {t("training.history.backToResult")}
           </button>
         </div>
         {isLoadingHistory ? (
           <div aria-live="polite" aria-busy="true" style={{ padding: "1rem 0" }}>
             <p style={styles.paragraph as React.CSSProperties}>
               <LoadingSpinner />
-              {STRINGS.historyLoadingMessage}
+              {t("training.history.loadingMessage")}
             </p>
           </div>
         ) : history.length === 0 ? (
-          <p style={styles.paragraph as React.CSSProperties}>{STRINGS.historyEmptyMessage}</p>
+          <p style={styles.paragraph as React.CSSProperties}>
+            {t("training.history.emptyMessage")}
+          </p>
         ) : (
           <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
             {history.map((entry) => {
@@ -1184,7 +1084,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                     month: "short",
                     day: "numeric",
                   })
-                : STRINGS.historyDateFallback;
+                : t("training.history.dateFallback");
               return (
                 <li key={sess.id} style={styles.card as React.CSSProperties}>
                   <div
@@ -1197,10 +1097,10 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                   >
                     <div>
                       <div style={{ fontWeight: 600, color: "#111", marginBottom: "0.25rem" }}>
-                        {STRINGS.historyAttemptLabel(sess.attemptNumber)}
+                        {t("training.history.attemptLabel", { n: sess.attemptNumber })}
                       </div>
                       <div style={{ fontSize: "0.875rem", color: "#555" }}>
-                        {STRINGS.historyDateLabel} {dateStr}
+                        {t("training.history.dateLabel")} {dateStr}
                       </div>
                     </div>
                     <div style={{ textAlign: "right" }}>
@@ -1221,7 +1121,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                       </span>
                       {pct != null && (
                         <div style={{ fontSize: "0.875rem", color: "#555" }}>
-                          {STRINGS.historyScoreLabel} {pct}%
+                          {t("training.history.scoreLabel")} {pct}%
                         </div>
                       )}
                     </div>
@@ -1236,7 +1136,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                           marginBottom: "0.5rem",
                         }}
                       >
-                        {STRINGS.historyModulesLabel}
+                        {t("training.history.modulesLabel")}
                       </summary>
                       <ul style={{ listStyle: "none", padding: "0.5rem 0 0 0", margin: 0 }}>
                         {sessMods.map((mod) => (
@@ -1255,7 +1155,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                             <span style={{ fontWeight: 600, color: "#111" }}>
                               {mod.moduleScore != null
                                 ? `${Math.round(mod.moduleScore * 100)}%`
-                                : "—"}
+                                : "\u2014"}
                             </span>
                           </li>
                         ))}
@@ -1280,7 +1180,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
       <div aria-live="polite" aria-busy="true" style={{ padding: "2rem 0", textAlign: "center" }}>
         <p style={styles.paragraph as React.CSSProperties}>
           <LoadingSpinner />
-          {STRINGS.loadingSession}
+          {t("training.loadingSession")}
         </p>
       </div>
     );
@@ -1290,9 +1190,9 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
     return (
       <section aria-labelledby="no-profile-heading">
         <h1 id="no-profile-heading" style={styles.heading as React.CSSProperties}>
-          {STRINGS.pageTitle}
+          {t("training.pageTitle")}
         </h1>
-        <p style={styles.paragraph as React.CSSProperties}>{STRINGS.noProfile}</p>
+        <p style={styles.paragraph as React.CSSProperties}>{t("training.noProfile")}</p>
         <a
           href={`/${tenant}/intake`}
           ref={firstFocusRef as React.RefObject<HTMLAnchorElement>}
@@ -1302,7 +1202,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
             textDecoration: "none",
           }}
         >
-          {STRINGS.goToIntake}
+          {t("training.goToIntake")}
         </a>
       </section>
     );
@@ -1312,9 +1212,9 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
     return (
       <section aria-labelledby="start-heading">
         <h1 id="start-heading" style={styles.heading as React.CSSProperties}>
-          {STRINGS.pageTitle}
+          {t("training.pageTitle")}
         </h1>
-        <p style={styles.paragraph as React.CSSProperties}>{STRINGS.startDescription}</p>
+        <p style={styles.paragraph as React.CSSProperties}>{t("training.startDescription")}</p>
         <button
           type="button"
           onClick={handleStartTraining}
@@ -1330,10 +1230,10 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
           {isSubmitting ? (
             <>
               <LoadingSpinner light />
-              {STRINGS.startingSession}
+              {t("training.startingSession")}
             </>
           ) : (
-            STRINGS.startButton
+            t("training.startButton")
           )}
         </button>
       </section>
@@ -1353,9 +1253,9 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
     return (
       <section aria-labelledby="curriculum-heading">
         <h1 id="curriculum-heading" style={styles.heading as React.CSSProperties}>
-          {STRINGS.curriculumTitle}
+          {t("training.curriculumTitle")}
         </h1>
-        <p style={styles.paragraph as React.CSSProperties}>{STRINGS.curriculumSubtitle}</p>
+        <p style={styles.paragraph as React.CSSProperties}>{t("training.curriculumSubtitle")}</p>
 
         {/* biome-ignore lint/a11y/useFocusableInteractive: progressbar is a read-only display widget; keyboard focus is not required */}
         <div
@@ -1364,7 +1264,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
           aria-valuenow={scoredCount}
           aria-valuemin={0}
           aria-valuemax={total}
-          aria-label={STRINGS.progressLabel(scoredCount, total)}
+          aria-label={t("training.progressLabel", { scored: scoredCount, total })}
         >
           <div
             style={{
@@ -1374,7 +1274,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
           />
         </div>
         <p style={{ fontSize: "0.875rem", color: "#555", marginBottom: "1rem" }}>
-          {STRINGS.progressLabel(scoredCount, total)}
+          {t("training.progressLabel", { scored: scoredCount, total })}
         </p>
 
         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
@@ -1390,7 +1290,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                   <button
                     type="button"
                     style={{ ...cardStyle, width: "100%", textAlign: "left", background: "white" }}
-                    aria-label={`${mod.title} — ${STRINGS.startModule}`}
+                    aria-label={`${mod.title} \u2014 ${t("training.startModule")}`}
                     onClick={() => handleStartModule(mod.moduleIndex)}
                   >
                     <div>
@@ -1399,7 +1299,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                       </div>
                       <div style={{ fontSize: "0.875rem", color: "#555" }}>{mod.topicArea}</div>
                     </div>
-                    <ModuleStatusBadge status={mod.status} />
+                    <ModuleStatusBadge status={mod.status} t={t} />
                   </button>
                 ) : (
                   <div style={cardStyle} aria-disabled="true">
@@ -1409,7 +1309,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                       </div>
                       <div style={{ fontSize: "0.875rem", color: "#555" }}>{mod.topicArea}</div>
                     </div>
-                    <ModuleStatusBadge status={mod.status} />
+                    <ModuleStatusBadge status={mod.status} t={t} />
                   </div>
                 )}
               </li>
@@ -1431,7 +1331,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
             }}
             aria-busy={isSubmitting}
           >
-            {isSubmitting ? STRINGS.abandoningSession : STRINGS.abandonButton}
+            {isSubmitting ? t("training.abandon.abandoning") : t("training.abandon.button")}
           </button>
         </div>
       </section>
@@ -1457,7 +1357,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
           <div aria-live="polite" aria-busy="true" style={styles.card as React.CSSProperties}>
             <p style={{ color: "#555", margin: 0 }}>
               <LoadingSpinner />
-              {STRINGS.loadingContent}
+              {t("training.loadingContent")}
             </p>
           </div>
         ) : (
@@ -1473,7 +1373,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
               onClick={handleContinueToScenarios}
               style={styles.primaryButton as React.CSSProperties}
             >
-              {STRINGS.continueToScenarios}
+              {t("training.continueToScenarios")}
             </button>
           </>
         )}
@@ -1492,7 +1392,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
             }}
             aria-busy={isSubmitting}
           >
-            {isSubmitting ? STRINGS.abandoningSession : STRINGS.abandonButton}
+            {isSubmitting ? t("training.abandon.abandoning") : t("training.abandon.button")}
           </button>
         </div>
       </section>
@@ -1515,7 +1415,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
           {activeModule.title}
         </h1>
         <p style={{ fontSize: "0.875rem", color: "#555", marginBottom: "1rem" }}>
-          {STRINGS.scenarioProgress(scenarioIndex + 1, total)}
+          {t("training.scenario.progress", { current: scenarioIndex + 1, total })}
         </p>
 
         {lastScenarioResult ? (
@@ -1528,11 +1428,12 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
             }}
           >
             <p style={{ fontWeight: 600, marginBottom: "0.5rem" }}>
-              {STRINGS.scenarioScoreLabel} {Math.round(lastScenarioResult.score * 100)}%
+              {t("training.scenario.scoreLabel")} {Math.round(lastScenarioResult.score * 100)}%
             </p>
             {lastScenarioResult.rationale && (
               <p style={{ color: "#333", margin: 0 }}>
-                <strong>{STRINGS.scenarioRationaleLabel}</strong> {lastScenarioResult.rationale}
+                <strong>{t("training.scenario.rationaleLabel")}</strong>{" "}
+                {lastScenarioResult.rationale}
               </p>
             )}
             <div style={{ marginTop: "1rem" }}>
@@ -1542,7 +1443,9 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                 onClick={handleNextScenario}
                 style={styles.primaryButton as React.CSSProperties}
               >
-                {scenarioIndex + 1 < total ? STRINGS.nextScenario : STRINGS.proceedToQuiz}
+                {scenarioIndex + 1 < total
+                  ? t("training.scenario.next")
+                  : t("training.scenario.proceedToQuiz")}
               </button>
             </div>
           </div>
@@ -1591,14 +1494,14 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                     htmlFor="scenario-free-text"
                     style={{ display: "block", fontWeight: 500, marginBottom: "0.5rem" }}
                   >
-                    {STRINGS.freeTextLabel}
+                    {t("training.freeText.label")}
                   </label>
                   <textarea
                     id="scenario-free-text"
                     value={freeTextAnswer}
                     onChange={(e) => setFreeTextAnswer(e.target.value)}
                     maxLength={2000}
-                    placeholder={STRINGS.freeTextPlaceholder}
+                    placeholder={t("training.freeText.placeholder")}
                     style={styles.textarea as React.CSSProperties}
                     aria-required="true"
                   />
@@ -1636,10 +1539,10 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
               {isSubmitting ? (
                 <>
                   <LoadingSpinner light />
-                  {STRINGS.submittingScenario}
+                  {t("training.scenario.submitting")}
                 </>
               ) : (
-                STRINGS.submitScenario
+                t("training.scenario.submit")
               )}
             </button>
           </form>
@@ -1659,7 +1562,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
             }}
             aria-busy={isSubmitting}
           >
-            {isSubmitting ? STRINGS.abandoningSession : STRINGS.abandonButton}
+            {isSubmitting ? t("training.abandon.abandoning") : t("training.abandon.button")}
           </button>
         </div>
       </section>
@@ -1675,7 +1578,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
     return (
       <section aria-labelledby="quiz-heading">
         <h1 id="quiz-heading" style={styles.heading as React.CSSProperties}>
-          {STRINGS.quizTitle}
+          {t("training.quiz.title")}
         </h1>
         <p style={{ fontSize: "0.875rem", color: "#555", marginBottom: "0.5rem" }}>
           {activeModule.title}
@@ -1684,7 +1587,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
         {lastQuizResult ? (
           <div aria-live="polite" style={styles.card as React.CSSProperties}>
             <p style={{ fontWeight: 600, marginBottom: "1rem" }}>
-              {STRINGS.moduleScoreLabel} {Math.round(lastQuizResult.moduleScore * 100)}%
+              {t("training.quiz.moduleScoreLabel")} {Math.round(lastQuizResult.moduleScore * 100)}%
             </p>
             <button
               type="button"
@@ -1692,7 +1595,9 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
               onClick={handleNextModuleOrEvaluate}
               style={styles.primaryButton as React.CSSProperties}
             >
-              {activeModuleIndex + 1 < modules.length ? STRINGS.nextModule : STRINGS.submitQuiz}
+              {activeModuleIndex + 1 < modules.length
+                ? t("training.quiz.nextModule")
+                : t("training.quiz.submit")}
             </button>
           </div>
         ) : (
@@ -1703,7 +1608,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
             }}
             aria-labelledby="quiz-heading"
           >
-            <p style={styles.paragraph as React.CSSProperties}>{STRINGS.quizSubtitle}</p>
+            <p style={styles.paragraph as React.CSSProperties}>{t("training.quiz.subtitle")}</p>
 
             {questions.map((q, qi) => (
               <fieldset
@@ -1754,7 +1659,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                         fontSize: "0.875rem",
                       }}
                     >
-                      {STRINGS.freeTextLabel}
+                      {t("training.freeText.label")}
                     </label>
                     <textarea
                       id={`quiz-free-text-${q.id}`}
@@ -1766,7 +1671,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                         }))
                       }
                       maxLength={2000}
-                      placeholder={STRINGS.freeTextPlaceholder}
+                      placeholder={t("training.freeText.placeholder")}
                       style={styles.textarea as React.CSSProperties}
                       aria-required="true"
                     />
@@ -1788,10 +1693,10 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
               {isSubmitting ? (
                 <>
                   <LoadingSpinner light />
-                  {STRINGS.submittingQuiz}
+                  {t("training.quiz.submitting")}
                 </>
               ) : (
-                STRINGS.submitQuiz
+                t("training.quiz.submit")
               )}
             </button>
           </form>
@@ -1811,7 +1716,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
             }}
             aria-busy={isSubmitting}
           >
-            {isSubmitting ? STRINGS.abandoningSession : STRINGS.abandonButton}
+            {isSubmitting ? t("training.abandon.abandoning") : t("training.abandon.button")}
           </button>
         </div>
       </section>
@@ -1821,10 +1726,10 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
   function renderEvaluating() {
     return (
       <div aria-live="polite" aria-busy="true" style={{ padding: "2rem 0", textAlign: "center" }}>
-        <h1 style={styles.heading as React.CSSProperties}>{STRINGS.evaluatingTitle}</h1>
+        <h1 style={styles.heading as React.CSSProperties}>{t("training.evaluating.title")}</h1>
         <p style={styles.paragraph as React.CSSProperties}>
           <LoadingSpinner />
-          {STRINGS.evaluatingMessage}
+          {t("training.evaluating.message")}
         </p>
       </div>
     );
@@ -1840,59 +1745,60 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
     const scorePct = aggregateScore != null ? Math.round(aggregateScore * 100) : null;
 
     let statusLabel: string;
-    if (isPassed) statusLabel = STRINGS.resultPassLabel;
-    else if (isExhausted) statusLabel = STRINGS.resultExhaustedLabel;
-    else if (isAbandoned) statusLabel = STRINGS.resultAbandonedLabel;
-    else statusLabel = STRINGS.resultFailLabel;
+    if (isPassed) statusLabel = t("training.result.passLabel");
+    else if (isExhausted) statusLabel = t("training.result.exhaustedLabel");
+    else if (isAbandoned) statusLabel = t("training.result.abandonedLabel");
+    else statusLabel = t("training.result.failLabel");
 
     return (
       <section aria-labelledby="result-heading" aria-live="polite">
         <h1 id="result-heading" style={styles.heading as React.CSSProperties}>
-          {STRINGS.resultTitle}
+          {t("training.result.title")}
         </h1>
 
         <div>
           <span style={styles.resultBadge(isPassed)} aria-label={`Result: ${statusLabel}`}>
-            {isPassed ? STRINGS.resultPassSymbol : STRINGS.resultFailSymbol} {statusLabel}
+            {isPassed ? t("training.result.passSymbol") : t("training.result.failSymbol")}{" "}
+            {statusLabel}
           </span>
         </div>
 
         {scorePct != null && (
           <div
             style={styles.scoreDisplay as React.CSSProperties}
-            aria-label={`${STRINGS.resultScoreLabel} ${scorePct}%`}
+            aria-label={`${t("training.result.scoreLabel")} ${scorePct}%`}
           >
             {scorePct}%
             <span
               style={{ fontSize: "1rem", fontWeight: 400, color: "#555", marginLeft: "0.5rem" }}
             >
-              {STRINGS.resultScoreLabel}
+              {t("training.result.scoreLabel")}
             </span>
           </div>
         )}
 
         {!isPassed && !isExhausted && !isAbandoned && (
           <div style={styles.infoMessage as React.CSSProperties} role="note">
-            {STRINGS.remediationHint}
+            {t("training.remediation.hint")}
           </div>
         )}
 
         {isExhausted && (
           <div style={styles.infoMessage as React.CSSProperties} role="note">
-            {STRINGS.exhaustedMessage}
+            {t("training.remediation.exhaustedMessage")}
           </div>
         )}
 
         {isAbandoned && (
           <div style={styles.infoMessage as React.CSSProperties} role="note">
-            {STRINGS.abandonedMessage}
+            {t("training.remediation.abandonedMessage")}
           </div>
         )}
 
         {modules.length > 0 && (
           <section aria-labelledby="module-breakdown-heading" style={{ marginTop: "2rem" }}>
             <h2 id="module-breakdown-heading" style={styles.subheading as React.CSSProperties}>
-              {STRINGS.resultModuleBreakdown}
+              {t("training.result.moduleBreakdown")}
             </h2>
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
               {modules.map((mod) => (
@@ -1911,7 +1817,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                     {mod.moduleScore != null && (
                       <span
                         style={{ fontWeight: 600, fontSize: "1rem", color: "#111" }}
-                        aria-label={STRINGS.resultModuleScore(mod.title)}
+                        aria-label={t("training.result.moduleScore", { title: mod.title })}
                       >
                         {Math.round(mod.moduleScore * 100)}%
                       </span>
@@ -1939,10 +1845,10 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
             {isLoadingHistory ? (
               <>
                 <LoadingSpinner />
-                {STRINGS.historyLoadingMessage}
+                {t("training.history.loadingMessage")}
               </>
             ) : (
-              STRINGS.viewHistoryButton
+              t("training.history.viewButton")
             )}
           </button>
         </div>
@@ -1961,29 +1867,32 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
     return (
       <section aria-labelledby="failed-review-heading" aria-live="polite">
         <h1 id="failed-review-heading" style={styles.heading as React.CSSProperties}>
-          {STRINGS.failedReviewTitle}
+          {t("training.remediation.failedReviewTitle")}
         </h1>
 
         <div>
-          <span style={styles.resultBadge(false)} aria-label={`Result: ${STRINGS.resultFailLabel}`}>
-            {STRINGS.resultFailSymbol} {STRINGS.resultFailLabel}
+          <span
+            style={styles.resultBadge(false)}
+            aria-label={`Result: ${t("training.result.failLabel")}`}
+          >
+            {t("training.result.failSymbol")} {t("training.result.failLabel")}
           </span>
         </div>
 
         <p style={{ fontSize: "0.875rem", color: "#555", marginBottom: "1rem" }}>
-          {STRINGS.failedReviewSubtitle}
+          {t("training.remediation.failedReviewSubtitle")}
         </p>
 
         {scorePct != null && (
           <div
             style={styles.scoreDisplay as React.CSSProperties}
-            aria-label={`${STRINGS.resultScoreLabel} ${scorePct}%`}
+            aria-label={`${t("training.result.scoreLabel")} ${scorePct}%`}
           >
             {scorePct}%
             <span
               style={{ fontSize: "1rem", fontWeight: 400, color: "#555", marginLeft: "0.5rem" }}
             >
-              {STRINGS.resultScoreLabel}
+              {t("training.result.scoreLabel")}
             </span>
           </div>
         )}
@@ -1997,7 +1906,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
               id="failed-module-breakdown-heading"
               style={styles.subheading as React.CSSProperties}
             >
-              {STRINGS.resultModuleBreakdown}
+              {t("training.result.moduleBreakdown")}
             </h2>
             <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
               {modules.map((mod) => {
@@ -2031,7 +1940,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                               fontWeight: 500,
                             }}
                           >
-                            {STRINGS.weakAreasLabel.replace(":", "")}
+                            {t("training.remediation.weakAreasLabel").replace(":", "")}
                           </div>
                         )}
                       </div>
@@ -2042,7 +1951,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                             fontSize: "1rem",
                             color: isWeak ? "#991b1b" : "#111",
                           }}
-                          aria-label={STRINGS.resultModuleScore(mod.title)}
+                          aria-label={t("training.result.moduleScore", { title: mod.title })}
                         >
                           {modPct}%
                         </span>
@@ -2072,24 +1981,27 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
               {isSubmitting ? (
                 <>
                   <LoadingSpinner light />
-                  {STRINGS.startingRemediation}
+                  {t("training.remediation.startingRemediation")}
                 </>
               ) : (
-                STRINGS.startRemediation
+                t("training.remediation.startRemediation")
               )}
             </button>
           ) : (
             <div style={styles.infoMessage as React.CSSProperties} role="note">
-              {STRINGS.contactAdminMessage}
+              {t("training.remediation.contactAdminMessage")}
             </div>
           )}
         </div>
 
         <p
           style={{ fontSize: "0.875rem", color: "#777", marginTop: "0.75rem" }}
-          aria-label={STRINGS.attemptCounter(attemptNumber, maxAttempts)}
+          aria-label={t("training.remediation.attemptCounter", {
+            current: attemptNumber,
+            max: maxAttempts,
+          })}
         >
-          {STRINGS.attemptCounter(attemptNumber, maxAttempts)}
+          {t("training.remediation.attemptCounter", { current: attemptNumber, max: maxAttempts })}
         </p>
       </section>
     );
@@ -2099,7 +2011,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
     return (
       <section aria-labelledby="error-heading" aria-live="assertive">
         <h1 id="error-heading" style={styles.errorHeading as React.CSSProperties}>
-          {STRINGS.errorTitle}
+          {t("training.error.title")}
         </h1>
         <p style={{ color: "#333", marginBottom: "1.5rem" }}>{error}</p>
         <button
@@ -2108,7 +2020,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
           onClick={handleRetry}
           style={styles.primaryButton as React.CSSProperties}
         >
-          {STRINGS.retryButton}
+          {t("training.error.retryButton")}
         </button>
       </section>
     );
@@ -2119,7 +2031,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
   // -------------------------------------------------------------------------
 
   return (
-    <main style={styles.container as React.CSSProperties}>
+    <main id="main-content" style={styles.container as React.CSSProperties}>
       {conflictMessage && (
         <div
           role="alert"

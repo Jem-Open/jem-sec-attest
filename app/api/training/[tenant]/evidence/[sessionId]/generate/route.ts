@@ -20,7 +20,7 @@
 
 import { generateEvidenceForSession } from "@/evidence/evidence-generator";
 import { EvidenceRepository } from "@/evidence/evidence-repository";
-import { SQLiteAdapter } from "@/storage/sqlite-adapter";
+import { getStorage } from "@/storage/factory";
 import { NextResponse } from "next/server";
 
 const TERMINAL_STATUSES = new Set(["passed", "exhausted", "abandoned"]);
@@ -48,38 +48,28 @@ export async function POST(
     );
   }
 
-  const storage = new SQLiteAdapter({
-    dbPath: process.env.DB_PATH ?? "data/jem.db",
-  });
-  await storage.initialize();
+  const storage = await getStorage();
 
-  try {
-    // Check session exists and is in terminal state
-    const session = await storage.findById(tenantId, "training_sessions", sessionId);
-    if (!session) {
-      return NextResponse.json(
-        { error: "not_found", message: "Session not found" },
-        { status: 404 },
-      );
-    }
-    if (!TERMINAL_STATUSES.has((session as Record<string, unknown>).status as string)) {
-      return NextResponse.json(
-        { error: "conflict", message: "Session is not in a terminal state" },
-        { status: 409 },
-      );
-    }
-
-    // Check if evidence already exists (idempotent)
-    const evidenceRepo = new EvidenceRepository(storage);
-    const existing = await evidenceRepo.findBySessionId(tenantId, sessionId);
-    if (existing) {
-      return NextResponse.json(existing, { status: 200 });
-    }
-
-    // Generate evidence (awaited, not fire-and-forget — manages its own storage connection)
-    const evidence = await generateEvidenceForSession(tenantId, sessionId);
-    return NextResponse.json(evidence, { status: 201 });
-  } finally {
-    await storage.close();
+  // Check session exists and is in terminal state
+  const session = await storage.findById(tenantId, "training_sessions", sessionId);
+  if (!session) {
+    return NextResponse.json({ error: "not_found", message: "Session not found" }, { status: 404 });
   }
+  if (!TERMINAL_STATUSES.has((session as Record<string, unknown>).status as string)) {
+    return NextResponse.json(
+      { error: "conflict", message: "Session is not in a terminal state" },
+      { status: 409 },
+    );
+  }
+
+  // Check if evidence already exists (idempotent)
+  const evidenceRepo = new EvidenceRepository(storage);
+  const existing = await evidenceRepo.findBySessionId(tenantId, sessionId);
+  if (existing) {
+    return NextResponse.json(existing, { status: 200 });
+  }
+
+  // Generate evidence (awaited, not fire-and-forget — manages its own storage connection)
+  const evidence = await generateEvidenceForSession(tenantId, sessionId);
+  return NextResponse.json(evidence, { status: 201 });
 }

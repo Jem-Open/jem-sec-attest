@@ -28,13 +28,10 @@ import { createAuthFailureEvent, createSignInEvent, logAuthEvent } from "@/auth/
 import { EmployeeRepository } from "@/auth/employee-repository";
 import { createSession } from "@/auth/session/session-manager";
 import { validateEmailDomainForTenant, validateTenantSlug } from "@/auth/tenant-validation";
-import { SQLiteAdapter } from "@/storage/sqlite-adapter";
+import { getStorage } from "@/storage/factory";
 import { NextResponse } from "next/server";
 
-const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
 const oidcAdapter = new OIDCAdapter();
-const employeeRepo = new EmployeeRepository(storage);
-const auditLogger = new AuditLogger(storage);
 
 export async function GET(request: Request, { params }: { params: Promise<{ tenant: string }> }) {
   const { tenant: tenantSlug } = await params;
@@ -47,7 +44,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
 
   const { tenant } = lookup;
 
-  await storage.initialize();
+  const storage = await getStorage();
+  const employeeRepo = new EmployeeRepository(storage);
+  const auditLogger = new AuditLogger(storage);
 
   const result = await oidcAdapter.handleCallback(request, tenant);
 

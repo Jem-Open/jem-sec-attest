@@ -22,11 +22,8 @@ import { AuditLogger } from "@/audit/audit-logger";
 import { OIDCAdapter } from "@/auth/adapters/oidc-adapter";
 import { createAuthConfigErrorEvent, logAuthEvent } from "@/auth/audit";
 import { validateTenantSlug } from "@/auth/tenant-validation";
-import { SQLiteAdapter } from "@/storage/sqlite-adapter";
+import { getStorage } from "@/storage/factory";
 import { NextResponse } from "next/server";
-
-const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
-const auditLogger = new AuditLogger(storage);
 
 const oidcAdapter = new OIDCAdapter();
 
@@ -66,7 +63,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
     const auditReason = isMissing ? "missing-oidc-config" : "invalid-oidc-config";
     const redirectCode = isMissing ? "missing_config" : "invalid_config";
 
-    await storage.initialize();
+    const storage = await getStorage();
+    const auditLogger = new AuditLogger(storage);
     await logAuthEvent(auditLogger, createAuthConfigErrorEvent(tenantSlug, auditReason, request));
 
     return NextResponse.redirect(

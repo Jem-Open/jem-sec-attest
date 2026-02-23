@@ -67,7 +67,10 @@ export default defineConfig({
         resolve: { alias: { "@": path.resolve(__dirname, "src") } },
         test: {
           name: "contract",
+          globals: true,
           include: ["tests/contract/**/*.spec.ts"],
+          testTimeout: 60_000,
+          hookTimeout: 60_000,
         },
       },
     ],

@@ -21,7 +21,7 @@
 import { ComplianceUploadRepository } from "@/compliance/upload-repository";
 import { getSnapshot } from "@/config/index";
 import { EvidenceRepository } from "@/evidence/evidence-repository";
-import { SQLiteAdapter } from "@/storage/sqlite-adapter";
+import { getStorage } from "@/storage/factory";
 import { NextResponse } from "next/server";
 
 export async function GET(
@@ -41,55 +41,49 @@ export async function GET(
 
   const role = request.headers.get("x-employee-role") ?? "employee";
 
-  const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
+  const storage = await getStorage();
   const evidenceRepo = new EvidenceRepository(storage);
 
-  await storage.initialize();
+  const evidence = await evidenceRepo.findBySessionId(tenantId, sessionId);
 
-  try {
-    const evidence = await evidenceRepo.findBySessionId(tenantId, sessionId);
-
-    if (!evidence) {
-      return NextResponse.json(
-        { error: "not_found", message: "No evidence found for this session" },
-        { status: 404 },
-      );
-    }
-
-    // Role-based access: employees can only see their own evidence
-    if (role === "employee" && evidence.employeeId !== employeeId) {
-      return NextResponse.json({ error: "forbidden", message: "Access denied" }, { status: 403 });
-    }
-
-    // Look up compliance upload status if tenant has compliance enabled
-    const snapshot = getSnapshot();
-    const tenant = snapshot?.tenants.get(tenantId);
-    const complianceProvider = tenant?.settings?.integrations?.compliance?.provider;
-    let complianceUpload = null;
-
-    if (complianceProvider) {
-      const uploadRepo = new ComplianceUploadRepository(storage);
-      const upload = await uploadRepo.findByEvidenceId(tenantId, evidence.id, complianceProvider);
-      if (upload) {
-        complianceUpload = {
-          id: upload.id,
-          provider: upload.provider,
-          status: upload.status,
-          attemptCount: upload.attemptCount,
-          maxAttempts: upload.maxAttempts,
-          providerReferenceId: upload.providerReferenceId,
-          lastError: upload.lastError,
-          lastErrorCode: upload.lastErrorCode,
-          retryable: upload.retryable,
-          createdAt: upload.createdAt,
-          updatedAt: upload.updatedAt,
-          completedAt: upload.completedAt,
-        };
-      }
-    }
-
-    return NextResponse.json({ ...evidence, complianceUpload }, { status: 200 });
-  } finally {
-    await storage.close();
+  if (!evidence) {
+    return NextResponse.json(
+      { error: "not_found", message: "No evidence found for this session" },
+      { status: 404 },
+    );
   }
+
+  // Role-based access: employees can only see their own evidence
+  if (role === "employee" && evidence.employeeId !== employeeId) {
+    return NextResponse.json({ error: "forbidden", message: "Access denied" }, { status: 403 });
+  }
+
+  // Look up compliance upload status if tenant has compliance enabled
+  const snapshot = getSnapshot();
+  const tenant = snapshot?.tenants.get(tenantId);
+  const complianceProvider = tenant?.settings?.integrations?.compliance?.provider;
+  let complianceUpload = null;
+
+  if (complianceProvider) {
+    const uploadRepo = new ComplianceUploadRepository(storage);
+    const upload = await uploadRepo.findByEvidenceId(tenantId, evidence.id, complianceProvider);
+    if (upload) {
+      complianceUpload = {
+        id: upload.id,
+        provider: upload.provider,
+        status: upload.status,
+        attemptCount: upload.attemptCount,
+        maxAttempts: upload.maxAttempts,
+        providerReferenceId: upload.providerReferenceId,
+        lastError: upload.lastError,
+        lastErrorCode: upload.lastErrorCode,
+        retryable: upload.retryable,
+        createdAt: upload.createdAt,
+        updatedAt: upload.updatedAt,
+        completedAt: upload.completedAt,
+      };
+    }
+  }
+
+  return NextResponse.json({ ...evidence, complianceUpload }, { status: 200 });
 }

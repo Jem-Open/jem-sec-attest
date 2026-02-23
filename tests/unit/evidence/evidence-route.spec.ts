@@ -45,8 +45,8 @@ const { mockStorage, mockEvidenceRepo } = vi.hoisted(() => {
   return { mockStorage, mockEvidenceRepo };
 });
 
-vi.mock("@/storage/sqlite-adapter", () => ({
-  SQLiteAdapter: vi.fn().mockImplementation(() => mockStorage),
+vi.mock("@/storage/factory", () => ({
+  getStorage: vi.fn().mockResolvedValue(mockStorage),
 }));
 vi.mock("@/evidence/evidence-repository", () => ({
   EvidenceRepository: vi.fn().mockImplementation(() => mockEvidenceRepo),
@@ -208,14 +208,5 @@ describe("GET /api/training/[tenant]/evidence/[sessionId]", () => {
     expect(response.status).toBe(401);
     const body = await response.json();
     expect(body.error).toBe("unauthorized");
-  });
-
-  it("closes storage in finally block", async () => {
-    mockEvidenceRepo.findBySessionId.mockRejectedValue(new Error("boom"));
-
-    const request = makeRequest("sess-0001", "acme", "emp-100", "employee");
-    await expect(GET(request, makeParams("acme", "sess-0001"))).rejects.toThrow("boom");
-
-    expect(mockStorage.close).toHaveBeenCalled();
   });
 });

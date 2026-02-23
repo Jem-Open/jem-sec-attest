@@ -23,12 +23,10 @@ import { OIDCAdapter } from "@/auth/adapters/oidc-adapter";
 import { createSignOutEvent, logAuthEvent } from "@/auth/audit";
 import { destroySession, getSession } from "@/auth/session/session-manager";
 import { validateTenantSlug } from "@/auth/tenant-validation";
-import { SQLiteAdapter } from "@/storage/sqlite-adapter";
+import { getStorage } from "@/storage/factory";
 import { NextResponse } from "next/server";
 
-const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
 const oidcAdapter = new OIDCAdapter();
-const auditLogger = new AuditLogger(storage);
 
 async function handleSignOut(
   request: Request,
@@ -51,7 +49,8 @@ async function handleSignOut(
 
   const { tenant } = lookup;
 
-  await storage.initialize();
+  const storage = await getStorage();
+  const auditLogger = new AuditLogger(storage);
 
   // Read current session for audit logging
   const session = await getSession();

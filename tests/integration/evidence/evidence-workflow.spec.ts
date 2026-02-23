@@ -36,6 +36,7 @@ import { generateEvidenceForSession } from "@/evidence/evidence-generator";
 import { EvidenceRepository } from "@/evidence/evidence-repository";
 import { computeContentHash } from "@/evidence/hash";
 import { TrainingEvidenceSchema } from "@/evidence/schemas";
+import { closeStorage, resetStorage } from "@/storage/factory";
 import { SQLiteAdapter } from "@/storage/sqlite-adapter";
 import { SessionRepository } from "@/training/session-repository";
 import type { TrainingModule, TrainingSession } from "@/training/types";
@@ -177,13 +178,18 @@ describe("Evidence Workflow Integration", () => {
       tmpdir(),
       `jem-test-evidence-${Date.now()}-${Math.random().toString(36).slice(2)}.db`,
     );
+    // Set DB_PATH so the factory creates an adapter using this temp file
+    process.env.DB_PATH = dbPath;
+    resetStorage();
     storage = new SQLiteAdapter({ dbPath });
     await storage.initialize();
     sessionRepo = new SessionRepository(storage);
   });
 
   afterEach(async () => {
+    await closeStorage();
     await storage.close();
+    process.env.DB_PATH = undefined;
     if (existsSync(dbPath)) {
       unlinkSync(dbPath);
     }
@@ -219,7 +225,7 @@ describe("Evidence Workflow Integration", () => {
       );
 
       // Generate evidence
-      const evidence = await generateEvidenceForSession(TENANT_ID, session.id, dbPath);
+      const evidence = await generateEvidenceForSession(TENANT_ID, session.id);
 
       // Validate against Zod schema
       const parsed = TrainingEvidenceSchema.parse(evidence);
@@ -318,7 +324,7 @@ describe("Evidence Workflow Integration", () => {
       );
 
       // Generate evidence
-      const evidence = await generateEvidenceForSession(TENANT_ID, session.id, dbPath);
+      const evidence = await generateEvidenceForSession(TENANT_ID, session.id);
 
       // Validate against schema
       TrainingEvidenceSchema.parse(evidence);
@@ -353,10 +359,10 @@ describe("Evidence Workflow Integration", () => {
       await sessionRepo.createModules(TENANT_ID, [buildModuleData(session.id, 0)]);
 
       // First generation
-      const first = await generateEvidenceForSession(TENANT_ID, session.id, dbPath);
+      const first = await generateEvidenceForSession(TENANT_ID, session.id);
 
       // Second generation — should return same record
-      const second = await generateEvidenceForSession(TENANT_ID, session.id, dbPath);
+      const second = await generateEvidenceForSession(TENANT_ID, session.id);
 
       expect(second.id).toBe(first.id);
       expect(second.contentHash).toBe(first.contentHash);
@@ -381,7 +387,7 @@ describe("Evidence Workflow Integration", () => {
         buildSessionData({ status: "in-progress" }),
       );
 
-      await expect(generateEvidenceForSession(TENANT_ID, session.id, dbPath)).rejects.toThrow(
+      await expect(generateEvidenceForSession(TENANT_ID, session.id)).rejects.toThrow(
         /expected terminal state/i,
       );
     });
@@ -392,15 +398,15 @@ describe("Evidence Workflow Integration", () => {
         buildSessionData({ status: "evaluating" }),
       );
 
-      await expect(generateEvidenceForSession(TENANT_ID, session.id, dbPath)).rejects.toThrow(
+      await expect(generateEvidenceForSession(TENANT_ID, session.id)).rejects.toThrow(
         /expected terminal state/i,
       );
     });
 
     it("throws when session does not exist", async () => {
-      await expect(
-        generateEvidenceForSession(TENANT_ID, "nonexistent-session-id", dbPath),
-      ).rejects.toThrow(/not found/i);
+      await expect(generateEvidenceForSession(TENANT_ID, "nonexistent-session-id")).rejects.toThrow(
+        /not found/i,
+      );
     });
   });
 });

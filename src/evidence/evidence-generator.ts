@@ -19,7 +19,7 @@
 
 import { dispatchUpload } from "../compliance/orchestrator.js";
 import { getSnapshot } from "../config/index.js";
-import { SQLiteAdapter } from "../storage/sqlite-adapter.js";
+import { getStorage } from "../storage/factory.js";
 import type { TrainingModule, TrainingSession } from "../training/schemas.js";
 import { SessionRepository } from "../training/session-repository.js";
 import { EvidenceRepository } from "./evidence-repository.js";
@@ -51,110 +51,96 @@ const SESSIONS_COLLECTION = "training_sessions";
 export async function generateEvidenceForSession(
   tenantId: string,
   sessionId: string,
-  dbPath?: string,
 ): Promise<TrainingEvidence> {
-  const storage = new SQLiteAdapter({ dbPath: dbPath ?? process.env.DB_PATH ?? "data/jem.db" });
-  await storage.initialize();
+  const storage = await getStorage();
 
-  try {
-    const sessionRepo = new SessionRepository(storage);
-    const evidenceRepo = new EvidenceRepository(storage);
+  const sessionRepo = new SessionRepository(storage);
+  const evidenceRepo = new EvidenceRepository(storage);
 
-    // 1. Load session
-    const session = await storage.findById<TrainingSession>(
-      tenantId,
-      SESSIONS_COLLECTION,
-      sessionId,
+  // 1. Load session
+  const session = await storage.findById<TrainingSession>(tenantId, SESSIONS_COLLECTION, sessionId);
+
+  if (!session) {
+    throw new Error(`Session '${sessionId}' not found`);
+  }
+
+  if (!TERMINAL_STATUSES.has(session.status)) {
+    throw new Error(
+      `Session '${sessionId}' is in '${session.status}' state, expected terminal state (passed, exhausted, or abandoned)`,
     );
+  }
 
-    if (!session) {
-      throw new Error(`Session '${sessionId}' not found`);
-    }
+  // 2. Idempotency check — return existing evidence if already generated
+  const existing = await evidenceRepo.findBySessionId(tenantId, sessionId);
+  if (existing) {
+    return existing;
+  }
 
-    if (!TERMINAL_STATUSES.has(session.status)) {
-      throw new Error(
-        `Session '${sessionId}' is in '${session.status}' state, expected terminal state (passed, exhausted, or abandoned)`,
-      );
-    }
+  // 3. Load modules
+  const modules = await sessionRepo.findModulesBySession(tenantId, sessionId);
 
-    // 2. Idempotency check — return existing evidence if already generated
-    const existing = await evidenceRepo.findBySessionId(tenantId, sessionId);
-    if (existing) {
-      return existing;
-    }
+  // 4. Resolve tenant config for thresholds
+  const snapshot = getSnapshot();
+  const tenant = snapshot?.tenants.get(tenantId);
+  const passThreshold = tenant?.settings?.training?.passThreshold ?? 0.7;
+  const maxAttempts = tenant?.settings?.training?.maxAttempts ?? 3;
 
-    // 3. Load modules
-    const modules = await sessionRepo.findModulesBySession(tenantId, sessionId);
-
-    // 4. Resolve tenant config for thresholds
-    const snapshot = getSnapshot();
-    const tenant = snapshot?.tenants.get(tenantId);
-    const passThreshold = tenant?.settings?.training?.passThreshold ?? 0.7;
-    const maxAttempts = tenant?.settings?.training?.maxAttempts ?? 3;
-
-    // 5. Assemble the evidence body
-    const evidenceBody: EvidenceBody = {
-      session: {
-        sessionId: session.id,
-        employeeId: session.employeeId,
-        tenantId: session.tenantId,
-        attemptNumber: session.attemptNumber,
-        totalAttempts: maxAttempts,
-        status: session.status as "passed" | "exhausted" | "abandoned",
-        createdAt: session.createdAt,
-        completedAt: session.completedAt,
-      },
-      policyAttestation: {
-        configHash: session.configHash,
-        roleProfileId: session.roleProfileId,
-        roleProfileVersion: session.roleProfileVersion,
-        appVersion: session.appVersion,
-        passThreshold,
-        maxAttempts,
-      },
-      modules: modules.map((m) => buildModuleEvidence(m)),
-      outcome: {
-        aggregateScore: session.aggregateScore,
-        passed: session.status === "passed" ? true : session.status === "abandoned" ? null : false,
-        passThreshold,
-        weakAreas: session.weakAreas,
-        moduleScores: modules.map((m) => ({
-          moduleIndex: m.moduleIndex,
-          title: m.title,
-          score: m.moduleScore,
-        })),
-      },
-    };
-
-    // 6. Compute content hash for tamper detection
-    const contentHash = computeContentHash(evidenceBody as unknown as Record<string, unknown>);
-
-    // 7. Persist the evidence record
-    const record = await evidenceRepo.create(tenantId, {
-      tenantId,
+  // 5. Assemble the evidence body
+  const evidenceBody: EvidenceBody = {
+    session: {
       sessionId: session.id,
       employeeId: session.employeeId,
-      schemaVersion: CURRENT_SCHEMA_VERSION,
-      evidence: evidenceBody,
-      contentHash,
-      generatedAt: new Date().toISOString(),
-    });
+      tenantId: session.tenantId,
+      attemptNumber: session.attemptNumber,
+      totalAttempts: maxAttempts,
+      status: session.status as "passed" | "exhausted" | "abandoned",
+      createdAt: session.createdAt,
+      completedAt: session.completedAt,
+    },
+    policyAttestation: {
+      configHash: session.configHash,
+      roleProfileId: session.roleProfileId,
+      roleProfileVersion: session.roleProfileVersion,
+      appVersion: session.appVersion,
+      passThreshold,
+      maxAttempts,
+    },
+    modules: modules.map((m) => buildModuleEvidence(m)),
+    outcome: {
+      aggregateScore: session.aggregateScore,
+      passed: session.status === "passed" ? true : session.status === "abandoned" ? null : false,
+      passThreshold,
+      weakAreas: session.weakAreas,
+      moduleScores: modules.map((m) => ({
+        moduleIndex: m.moduleIndex,
+        title: m.title,
+        score: m.moduleScore,
+      })),
+    },
+  };
 
-    // 8. Dispatch compliance upload (fire-and-forget).
-    // Uses a dedicated storage connection so the caller's connection can close safely.
-    const uploadStorage = new SQLiteAdapter({
-      dbPath: dbPath ?? process.env.DB_PATH ?? "data/jem.db",
-    });
-    uploadStorage
-      .initialize()
-      .then(() => dispatchUpload(tenantId, record.id, uploadStorage))
-      .catch((err) => console.error("Compliance upload dispatch failed:", err))
-      .finally(() => uploadStorage.close());
+  // 6. Compute content hash for tamper detection
+  const contentHash = computeContentHash(evidenceBody as unknown as Record<string, unknown>);
 
-    return record;
-  } finally {
-    await storage.close();
-  }
+  // 7. Persist the evidence record
+  const record = await evidenceRepo.create(tenantId, {
+    tenantId,
+    sessionId: session.id,
+    employeeId: session.employeeId,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    evidence: evidenceBody,
+    contentHash,
+    generatedAt: new Date().toISOString(),
+  });
+
+  // 8. Dispatch compliance upload (fire-and-forget).
+  // Uses the shared storage singleton — no separate connection needed.
+  const uploadStorage = await getStorage();
+  dispatchUpload(tenantId, record.id, uploadStorage).catch((err) =>
+    console.error("Compliance upload dispatch failed:", err),
+  );
+
+  return record;
 }
 
 // ---------------------------------------------------------------------------

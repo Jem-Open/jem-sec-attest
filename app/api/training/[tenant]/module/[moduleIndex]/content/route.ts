@@ -21,7 +21,7 @@
 import { getSnapshot } from "@/config/index";
 import { resolveModel } from "@/intake/ai-model-resolver";
 import { ProfileRepository } from "@/intake/profile-repository";
-import { SQLiteAdapter } from "@/storage/sqlite-adapter";
+import { getStorage } from "@/storage/factory";
 import { ModuleGenerationError, generateModuleContent } from "@/training/module-generator";
 import { MAX_MODULE_INDEX } from "@/training/schemas";
 import { SessionRepository, VersionConflictError } from "@/training/session-repository";
@@ -79,11 +79,9 @@ export async function POST(
   }
 
   // Initialise repositories
-  const adapter = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
-  const sessionRepo = new SessionRepository(adapter);
-  const profileRepo = new ProfileRepository(adapter);
-
-  await adapter.initialize();
+  const storage = await getStorage();
+  const sessionRepo = new SessionRepository(storage);
+  const profileRepo = new ProfileRepository(storage);
 
   let activeSessionId: string | undefined;
 
@@ -235,7 +233,5 @@ export async function POST(
       { error: "internal_error", message: "An unexpected error occurred" },
       { status: 500 },
     );
-  } finally {
-    await adapter.close();
   }
 }

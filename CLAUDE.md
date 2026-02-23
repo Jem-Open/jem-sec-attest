@@ -93,9 +93,10 @@ Copy `.env.example` to `.env`. Required variables:
 - **Tenant isolation** — every API route validates `[tenant]` param against loaded config; storage queries must filter by tenant
 
 ## Recent Changes
+- 009-postgres-support: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x, React 19.x, `postgres` (postgres.js — Unlicense, zero deps)
 - 008-guardrails-i18n-a11y: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), React 19.x, Vercel AI SDK v6, Zod v4.x
 - 007-evidence-integration: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), pdfkit (existing), node `fetch` (native)
-- 006-pdf-evidence-export: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), pdfkit (new), Zod v4.x
 
 ## Active Technologies
-- TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), React 19.x, Vercel AI SDK v6, Zod v4.x (008-guardrails-i18n-a11y)
+- TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x, React 19.x, `postgres` (postgres.js — Unlicense, zero deps) (009-postgres-support)
+- PostgreSQL 14+ via `postgres` library; SQLite via `better-sqlite3` (existing) (009-postgres-support)

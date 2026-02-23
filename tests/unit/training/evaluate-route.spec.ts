@@ -26,9 +26,8 @@ const mockSessionRepo = vi.hoisted(() => ({
   updateSession: vi.fn(),
 }));
 
-vi.mock("@/storage/sqlite-adapter", () => ({
-  SQLiteAdapter: vi.fn().mockImplementation(() => ({
-    initialize: vi.fn(),
+vi.mock("@/storage/factory", () => ({
+  getStorage: vi.fn().mockResolvedValue({
     create: vi.fn(),
     findById: vi.fn(),
     findMany: vi.fn(),
@@ -36,8 +35,7 @@ vi.mock("@/storage/sqlite-adapter", () => ({
     delete: vi.fn(),
     transaction: vi.fn().mockImplementation((_t: string, fn: () => Promise<unknown>) => fn()),
     getMetadata: vi.fn(),
-    close: vi.fn(),
-  })),
+  }),
 }));
 
 vi.mock("@/training/session-repository", () => ({

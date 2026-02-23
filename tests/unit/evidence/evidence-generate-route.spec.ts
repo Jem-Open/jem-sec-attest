@@ -19,7 +19,6 @@
 
 const { mockStorage, mockEvidenceRepo, mockGenerateEvidence } = vi.hoisted(() => {
   const mockStorage = {
-    initialize: vi.fn(),
     create: vi.fn(),
     findById: vi.fn(),
     findMany: vi.fn(),
@@ -27,7 +26,6 @@ const { mockStorage, mockEvidenceRepo, mockGenerateEvidence } = vi.hoisted(() =>
     delete: vi.fn(),
     transaction: vi.fn().mockImplementation((_t: string, fn: () => Promise<unknown>) => fn()),
     getMetadata: vi.fn(),
-    close: vi.fn(),
   };
   const mockEvidenceRepo = {
     listByTenant: vi.fn(),
@@ -39,8 +37,8 @@ const { mockStorage, mockEvidenceRepo, mockGenerateEvidence } = vi.hoisted(() =>
   return { mockStorage, mockEvidenceRepo, mockGenerateEvidence };
 });
 
-vi.mock("@/storage/sqlite-adapter", () => ({
-  SQLiteAdapter: vi.fn().mockImplementation(() => mockStorage),
+vi.mock("@/storage/factory", () => ({
+  getStorage: vi.fn().mockResolvedValue(mockStorage),
 }));
 
 vi.mock("@/evidence/evidence-repository", () => ({

@@ -21,7 +21,7 @@
 import { getSnapshot } from "@/config/index";
 import { SecretRedactor } from "@/guardrails/secret-redactor";
 import { resolveModel } from "@/intake/ai-model-resolver";
-import { SQLiteAdapter } from "@/storage/sqlite-adapter";
+import { getStorage } from "@/storage/factory";
 import { EvaluationError, evaluateFreeText } from "@/training/evaluator";
 import { MAX_MODULE_INDEX, ScenarioSubmissionSchema } from "@/training/schemas";
 import type { ModuleStatus } from "@/training/schemas";
@@ -77,201 +77,190 @@ export async function POST(
   const submission = parsed.data;
 
   // Initialise repositories
-  const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
+  const storage = await getStorage();
   const sessionRepo = new SessionRepository(storage);
 
-  await storage.initialize();
+  // 4. Find active session
+  const session = await sessionRepo.findActiveSession(tenantId, employeeId);
+  if (!session) {
+    return NextResponse.json(
+      { error: "not_found", message: "No active training session found" },
+      { status: 404 },
+    );
+  }
+
+  // Find the module
+  const mod = await sessionRepo.findModule(tenantId, session.id, moduleIndex);
+  if (!mod) {
+    return NextResponse.json({ error: "not_found", message: "Module not found" }, { status: 404 });
+  }
+
+  // 5. Guard: module must be in `learning` or `scenario-active` state
+  if (mod.status !== "learning" && mod.status !== "scenario-active") {
+    return NextResponse.json(
+      {
+        error: "conflict",
+        message: `Module is in '${mod.status}' state; expected 'learning' or 'scenario-active'`,
+      },
+      { status: 409 },
+    );
+  }
+
+  // 6. Find the scenario in module.content.scenarios by scenarioId
+  if (!mod.content) {
+    return NextResponse.json(
+      { error: "not_found", message: "Module content not available" },
+      { status: 404 },
+    );
+  }
+
+  const scenario = mod.content.scenarios.find((s) => s.id === submission.scenarioId);
+  if (!scenario) {
+    return NextResponse.json(
+      { error: "not_found", message: `Scenario '${submission.scenarioId}' not found in module` },
+      { status: 404 },
+    );
+  }
+
+  // 7. Guard: scenario must not already be answered
+  const alreadyAnswered = mod.scenarioResponses.some((r) => r.scenarioId === submission.scenarioId);
+  if (alreadyAnswered) {
+    return NextResponse.json(
+      {
+        error: "conflict",
+        message: `Scenario '${submission.scenarioId}' has already been answered`,
+      },
+      { status: 409 },
+    );
+  }
+
+  // 8. Score the response
+  let score: number;
+  let llmRationale: string | undefined;
 
   try {
-    // 4. Find active session
-    const session = await sessionRepo.findActiveSession(tenantId, employeeId);
-    if (!session) {
+    if (submission.responseType === "multiple-choice") {
+      const correctOption = scenario.options?.find((o) => o.correct)?.key;
+      if (!correctOption) {
+        return NextResponse.json(
+          { error: "internal_error", message: "Scenario has no correct option defined" },
+          { status: 500 },
+        );
+      }
+      score = scoreMcAnswer(submission.selectedOption ?? "", correctOption);
+    } else {
+      // free-text
+      const snapshot = getSnapshot();
+      const tenantConfig = snapshot?.tenants.get(tenantId);
+      if (!tenantConfig) {
+        return NextResponse.json(
+          { error: "not_found", message: "Tenant configuration not found" },
+          { status: 404 },
+        );
+      }
+      const model = resolveModel(tenantConfig);
+      const evaluation = await evaluateFreeText(
+        scenario.narrative,
+        scenario.rubric ?? "",
+        submission.freeTextResponse ?? "",
+        model,
+      );
+      score = evaluation.score;
+      llmRationale = evaluation.rationale;
+    }
+  } catch (error) {
+    if (error instanceof EvaluationError) {
       return NextResponse.json(
-        { error: "not_found", message: "No active training session found" },
-        { status: 404 },
+        { error: "ai_unavailable", message: "AI evaluation service temporarily unavailable" },
+        { status: 503 },
       );
     }
-
-    // Find the module
-    const mod = await sessionRepo.findModule(tenantId, session.id, moduleIndex);
-    if (!mod) {
-      return NextResponse.json(
-        { error: "not_found", message: "Module not found" },
-        { status: 404 },
-      );
-    }
-
-    // 5. Guard: module must be in `learning` or `scenario-active` state
-    if (mod.status !== "learning" && mod.status !== "scenario-active") {
-      return NextResponse.json(
-        {
-          error: "conflict",
-          message: `Module is in '${mod.status}' state; expected 'learning' or 'scenario-active'`,
-        },
-        { status: 409 },
-      );
-    }
-
-    // 6. Find the scenario in module.content.scenarios by scenarioId
-    if (!mod.content) {
-      return NextResponse.json(
-        { error: "not_found", message: "Module content not available" },
-        { status: 404 },
-      );
-    }
-
-    const scenario = mod.content.scenarios.find((s) => s.id === submission.scenarioId);
-    if (!scenario) {
-      return NextResponse.json(
-        { error: "not_found", message: `Scenario '${submission.scenarioId}' not found in module` },
-        { status: 404 },
-      );
-    }
-
-    // 7. Guard: scenario must not already be answered
-    const alreadyAnswered = mod.scenarioResponses.some(
-      (r) => r.scenarioId === submission.scenarioId,
+    return NextResponse.json(
+      { error: "internal_error", message: "An unexpected error occurred during scoring" },
+      { status: 500 },
     );
-    if (alreadyAnswered) {
+  }
+
+  // 9. Redact secrets from free-text content before storage (FR-001, FR-002)
+  const redactor = new SecretRedactor();
+  const redactedFreeText =
+    submission.freeTextResponse !== undefined
+      ? redactor.redact(submission.freeTextResponse).text
+      : undefined;
+  const redactedRationale =
+    llmRationale !== undefined ? redactor.redact(llmRationale).text : undefined;
+
+  // 10. Check transcript retention: if disabled, omit free-text fields
+  const retentionSnapshot = getSnapshot();
+  const tenantCfg = retentionSnapshot?.tenants.get(tenantId);
+  const transcriptsEnabled =
+    (tenantCfg?.settings?.retention as Record<string, unknown> | undefined)?.transcripts !==
+    undefined
+      ? (
+          (tenantCfg?.settings?.retention as Record<string, unknown>).transcripts as {
+            enabled?: boolean;
+          }
+        )?.enabled !== false
+      : true;
+
+  // Build ScenarioResponse record
+  const now = new Date().toISOString();
+  const scenarioResponse = {
+    scenarioId: submission.scenarioId,
+    responseType: submission.responseType,
+    ...(submission.selectedOption !== undefined
+      ? { selectedOption: submission.selectedOption }
+      : {}),
+    ...(redactedFreeText !== undefined && transcriptsEnabled
+      ? { freeTextResponse: redactedFreeText }
+      : {}),
+    score,
+    ...(redactedRationale !== undefined && transcriptsEnabled
+      ? { llmRationale: redactedRationale }
+      : {}),
+    submittedAt: now,
+  };
+
+  // 11. Determine next status (transition to scenario-active if currently in learning)
+  let nextStatus: ModuleStatus = mod.status;
+  if (mod.status === "learning") {
+    nextStatus = transitionModule(mod.status, "start-scenario");
+  }
+
+  // 12. Append response
+  const updatedResponses = [...mod.scenarioResponses, scenarioResponse];
+
+  // 13. Determine if all scenarios answered → transition to quiz-active
+  const allScenariosAnswered = updatedResponses.length >= mod.content.scenarios.length;
+  if (allScenariosAnswered) {
+    nextStatus = transitionModule("scenario-active", "scenarios-complete");
+  }
+
+  // 14. Update module via sessionRepo.updateModule
+  try {
+    await sessionRepo.updateModule(
+      tenantId,
+      mod.id,
+      {
+        status: nextStatus,
+        scenarioResponses: updatedResponses,
+      },
+      mod.version,
+    );
+  } catch (updateError) {
+    if (updateError instanceof VersionConflictError) {
       return NextResponse.json(
-        {
-          error: "conflict",
-          message: `Scenario '${submission.scenarioId}' has already been answered`,
-        },
+        { error: "conflict", message: "Resource was modified by another request" },
         { status: 409 },
       );
     }
-
-    // 8. Score the response
-    let score: number;
-    let llmRationale: string | undefined;
-
-    try {
-      if (submission.responseType === "multiple-choice") {
-        const correctOption = scenario.options?.find((o) => o.correct)?.key;
-        if (!correctOption) {
-          return NextResponse.json(
-            { error: "internal_error", message: "Scenario has no correct option defined" },
-            { status: 500 },
-          );
-        }
-        score = scoreMcAnswer(submission.selectedOption ?? "", correctOption);
-      } else {
-        // free-text
-        const snapshot = getSnapshot();
-        const tenantConfig = snapshot?.tenants.get(tenantId);
-        if (!tenantConfig) {
-          return NextResponse.json(
-            { error: "not_found", message: "Tenant configuration not found" },
-            { status: 404 },
-          );
-        }
-        const model = resolveModel(tenantConfig);
-        const evaluation = await evaluateFreeText(
-          scenario.narrative,
-          scenario.rubric ?? "",
-          submission.freeTextResponse ?? "",
-          model,
-        );
-        score = evaluation.score;
-        llmRationale = evaluation.rationale;
-      }
-    } catch (error) {
-      if (error instanceof EvaluationError) {
-        return NextResponse.json(
-          { error: "ai_unavailable", message: "AI evaluation service temporarily unavailable" },
-          { status: 503 },
-        );
-      }
-      return NextResponse.json(
-        { error: "internal_error", message: "An unexpected error occurred during scoring" },
-        { status: 500 },
-      );
-    }
-
-    // 9. Redact secrets from free-text content before storage (FR-001, FR-002)
-    const redactor = new SecretRedactor();
-    const redactedFreeText =
-      submission.freeTextResponse !== undefined
-        ? redactor.redact(submission.freeTextResponse).text
-        : undefined;
-    const redactedRationale =
-      llmRationale !== undefined ? redactor.redact(llmRationale).text : undefined;
-
-    // 10. Check transcript retention: if disabled, omit free-text fields
-    const retentionSnapshot = getSnapshot();
-    const tenantCfg = retentionSnapshot?.tenants.get(tenantId);
-    const transcriptsEnabled =
-      (tenantCfg?.settings?.retention as Record<string, unknown> | undefined)?.transcripts !==
-      undefined
-        ? (
-            (tenantCfg?.settings?.retention as Record<string, unknown>).transcripts as {
-              enabled?: boolean;
-            }
-          )?.enabled !== false
-        : true;
-
-    // Build ScenarioResponse record
-    const now = new Date().toISOString();
-    const scenarioResponse = {
-      scenarioId: submission.scenarioId,
-      responseType: submission.responseType,
-      ...(submission.selectedOption !== undefined
-        ? { selectedOption: submission.selectedOption }
-        : {}),
-      ...(redactedFreeText !== undefined && transcriptsEnabled
-        ? { freeTextResponse: redactedFreeText }
-        : {}),
-      score,
-      ...(redactedRationale !== undefined && transcriptsEnabled
-        ? { llmRationale: redactedRationale }
-        : {}),
-      submittedAt: now,
-    };
-
-    // 11. Determine next status (transition to scenario-active if currently in learning)
-    let nextStatus: ModuleStatus = mod.status;
-    if (mod.status === "learning") {
-      nextStatus = transitionModule(mod.status, "start-scenario");
-    }
-
-    // 12. Append response
-    const updatedResponses = [...mod.scenarioResponses, scenarioResponse];
-
-    // 13. Determine if all scenarios answered → transition to quiz-active
-    const allScenariosAnswered = updatedResponses.length >= mod.content.scenarios.length;
-    if (allScenariosAnswered) {
-      nextStatus = transitionModule("scenario-active", "scenarios-complete");
-    }
-
-    // 14. Update module via sessionRepo.updateModule
-    try {
-      await sessionRepo.updateModule(
-        tenantId,
-        mod.id,
-        {
-          status: nextStatus,
-          scenarioResponses: updatedResponses,
-        },
-        mod.version,
-      );
-    } catch (updateError) {
-      if (updateError instanceof VersionConflictError) {
-        return NextResponse.json(
-          { error: "conflict", message: "Resource was modified by another request" },
-          { status: 409 },
-        );
-      }
-      throw updateError;
-    }
-
-    // 15. Return 200 with result
-    return NextResponse.json({
-      scenarioId: submission.scenarioId,
-      score,
-      ...(llmRationale !== undefined ? { rationale: llmRationale } : {}),
-    });
-  } finally {
-    await storage.close();
+    throw updateError;
   }
+
+  // 15. Return 200 with result
+  return NextResponse.json({
+    scenarioId: submission.scenarioId,
+    score,
+    ...(llmRationale !== undefined ? { rationale: llmRationale } : {}),
+  });
 }

@@ -28,7 +28,6 @@
 
 const { mockStorage, mockSessionRepo, mockProfileRepo } = vi.hoisted(() => {
   const mockStorage = {
-    initialize: vi.fn().mockResolvedValue(undefined),
     create: vi.fn(),
     findById: vi.fn(),
     findMany: vi.fn(),
@@ -36,7 +35,6 @@ const { mockStorage, mockSessionRepo, mockProfileRepo } = vi.hoisted(() => {
     delete: vi.fn(),
     transaction: vi.fn().mockImplementation((_t: string, fn: () => Promise<unknown>) => fn()),
     getMetadata: vi.fn().mockReturnValue({ adapterName: "mock", adapterVersion: "1.0" }),
-    close: vi.fn(),
   };
 
   const mockSessionRepo = {
@@ -56,8 +54,8 @@ const { mockStorage, mockSessionRepo, mockProfileRepo } = vi.hoisted(() => {
   return { mockStorage, mockSessionRepo, mockProfileRepo };
 });
 
-vi.mock("@/storage/sqlite-adapter", () => ({
-  SQLiteAdapter: vi.fn().mockImplementation(() => mockStorage),
+vi.mock("@/storage/factory", () => ({
+  getStorage: vi.fn().mockResolvedValue(mockStorage),
 }));
 
 vi.mock("@/training/session-repository", () => ({
@@ -371,7 +369,6 @@ function makeModuleWithContent() {
 describe("POST /api/training/{tenant}/session", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStorage.initialize.mockResolvedValue(undefined);
     vi.mocked(getSnapshot).mockReturnValue(makeSnapshot() as ReturnType<typeof getSnapshot>);
     vi.mocked(resolveModel).mockReturnValue({} as ReturnType<typeof resolveModel>);
     // Safe defaults: no active session, no failed session, no profile (fail-fast by default)
@@ -536,7 +533,6 @@ describe("POST /api/training/{tenant}/session", () => {
 describe("POST /api/training/{tenant}/session — T022: Remediation", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStorage.initialize.mockResolvedValue(undefined);
     vi.mocked(getSnapshot).mockReturnValue(makeSnapshot() as ReturnType<typeof getSnapshot>);
     vi.mocked(resolveModel).mockReturnValue({} as ReturnType<typeof resolveModel>);
     // Safe defaults: no active session, failed session present, profile present
@@ -652,7 +648,6 @@ describe("POST /api/training/{tenant}/session — T022: Remediation", () => {
 describe("GET /api/training/{tenant}/session", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStorage.initialize.mockResolvedValue(undefined);
     vi.mocked(getSnapshot).mockReturnValue(makeSnapshot() as ReturnType<typeof getSnapshot>);
     // Safe defaults
     mockSessionRepo.findActiveSession.mockResolvedValue(null);
@@ -788,7 +783,6 @@ describe("GET /api/training/{tenant}/session", () => {
 describe("GET /api/training/{tenant}/session?history=true", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockStorage.initialize.mockResolvedValue(undefined);
     vi.mocked(getSnapshot).mockReturnValue(makeSnapshot() as ReturnType<typeof getSnapshot>);
     mockSessionRepo.findActiveSession.mockResolvedValue(null);
     mockSessionRepo.findSessionHistory.mockResolvedValue([]);

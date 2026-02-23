@@ -22,7 +22,6 @@ import type { TrainingModule, TrainingSession } from "@/training/schemas";
 
 const { mockStorage, mockSessionRepo, mockEvidenceRepo } = vi.hoisted(() => {
   const mockStorage = {
-    initialize: vi.fn().mockResolvedValue(undefined),
     create: vi.fn(),
     findById: vi.fn(),
     findMany: vi.fn(),
@@ -30,7 +29,6 @@ const { mockStorage, mockSessionRepo, mockEvidenceRepo } = vi.hoisted(() => {
     delete: vi.fn(),
     transaction: vi.fn().mockImplementation((_t: string, fn: () => unknown) => fn()),
     getMetadata: vi.fn().mockReturnValue({ adapterName: "mock", adapterVersion: "1.0" }),
-    close: vi.fn(),
   };
   const mockSessionRepo = {
     findActiveSession: vi.fn(),
@@ -50,8 +48,8 @@ const { mockStorage, mockSessionRepo, mockEvidenceRepo } = vi.hoisted(() => {
   return { mockStorage, mockSessionRepo, mockEvidenceRepo };
 });
 
-vi.mock("@/storage/sqlite-adapter", () => ({
-  SQLiteAdapter: vi.fn().mockImplementation(() => mockStorage),
+vi.mock("@/storage/factory", () => ({
+  getStorage: vi.fn().mockResolvedValue(mockStorage),
 }));
 vi.mock("@/training/session-repository", () => ({
   SessionRepository: vi.fn().mockImplementation(() => mockSessionRepo),

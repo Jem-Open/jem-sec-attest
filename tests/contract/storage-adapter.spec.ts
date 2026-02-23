@@ -17,8 +17,10 @@
  * Any adapter must pass this suite to be considered conformant.
  */
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { PostgreSqlContainer, type StartedPostgreSqlContainer } from "@testcontainers/postgresql";
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import type { StorageAdapter } from "../../src/storage/adapter.js";
+import { PostgresAdapter } from "../../src/storage/postgres-adapter.js";
 import { SQLiteAdapter } from "../../src/storage/sqlite-adapter.js";
 
 interface TestRecord {
@@ -298,4 +300,104 @@ function runStorageAdapterContractTests(createAdapter: () => Promise<StorageAdap
 
 describe("StorageAdapter Contract Tests — SQLiteAdapter", () => {
   runStorageAdapterContractTests(async () => new SQLiteAdapter({ dbPath: ":memory:" }));
+});
+
+describe("StorageAdapter Contract Tests — PostgresAdapter", () => {
+  let container: StartedPostgreSqlContainer;
+
+  beforeAll(async () => {
+    container = await new PostgreSqlContainer("postgres:16-alpine").start();
+  }, 60_000);
+
+  afterAll(async () => {
+    await container?.stop();
+  });
+
+  runStorageAdapterContractTests(async () => {
+    const adapter = new PostgresAdapter({
+      connectionString: container.getConnectionUri(),
+      max: 5,
+    });
+    // Clean the table before each test to ensure isolation
+    await adapter.initialize();
+    const sql = (await import("postgres")).default(container.getConnectionUri());
+    await sql.unsafe("DELETE FROM records");
+    await sql.end();
+    return adapter;
+  });
+});
+
+describe("PostgresAdapter — Connection Resilience", () => {
+  let container: StartedPostgreSqlContainer;
+
+  beforeAll(async () => {
+    container = await new PostgreSqlContainer("postgres:16-alpine").start();
+  }, 60_000);
+
+  afterAll(async () => {
+    await container?.stop();
+  });
+
+  it("handles 50 concurrent create operations without errors", async () => {
+    const adapter = new PostgresAdapter({
+      connectionString: container.getConnectionUri(),
+      max: 10,
+    });
+    await adapter.initialize();
+
+    const promises = Array.from({ length: 50 }, (_, i) =>
+      adapter.create("tenant-concurrent", "stress", {
+        name: `record-${i}`,
+        value: i,
+      }),
+    );
+
+    const results = await Promise.all(promises);
+
+    expect(results).toHaveLength(50);
+    for (const result of results) {
+      expect(result).toHaveProperty("id");
+      expect(typeof result.id).toBe("string");
+    }
+
+    const allRecords = await adapter.findMany<{ id: string; name: string; value: number }>(
+      "tenant-concurrent",
+      "stress",
+      {},
+    );
+    expect(allRecords).toHaveLength(50);
+
+    await adapter.close();
+  });
+
+  it("resolves close() cleanly after creating records", async () => {
+    const adapter = new PostgresAdapter({
+      connectionString: container.getConnectionUri(),
+      max: 5,
+    });
+    await adapter.initialize();
+
+    await adapter.create("tenant-close", "items", { name: "a", value: 1 });
+    await adapter.create("tenant-close", "items", { name: "b", value: 2 });
+    await adapter.create("tenant-close", "items", { name: "c", value: 3 });
+
+    await expect(adapter.close()).resolves.toBeUndefined();
+  });
+
+  it("wraps connection errors without leaking credentials", async () => {
+    const adapter = new PostgresAdapter({
+      connectionString: "postgres://invalid:supersecretpassword@localhost:1/nonexistent",
+      max: 1,
+    });
+
+    await expect(adapter.initialize()).rejects.toSatisfy((error: Error) => {
+      expect(error).toBeInstanceOf(Error);
+      expect(error.message).toMatch(/^Failed to initialize database schema:/);
+      expect(error.message).not.toContain("supersecretpassword");
+      expect(error.message).not.toContain(
+        "postgres://invalid:supersecretpassword@localhost:1/nonexistent",
+      );
+      return true;
+    });
+  });
 });

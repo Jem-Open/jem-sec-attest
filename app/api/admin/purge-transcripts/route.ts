@@ -20,7 +20,7 @@
  */
 
 import { TranscriptPurger } from "@/retention/transcript-purger";
-import { SQLiteAdapter } from "@/storage/sqlite-adapter";
+import { getStorage } from "@/storage/factory";
 import { NextResponse } from "next/server";
 
 export async function POST(request: Request): Promise<NextResponse> {
@@ -34,15 +34,9 @@ export async function POST(request: Request): Promise<NextResponse> {
     );
   }
 
-  const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
-  await storage.initialize();
+  const storage = await getStorage();
+  const purger = new TranscriptPurger(storage);
+  const results = await purger.purgeAll();
 
-  try {
-    const purger = new TranscriptPurger(storage);
-    const results = await purger.purgeAll();
-
-    return NextResponse.json({ results });
-  } finally {
-    await storage.close();
-  }
+  return NextResponse.json({ results });
 }

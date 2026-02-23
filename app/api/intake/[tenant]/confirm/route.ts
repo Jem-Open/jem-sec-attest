@@ -23,11 +23,8 @@ import { getSnapshot } from "@/config/index";
 import { logProfileConfirmed, logProfileUpdated } from "@/intake/audit";
 import { ProfileRepository } from "@/intake/profile-repository";
 import { ProfileConfirmationSchema } from "@/intake/schemas";
-import { SQLiteAdapter } from "@/storage/sqlite-adapter";
+import { getStorage } from "@/storage/factory";
 import { NextResponse } from "next/server";
-
-const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
-const profileRepo = new ProfileRepository(storage);
 
 export async function POST(request: Request, { params }: { params: Promise<{ tenant: string }> }) {
   const { tenant } = await params;
@@ -67,7 +64,8 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
     );
   }
 
-  await storage.initialize();
+  const storage = await getStorage();
+  const profileRepo = new ProfileRepository(storage);
 
   // Get config hash for evidence stamping
   const snapshot = getSnapshot();

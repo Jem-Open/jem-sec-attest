@@ -19,11 +19,8 @@
  */
 
 import { ProfileRepository } from "@/intake/profile-repository";
-import { SQLiteAdapter } from "@/storage/sqlite-adapter";
+import { getStorage } from "@/storage/factory";
 import { NextResponse } from "next/server";
-
-const storage = new SQLiteAdapter({ dbPath: process.env.DB_PATH ?? "data/jem.db" });
-const profileRepo = new ProfileRepository(storage);
 
 export async function GET(request: Request, { params }: { params: Promise<{ tenant: string }> }) {
   const { tenant } = await params;
@@ -37,7 +34,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
     );
   }
 
-  await storage.initialize();
+  const storage = await getStorage();
+  const profileRepo = new ProfileRepository(storage);
 
   const profile = await profileRepo.findByEmployee(tenantId, employeeId);
 

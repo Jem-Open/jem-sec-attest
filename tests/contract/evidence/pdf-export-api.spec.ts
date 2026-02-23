@@ -47,8 +47,8 @@ const { mockStorage, mockEvidenceRepo, mockRenderPdf, mockGetSnapshot } = vi.hoi
   return { mockStorage, mockEvidenceRepo, mockRenderPdf, mockGetSnapshot };
 });
 
-vi.mock("@/storage/sqlite-adapter", () => ({
-  SQLiteAdapter: vi.fn().mockImplementation(() => mockStorage),
+vi.mock("@/storage/factory", () => ({
+  getStorage: vi.fn().mockResolvedValue(mockStorage),
 }));
 vi.mock("@/evidence/evidence-repository", () => ({
   EvidenceRepository: vi.fn().mockImplementation(() => mockEvidenceRepo),
@@ -280,13 +280,5 @@ describe("GET /api/training/[tenant]/evidence/[sessionId]/pdf", () => {
     expect(response.status).toBe(409);
     const body = await response.json();
     expect(body.error).toBe("conflict");
-  });
-
-  it("closes storage in finally block", async () => {
-    mockEvidenceRepo.findBySessionId.mockResolvedValue(null);
-
-    await GET(makeRequest("sess-0001", "acme", "emp-100"), makeParams("acme", "sess-0001"));
-
-    expect(mockStorage.close).toHaveBeenCalled();
   });
 });

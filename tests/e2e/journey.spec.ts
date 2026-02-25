@@ -124,6 +124,25 @@ test("training — starts a training session and begins first module", async ({ 
     .first();
   if (await startButton.isVisible({ timeout: 5_000 }).catch(() => false)) {
     await startButton.click();
+  } else {
+    // Start button not present — verify the page is already in a known valid state
+    // (curriculum or learning view). If neither is found, fail early rather than
+    // waiting up to 90s for content that will never appear.
+    const alreadyInProgress =
+      (await page
+        .locator("section[aria-labelledby='curriculum-heading']")
+        .isVisible({ timeout: 2_000 })
+        .catch(() => false)) ||
+      (await page
+        .locator("section[aria-labelledby='learning-heading']")
+        .isVisible({ timeout: 2_000 })
+        .catch(() => false));
+    if (!alreadyInProgress) {
+      throw new Error(
+        "Training page is in an unexpected state: start button not visible and neither " +
+          "curriculum-heading nor learning-heading is present. Cannot proceed.",
+      );
+    }
   }
 
   // Wait for curriculum to generate — the training session moves through
@@ -193,24 +212,14 @@ test("evidence export — PDF endpoint returns a valid PDF for a completed sessi
       // Verify the response starts with the PDF magic bytes (%PDF-)
       expect(body.slice(0, 4).toString()).toBe("%PDF");
     } else {
-      // No passing session yet — verify the evidence list endpoint is accessible
-      const evidenceListResponse = await page.request.get(`/api/training/${TENANT}/evidence`);
-      // Should return 200 (empty list) or 401 if middleware blocks — not a 500
-      expect(evidenceListResponse.status()).toBeLessThan(500);
-
-      test.info().annotations.push({
-        type: "info",
-        description: `Session status is "${sessionStatus ?? "none"}" — PDF export test skipped (requires a "passed" session).`,
-      });
+      // No passing session yet — skip so CI dashboards show the PDF path was not exercised
+      test.skip(
+        true,
+        `No completed/passed session available — PDF validation skipped (session status: "${sessionStatus ?? "none"}").`,
+      );
     }
   } else if (sessionResponse.status() === 404) {
-    // No session exists yet — verify the evidence endpoint structure is sound
-    const evidenceListResponse = await page.request.get(`/api/training/${TENANT}/evidence`);
-    expect(evidenceListResponse.status()).toBeLessThan(500);
-
-    test.info().annotations.push({
-      type: "info",
-      description: "No training session found — PDF export test requires a completed session.",
-    });
+    // No session exists at all — skip so CI dashboards show the PDF path was not exercised
+    test.skip(true, "No completed/passed session available — PDF validation skipped.");
   }
 });

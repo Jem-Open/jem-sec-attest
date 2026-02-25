@@ -776,7 +776,9 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
       const sessionRes = await fetch(`/api/training/${tenant}/session`);
       if (sessionRes.status === 409) {
         await refreshSession();
-      } else if (sessionRes.ok) {
+        return;
+      }
+      if (sessionRes.ok) {
         const sessionData = (await sessionRes.json()) as SessionApiResponse;
         setModules(sessionData.modules);
       } else {
@@ -1814,8 +1816,8 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
         )}
 
         {/* T031: Action buttons — start new session or view history */}
-        {!isExhausted && (
-          <div style={{ marginTop: "1.5rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+        <div style={{ marginTop: "1.5rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+          {!isExhausted && (
             <button
               type="button"
               onClick={handleStartTraining}
@@ -1836,28 +1838,28 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
                 t("training.result.startNewButton")
               )}
             </button>
-            <button
-              type="button"
-              onClick={handleViewHistory}
-              disabled={isLoadingHistory}
-              style={{
-                ...(styles.secondaryButton as React.CSSProperties),
-                opacity: isLoadingHistory ? 0.7 : 1,
-                cursor: isLoadingHistory ? "not-allowed" : "pointer",
-              }}
-              aria-busy={isLoadingHistory}
-            >
-              {isLoadingHistory ? (
-                <>
-                  <LoadingSpinner />
-                  {t("training.history.loadingMessage")}
-                </>
-              ) : (
-                t("training.history.viewButton")
-              )}
-            </button>
-          </div>
-        )}
+          )}
+          <button
+            type="button"
+            onClick={handleViewHistory}
+            disabled={isLoadingHistory}
+            style={{
+              ...(styles.secondaryButton as React.CSSProperties),
+              opacity: isLoadingHistory ? 0.7 : 1,
+              cursor: isLoadingHistory ? "not-allowed" : "pointer",
+            }}
+            aria-busy={isLoadingHistory}
+          >
+            {isLoadingHistory ? (
+              <>
+                <LoadingSpinner />
+                {t("training.history.loadingMessage")}
+              </>
+            ) : (
+              t("training.history.viewButton")
+            )}
+          </button>
+        </div>
       </section>
     );
   }

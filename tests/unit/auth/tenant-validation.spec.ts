@@ -128,6 +128,53 @@ describe("validateTenantSlug", () => {
     expect(noSnapshot).toEqual({ valid: false });
     expect(unknownSlug).toEqual({ valid: false });
   });
+
+  it("returns valid when hostname matches tenant's configured hostname", async () => {
+    const result = await validateTenantSlug("acme-corp", "acme.example.com");
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.tenant.id).toBe("acme-corp");
+    }
+  });
+
+  it("returns failure when hostname does not match tenant's configured hostnames", async () => {
+    // globex.example.com is a valid hostname, but it belongs to globex-inc, not acme-corp
+    const result = await validateTenantSlug("acme-corp", "globex.example.com");
+    expect(result.valid).toBe(false);
+  });
+
+  it("hostname comparison is case-insensitive", async () => {
+    const result = await validateTenantSlug("acme-corp", "ACME.EXAMPLE.COM");
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.tenant.id).toBe("acme-corp");
+    }
+  });
+
+  it("skips hostname check when hostname param is not provided", async () => {
+    // No hostname passed — existing slug-only validation applies
+    const result = await validateTenantSlug("acme-corp");
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.tenant.id).toBe("acme-corp");
+    }
+  });
+
+  it("skips hostname check when tenant has no configured hostnames", async () => {
+    const noHostnameTenant = makeTenant({
+      id: "open-tenant",
+      name: "Open Tenant",
+      hostnames: [],
+    });
+    mockedEnsureConfigLoaded.mockResolvedValue(makeSnapshot([noHostnameTenant]));
+
+    // Any hostname is accepted when the tenant has no hostnames configured
+    const result = await validateTenantSlug("open-tenant", "any.unrelated.host");
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.tenant.id).toBe("open-tenant");
+    }
+  });
 });
 
 describe("validateEmailDomainForTenant", () => {

@@ -127,7 +127,7 @@
       "title": "Something went wrong",
       "retryButton": "Try Again",
       "loadSession": "Unable to load your training session. Please check your connection and try again.",
-      "startTraining": "Failed to start training. Please try again.",
+      "startTraining": "Failed to begin training. Please try again.",
       "loadModuleContent": "Failed to load module content. Please try again.",
       "submitAnswer": "Failed to submit answer. Please try again.",
       "submitQuiz": "Failed to submit quiz. Please try again.",

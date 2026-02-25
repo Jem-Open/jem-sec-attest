@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import styles from "./error.module.css";
+
 /**
  * Auth error page — displays user-friendly error messages.
  * FR-006: Never exposes raw error details to the user.
@@ -46,9 +48,6 @@ export default async function ErrorPage({
 
   return (
     <>
-      <style>
-        {".jem-auth-error-link:focus-visible { outline: 2px solid #1a73e8; outline-offset: 2px; }"}
-      </style>
       <main
         aria-labelledby="error-heading"
         style={{
@@ -121,17 +120,7 @@ export default async function ErrorPage({
           <a
             href={`/${tenant}/auth/signin`}
             aria-label="Try signing in again"
-            className="jem-auth-error-link"
-            style={{
-              display: "inline-block",
-              padding: "0.75rem 2rem",
-              backgroundColor: "#1a73e8",
-              color: "white",
-              textDecoration: "none",
-              borderRadius: "4px",
-              fontSize: "1rem",
-              fontWeight: 500,
-            }}
+            className={styles.link}
           >
             Try Again
           </a>

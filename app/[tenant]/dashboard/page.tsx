@@ -23,7 +23,7 @@ import { getTranslation } from "@/i18n";
 import { getStorage } from "@/storage/factory";
 import { SessionRepository } from "@/training/session-repository";
 import type { TrainingSession } from "@/training/types";
-import { cookies, headers } from "next/headers";
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 export default async function DashboardPage({
@@ -42,19 +42,15 @@ export default async function DashboardPage({
   const locale = cookieStore.get("locale")?.value ?? "en";
   const t = await getTranslation(locale);
 
-  const headerStore = await headers();
-  const employeeId = headerStore.get("x-employee-id") ?? "";
-  const tenantId = headerStore.get("x-tenant-id") ?? tenant;
+  const employeeId = session.employee.employeeId;
 
   let recentSessions: TrainingSession[] = [];
-  if (employeeId) {
-    try {
-      const storage = await getStorage();
-      const sessionRepo = new SessionRepository(storage);
-      recentSessions = await sessionRepo.findSessionHistory(tenantId, employeeId, { limit: 3 });
-    } catch {
-      recentSessions = []; // non-fatal — dashboard degrades gracefully
-    }
+  try {
+    const storage = await getStorage();
+    const sessionRepo = new SessionRepository(storage);
+    recentSessions = await sessionRepo.findSessionHistory(tenant, employeeId, { limit: 3 });
+  } catch {
+    recentSessions = []; // non-fatal — dashboard degrades gracefully
   }
 
   return (

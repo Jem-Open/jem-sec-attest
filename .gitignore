@@ -23,6 +23,9 @@ Thumbs.db
 *.swp
 *.swo
 
+# Security analysis scratch
+.gemini_security/
+
 # Logs
 *.log
 npm-debug.log*

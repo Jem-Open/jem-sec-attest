@@ -374,8 +374,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
   const clientModules = modules.map(stripServerFields);
 
   // 4. Read maxAttempts from tenant config so the UI can display accurate attempt counts
-  const tenantConfig = (await ensureConfigLoaded())?.tenants.get(tenantSlug);
-  const maxAttempts = tenantConfig?.settings.training?.maxAttempts ?? 3;
+  const snapshot = await ensureConfigLoaded();
+  const tenantConfig = snapshot?.tenants.get(tenantSlug);
+  if (!tenantConfig) {
+    return NextResponse.json({ error: "not_found", message: "Tenant not found" }, { status: 404 });
+  }
+  const maxAttempts = tenantConfig.settings.training?.maxAttempts ?? 3;
 
   return NextResponse.json({ session, modules: clientModules, maxAttempts });
 }

@@ -38,8 +38,15 @@ export type TenantLookupResult = TenantValidationResult | TenantValidationFailur
  * The caller should return a generic 404 on failure — never reveal
  * whether the slug was syntactically invalid vs. simply unknown.
  * Lazily loads config on first call if not already loaded.
+ *
+ * When `hostname` is provided and the tenant has configured hostnames,
+ * validates that the request hostname matches one of them (case-insensitive).
+ * This prevents cross-tenant access via a valid slug on an unrelated hostname.
  */
-export async function validateTenantSlug(slug: string): Promise<TenantLookupResult> {
+export async function validateTenantSlug(
+  slug: string,
+  hostname?: string,
+): Promise<TenantLookupResult> {
   const snapshot = await ensureConfigLoaded();
   if (!snapshot) {
     return { valid: false };
@@ -48,6 +55,14 @@ export async function validateTenantSlug(slug: string): Promise<TenantLookupResu
   const tenant = snapshot.tenants.get(slug);
   if (!tenant) {
     return { valid: false };
+  }
+
+  if (hostname && tenant.hostnames.length > 0) {
+    const normalizedHostname = hostname.toLowerCase();
+    const hostnameMatch = tenant.hostnames.some((h) => h.toLowerCase() === normalizedHostname);
+    if (!hostnameMatch) {
+      return { valid: false };
+    }
   }
 
   return { valid: true, tenant };

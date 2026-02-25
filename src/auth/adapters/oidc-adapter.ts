@@ -61,9 +61,18 @@ async function getOrDiscoverConfig(oidcConfig: {
   let config = configCache.get(oidcConfig.issuerUrl);
   if (!config) {
     const issuerUrl = new URL(oidcConfig.issuerUrl);
-    // Allow HTTP for local/dev issuers (e.g., Dex running in Docker without TLS)
-    const discoveryOptions =
-      issuerUrl.protocol === "http:" ? { execute: [client.allowInsecureRequests] } : undefined;
+    // Allow HTTP only for known loopback/Docker-bridge hosts (e.g., Dex in Docker without TLS)
+    const INSECURE_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "dex"]);
+    const isInsecureAllowed =
+      issuerUrl.protocol === "http:" && INSECURE_HOSTS.has(issuerUrl.hostname);
+    const discoveryOptions = isInsecureAllowed
+      ? { execute: [client.allowInsecureRequests] }
+      : undefined;
+    if (issuerUrl.protocol === "http:" && !isInsecureAllowed) {
+      throw new Error(
+        `HTTP issuer URLs are only allowed for local/dev hosts: ${issuerUrl.hostname}`,
+      );
+    }
     config = await client.discovery(
       issuerUrl,
       oidcConfig.clientId,

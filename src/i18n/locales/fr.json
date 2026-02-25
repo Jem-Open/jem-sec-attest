@@ -83,6 +83,7 @@
       "viewButton": "Voir l'historique de formation",
       "backToResult": "Retour au résultat",
       "title": "Historique de formation",
+      "dateFallback": "\u2014",
       "status": {
         "passed": "Réussi",
         "failed": "Échoué",

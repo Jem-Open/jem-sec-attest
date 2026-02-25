@@ -102,6 +102,13 @@ export async function middleware(request: NextRequest) {
 
   // When snapshot is loaded: enforce hostname-based tenant resolution (404 on mismatch).
   // When snapshot is not loaded: allow the request through; route handlers validate.
+  //
+  // Safety net: all tenant-scoped route handlers call ensureConfigLoaded() and validate
+  // the tenant slug against the loaded config snapshot (returning 404 on failure) before
+  // serving any data. Auth routes (signin, callback, signout) use validateTenantSlug()
+  // which wraps ensureConfigLoaded(). Protected routes (intake, training) call
+  // ensureConfigLoaded() directly and check snapshot.tenants.get(tenantSlug). This
+  // ensures tenant isolation even when the Edge Runtime cannot load config synchronously.
   if (snapshotLoaded && !hostnameResult) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }

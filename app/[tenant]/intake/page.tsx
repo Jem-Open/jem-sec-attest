@@ -43,7 +43,7 @@ const STRINGS = {
   startOverButton: "Start Over",
   confirmedTitle: "Profile Saved",
   confirmedMessage: "Your role profile has been saved.",
-  startTrainingLink: "Start Training",
+  startTrainingLink: "Begin Training",
   dashboardLink: "Go to Dashboard",
   errorTitle: "Something went wrong",
   retryButton: "Retry",

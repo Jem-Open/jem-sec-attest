@@ -201,7 +201,7 @@ describe("middleware", () => {
       unknown
     >;
 
-    expect(response.status === 404).toBe(true);
+    expect(response.status).toBe(404);
     expect(response.__jsonData).toEqual({ error: "Not found." });
   });
 

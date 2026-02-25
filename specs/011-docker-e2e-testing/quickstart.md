@@ -17,8 +17,21 @@ This guide walks you through starting the infrastructure services in Docker, run
 
 The Dex identity provider runs as `dex` in Docker. Your browser and the locally-running app both need to resolve this hostname.
 
+**macOS / Linux:**
 ```bash
 echo "127.0.0.1 dex" | sudo tee -a /etc/hosts
+```
+
+**Windows** (requires Administrator privileges):
+
+Option 1 — Notepad: open Notepad as Administrator, then open `C:\Windows\System32\drivers\etc\hosts` and add the following line:
+```
+127.0.0.1 dex
+```
+
+Option 2 — PowerShell (elevated):
+```powershell
+Add-Content C:\Windows\System32\drivers\etc\hosts "127.0.0.1 dex"
 ```
 
 Verify:

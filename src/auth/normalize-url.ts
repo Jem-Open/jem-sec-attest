@@ -13,9 +13,27 @@
 // limitations under the License.
 
 /**
+ * Returns the set of hostnames that are permitted to replace the bind address
+ * (0.0.0.0) in OIDC callback URLs. Reads from the ALLOWED_CALLBACK_HOSTS
+ * environment variable (comma-separated), falling back to "localhost".
+ */
+function allowedCallbackHosts(): Set<string> {
+  const raw = process.env.ALLOWED_CALLBACK_HOSTS ?? "localhost";
+  return new Set(
+    raw
+      .split(",")
+      .map((h) => h.trim())
+      .filter(Boolean),
+  );
+}
+
+/**
  * Normalizes a request URL by replacing the bind address (0.0.0.0) with the
  * actual hostname from the Host header. This is necessary in Docker/production
  * where Next.js binds to 0.0.0.0 but the browser connects via localhost.
+ *
+ * Security: the extracted hostname is validated against ALLOWED_CALLBACK_HOSTS
+ * before being applied, preventing Host-header injection attacks.
  */
 export function normalizeRequestUrl(request: Request): URL {
   const url = new URL(request.url);
@@ -24,8 +42,10 @@ export function normalizeRequestUrl(request: Request): URL {
     if (hostHeader) {
       try {
         const parsed = new URL(`http://${hostHeader}`);
-        url.hostname = parsed.hostname;
-        url.port = parsed.port;
+        if (allowedCallbackHosts().has(parsed.hostname)) {
+          url.hostname = parsed.hostname;
+          url.port = parsed.port || url.port;
+        }
       } catch {
         // malformed Host header — leave url unchanged
       }

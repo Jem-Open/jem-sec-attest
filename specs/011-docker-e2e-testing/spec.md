@@ -114,4 +114,42 @@ An automated Playwright test suite exercises the complete user journey: authenti
 - The Docker stack uses PostgreSQL as the database, matching the production storage adapter. No separate test schema is required; the schema is initialised on first container start.
 - Developers are expected to have Docker and Docker Compose installed; the feature does not provision Docker itself.
 - The Playwright test suite is a new addition to the project, running against the local stack only (not CI/production).
-- Port assignments for local services (app, IDP, DB) will follow defaults and be documented; conflicts are the developer's responsibility to resolve.
+- Port assignments for local services (app, IDP, DB) will follow defaults; see [Ports / Configuration](#ports--configuration) below. Conflicts are the developer's responsibility to resolve.
+
+## Ports / Configuration
+
+The canonical source for port bindings is `docker/compose.yml`. The table below documents the default host-side ports that Compose exposes; the container-internal ports are identical.
+
+| Service    | Container name | Default host port | Purpose                              |
+|------------|----------------|-------------------|--------------------------------------|
+| `postgres` | `jem-postgres` | `5432`            | PostgreSQL database                  |
+| `dex`      | `jem-dex`      | `5556`            | Dex OIDC server (must be browser-reachable; add `127.0.0.1 dex` to `/etc/hosts`) |
+| `dex`      | `jem-dex`      | `5558`            | Dex health and metrics endpoint      |
+
+The Next.js application is **not** a Compose service — it runs on the developer's host via `pnpm dev` (default port `3000`) or `pnpm build && pnpm start`.
+
+### Overriding ports
+
+Compose reads the standard environment variables listed in `.env.example`. To change a port, set the corresponding variable before starting the stack:
+
+| Variable          | Controls                    | Default value |
+|-------------------|-----------------------------|---------------|
+| `POSTGRES_USER`   | PostgreSQL username          | `postgres`    |
+| `POSTGRES_PASSWORD` | PostgreSQL password        | `postgres`    |
+| `POSTGRES_DB`     | PostgreSQL database name     | `jem_attest`  |
+
+Port numbers themselves are hardcoded in `docker/compose.yml`. To remap them without editing the file, use a Compose override file:
+
+```yaml
+# docker/compose.override.yml — not checked in; create locally as needed
+services:
+  postgres:
+    ports:
+      - "5433:5432"   # Use host port 5433 if 5432 is already taken
+  dex:
+    ports:
+      - "5557:5556"
+      - "5559:5558"
+```
+
+Run `docker compose -f docker/compose.yml -f docker/compose.override.yml up -d --wait` to apply the override.

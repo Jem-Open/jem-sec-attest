@@ -137,7 +137,11 @@ export async function POST(
   // 8. Score the response
   // Load config once (used for AI model resolution + retention check)
   const snapshot = await ensureConfigLoaded();
-  if (!snapshot) return NextResponse.json({ error: "config_error" }, { status: 503 });
+  if (!snapshot)
+    return NextResponse.json(
+      { error: "config_error", message: "Configuration not available" },
+      { status: 503 },
+    );
   const tenantConfig = snapshot.tenants.get(tenantId);
 
   let score: number;

@@ -45,7 +45,13 @@ export async function POST(
   // check (Edge Runtime / snapshot not yet loaded). Ensures tenant isolation regardless
   // of middleware state.
   const snapshot = await ensureConfigLoaded();
-  if (!snapshot?.tenants.get(tenantSlug)) {
+  if (!snapshot) {
+    return NextResponse.json(
+      { error: "internal_error", message: "Configuration not available" },
+      { status: 503 },
+    );
+  }
+  if (!snapshot.tenants.get(tenantSlug)) {
     return NextResponse.json({ error: "not_found", message: "Tenant not found" }, { status: 404 });
   }
 

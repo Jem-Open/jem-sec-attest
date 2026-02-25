@@ -1819,6 +1819,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
         <div style={{ marginTop: "1.5rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
           {!isExhausted && (
             <button
+              ref={firstFocusRef as React.RefObject<HTMLButtonElement>}
               type="button"
               onClick={handleStartTraining}
               disabled={isSubmitting}
@@ -1840,6 +1841,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
             </button>
           )}
           <button
+            ref={isExhausted ? (firstFocusRef as React.RefObject<HTMLButtonElement>) : undefined}
             type="button"
             onClick={handleViewHistory}
             disabled={isLoadingHistory}

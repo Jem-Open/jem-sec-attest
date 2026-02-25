@@ -14,13 +14,13 @@
 
 /**
  * AI-powered role profile generator.
- * Uses generateObject() from AI SDK v6 with a strict Zod schema for
+ * Uses generateText() with Output API from AI SDK v6 with a strict Zod schema for
  * deterministic, schema-constrained extraction of job expectations.
  * Three-layer prompt injection mitigation: sanitization, boundaries, schema constraint.
  */
 
 import type { LanguageModel } from "ai";
-import { generateObject } from "ai";
+import { Output, generateText } from "ai";
 import { RoleProfileExtractionSchema } from "./schemas";
 import type { RoleProfileExtraction } from "./types";
 
@@ -56,9 +56,9 @@ export async function generateRoleProfile(
   let result: RoleProfileExtraction;
 
   try {
-    const { object } = await generateObject({
+    const { experimental_output: object } = await generateText({
       model,
-      schema: RoleProfileExtractionSchema,
+      output: Output.object({ schema: RoleProfileExtractionSchema }),
       system: SYSTEM_PROMPT,
       prompt: USER_PROMPT_TEMPLATE.replace("{JOB_TEXT}", jobText),
       temperature: 0,

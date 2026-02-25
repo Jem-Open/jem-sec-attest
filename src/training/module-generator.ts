@@ -14,7 +14,7 @@
 
 /**
  * AI-powered training module content generator.
- * Uses generateObject() from AI SDK v6 with a strict Zod schema for
+ * Uses generateText() with Output API from AI SDK v6 with a strict Zod schema for
  * deterministic, schema-constrained generation of instructional content,
  * workplace scenarios, and quiz questions.
  * Prompt injection mitigation: XML boundaries, schema constraint, and explicit
@@ -22,7 +22,7 @@
  */
 
 import type { LanguageModel } from "ai";
-import { generateObject } from "ai";
+import { Output, generateText } from "ai";
 import { z } from "zod";
 import type { ModuleContent } from "./types";
 
@@ -128,16 +128,16 @@ export async function generateModuleContent(
   let raw: z.infer<typeof ModuleContentLlmSchema>;
 
   try {
-    const { object } = await generateObject({
+    const { experimental_output: object } = await generateText({
       model,
-      schema: ModuleContentLlmSchema,
+      output: Output.object({ schema: ModuleContentLlmSchema }),
       system: SYSTEM_PROMPT,
       prompt,
       temperature: 0,
     });
     raw = object;
   } catch (error) {
-    console.error("[module-generator] generateObject failed:", error);
+    console.error("[module-generator] generateText failed:", error);
     throw new ModuleGenerationError(
       `AI provider error: ${error instanceof Error ? error.message : String(error)}`,
       "ai_unavailable",

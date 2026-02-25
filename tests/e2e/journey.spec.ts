@@ -150,7 +150,7 @@ test("training — starts a training session and begins first module", async ({ 
   // Look for a module list or the first module button
   await expect(
     page.locator(
-      "section[aria-labelledby='curriculum-heading'], section[aria-labelledby='module-learning-heading'], section[aria-labelledby='result-heading']",
+      "section[aria-labelledby='curriculum-heading'], section[aria-labelledby='learning-heading'], section[aria-labelledby='result-heading']",
     ),
   ).toBeVisible({ timeout: 90_000 });
 
@@ -209,7 +209,7 @@ test("evidence export — PDF endpoint returns a valid PDF for a completed sessi
       const body = await pdfResponse.body();
       expect(body.length).toBeGreaterThan(0);
 
-      // Verify the response starts with the PDF magic bytes (%PDF-)
+      // Verify the response starts with the PDF magic bytes (%PDF)
       expect(body.slice(0, 4).toString()).toBe("%PDF");
     } else {
       // No passing session yet — skip so CI dashboards show the PDF path was not exercised

@@ -42,6 +42,10 @@ export default async function DashboardPage({
   const locale = cookieStore.get("locale")?.value ?? "en";
   const t = await getTranslation(locale);
 
+  if (session.employee.tenantId !== tenant) {
+    redirect(`/${tenant}/auth/signin`);
+  }
+
   const employeeId = session.employee.employeeId;
 
   let recentSessions: TrainingSession[] = [];

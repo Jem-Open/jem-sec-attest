@@ -14,12 +14,12 @@
 
 /**
  * AI-powered remediation curriculum planner.
- * Uses generateObject() from AI SDK v6 with a strict Zod schema to generate
+ * Uses generateText() with Output API from AI SDK v6 with a strict Zod schema to generate
  * a targeted remediation curriculum focused on identified weak areas.
  */
 
 import type { LanguageModel } from "ai";
-import { generateObject } from "ai";
+import { Output, generateText } from "ai";
 import { z } from "zod";
 import type { CurriculumOutline } from "./schemas";
 
@@ -106,9 +106,9 @@ export async function generateRemediationCurriculum(
   let llmResult: z.infer<typeof RemediationLlmOutputSchema>;
 
   try {
-    const { object } = await generateObject({
+    const { experimental_output: object } = await generateText({
       model,
-      schema: RemediationLlmOutputSchema,
+      output: Output.object({ schema: RemediationLlmOutputSchema }),
       system: SYSTEM_PROMPT,
       prompt,
       temperature: 0,

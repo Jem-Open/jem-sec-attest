@@ -14,10 +14,11 @@
 
 // vi.mock calls are hoisted — place them before imports for clarity.
 vi.mock("ai", () => ({
-  generateObject: vi.fn(),
+  generateText: vi.fn(),
+  Output: { object: vi.fn((opts: unknown) => opts) },
 }));
 
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import type { LanguageModel } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { generateRoleProfile } from "../../../src/intake/profile-generator";
@@ -39,7 +40,7 @@ describe("generateRoleProfile", () => {
 
   it("returns typed object with jobExpectations array on valid extraction", async () => {
     const mockResult = {
-      object: {
+      experimental_output: {
         jobExpectations: [
           "Manage network security infrastructure",
           "Conduct security audits and assessments",
@@ -47,7 +48,7 @@ describe("generateRoleProfile", () => {
       },
     };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(mockResult as any); // mock return type
+    vi.mocked(generateText).mockResolvedValue(mockResult as any); // mock return type
 
     const result = await generateRoleProfile("some job text here...", makeMockModel());
 
@@ -57,41 +58,41 @@ describe("generateRoleProfile", () => {
     ]);
   });
 
-  it("passes the model to generateObject", async () => {
+  it("passes the model to generateText", async () => {
     const model = makeMockModel();
     const mockResult = {
-      object: { jobExpectations: ["Valid expectation text here"] },
+      experimental_output: { jobExpectations: ["Valid expectation text here"] },
     };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(mockResult as any); // mock return type
+    vi.mocked(generateText).mockResolvedValue(mockResult as any); // mock return type
 
     await generateRoleProfile("some job text", model);
 
-    expect(vi.mocked(generateObject).mock.calls[0][0].model).toBe(model);
+    expect(vi.mocked(generateText).mock.calls[0][0].model).toBe(model);
   });
 
   it("sets temperature to 0", async () => {
     const mockResult = {
-      object: { jobExpectations: ["Valid expectation text here"] },
+      experimental_output: { jobExpectations: ["Valid expectation text here"] },
     };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(mockResult as any); // mock return type
+    vi.mocked(generateText).mockResolvedValue(mockResult as any); // mock return type
 
     await generateRoleProfile("some job text", makeMockModel());
 
-    expect(vi.mocked(generateObject).mock.calls[0][0].temperature).toBe(0);
+    expect(vi.mocked(generateText).mock.calls[0][0].temperature).toBe(0);
   });
 
   it("includes job_description boundary tags in prompt", async () => {
     const mockResult = {
-      object: { jobExpectations: ["Valid expectation text here"] },
+      experimental_output: { jobExpectations: ["Valid expectation text here"] },
     };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(mockResult as any); // mock return type
+    vi.mocked(generateText).mockResolvedValue(mockResult as any); // mock return type
 
     await generateRoleProfile("my specific job text", makeMockModel());
 
-    const callArgs = vi.mocked(generateObject).mock.calls[0][0];
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
     expect(callArgs.prompt).toContain("<job_description>");
     expect(callArgs.prompt).toContain("</job_description>");
     expect(callArgs.prompt).toContain("my specific job text");
@@ -99,20 +100,20 @@ describe("generateRoleProfile", () => {
 
   it("includes untrusted-data instruction in system prompt", async () => {
     const mockResult = {
-      object: { jobExpectations: ["Valid expectation text here"] },
+      experimental_output: { jobExpectations: ["Valid expectation text here"] },
     };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(mockResult as any); // mock return type
+    vi.mocked(generateText).mockResolvedValue(mockResult as any); // mock return type
 
     await generateRoleProfile("some job text", makeMockModel());
 
-    const callArgs = vi.mocked(generateObject).mock.calls[0][0];
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
     expect(callArgs.system).toBeDefined();
     expect(callArgs.system).toMatch(/not follow.*instructions/i);
   });
 
   it("propagates AI provider errors", async () => {
-    vi.mocked(generateObject).mockRejectedValue(new Error("503 Service Unavailable"));
+    vi.mocked(generateText).mockRejectedValue(new Error("503 Service Unavailable"));
 
     await expect(generateRoleProfile("some job text", makeMockModel())).rejects.toThrow();
   });

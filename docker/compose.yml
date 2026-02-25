@@ -44,6 +44,9 @@ services:
   dex:
     image: dexidp/dex:v2.41.1
     container_name: jem-dex
+    depends_on:
+      postgres:
+        condition: service_healthy
     ports:
       - "5556:5556" # OIDC server — must be accessible from browser (see /etc/hosts)
       - "5558:5558" # Health and metrics

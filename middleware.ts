@@ -28,7 +28,7 @@ import type { EmployeeSession } from "./src/auth/types";
 import { getSnapshot } from "./src/config/snapshot";
 import { createResolver } from "./src/tenant/resolver";
 
-const PUBLIC_PATHS = ["/api/auth/", "/api/health/", "/_next/", "/favicon.ico"];
+const PUBLIC_PATHS = ["/api/admin/", "/api/auth/", "/api/health/", "/_next/", "/favicon.ico"];
 
 interface SessionData {
   employee?: EmployeeSession;
@@ -88,9 +88,12 @@ export async function middleware(request: NextRequest) {
 
   const hostname = request.headers.get("host")?.split(":")[0] ?? "";
 
-  // Extract tenant slug from first path segment (used for page-route redirects)
+  // Extract tenant slug from path segments.
+  // For API routes (/api/<resource>/[tenant]/...) the tenant is segments[2];
+  // for page routes (/[tenant]/...) the tenant is segments[0].
   const segments = pathname.split("/").filter(Boolean);
-  const tenantSlug = segments[0];
+  const isApiRoute = segments[0] === "api";
+  const tenantSlug = isApiRoute ? segments[2] : segments[0];
 
   // Resolve tenant from hostname.
   // - If the config snapshot is loaded: strict hostname check (enumeration protection).
@@ -172,10 +175,13 @@ export async function middleware(request: NextRequest) {
     return redirectResponse;
   }
 
-  // Tenant mismatch — only enforce when the snapshot is loaded and hostname resolution
-  // is authoritative. Skip when snapshot is not available (Edge context).
-  if (snapshotLoaded && employee.tenantId !== (effectiveTenantId as string)) {
-    const signInUrl = new URL(`/${effectiveTenantId ?? "unknown"}/auth/signin`, request.url);
+  // Tenant mismatch — enforce using hostname-resolved tenant when snapshot is loaded,
+  // or fall back to the URL tenant slug when snapshot is not available (Edge context).
+  const targetTenant = snapshotLoaded
+    ? (effectiveTenantId as string)
+    : (tenantSlug ?? effectiveTenantId);
+  if (targetTenant && employee.tenantId !== targetTenant) {
+    const signInUrl = new URL(`/${targetTenant}/auth/signin`, request.url);
     const redirectResponse = NextResponse.redirect(signInUrl);
     redirectResponse.cookies.set("jem_session", "", {
       httpOnly: true,

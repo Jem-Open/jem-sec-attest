@@ -9,7 +9,7 @@
 
 ### Session 2026-02-23
 
-- Q: How many tenants should the Docker local stack and E2E tests target? → A: One fixed test tenant named `acme`. All services, IDP config, and Playwright tests target `acme` only.
+- Q: How many tenants should the Docker local stack and E2E tests target? → A: One fixed test tenant named `acme-corp`. All services, IDP config, and Playwright tests target `acme-corp` only.
 - Q: Which database should the Docker local stack use? → A: PostgreSQL — a dedicated Postgres container to match production more closely.
 - Q: Which test user roles must be covered in the Playwright E2E suite? → A: Employee role only — one test user completing the full journey (sign-in → intake → training → export).
 - Q: How should logs be surfaced to developers during test runs? → A: Stdout/stderr only — all services log to stdout and are readable via `docker logs`; no volume mounts or UI required.
@@ -27,7 +27,7 @@ A developer wants to bring the entire application stack — including the Next.j
 
 **Acceptance Scenarios**:
 
-1. **Given** the developer has Docker installed, **When** they run the startup command, **Then** all services (app, IDP, database) start without errors and the app is reachable at a known local URL within 2 minutes.
+1. **Given** the developer has Docker installed, **When** they run the startup command, **Then** all services (app, IDP, database) start without errors and the app is reachable at a known local URL within 3 minutes.
 2. **Given** the stack is running, **When** the developer accesses the app URL, **Then** they see the application home page without any "dev mode" indicators (no hot-reload banners, no development error overlays).
 3. **Given** the stack is running, **When** a service fails to start, **Then** the logs for that service are immediately accessible and contain actionable error messages.
 
@@ -79,8 +79,8 @@ An automated Playwright test suite exercises the complete user journey: authenti
 - **FR-001**: The local stack MUST be startable with a single command that brings up the Next.js application, the test IDP, and a PostgreSQL database.
 - **FR-002**: The Next.js application MUST run in production build mode (no hot-reload, no development overlays, no source maps exposed).
 - **FR-003**: The test IDP MUST implement OIDC (authorization code flow) and issue tokens containing at minimum the standard claims `sub`, `email`, and `name`. No custom role or group claims are required. Test users are configured declaratively (e.g., via a config file or environment variables).
-- **FR-004**: Test users MUST be definable without modifying application code — only IDP container configuration. The initial set is one employee-role user for the `acme` tenant.
-- **FR-005**: The application MUST be configured to use the local IDP as its OIDC provider when running in the Docker environment, scoped to the `acme` tenant.
+- **FR-004**: Test users MUST be definable without modifying application code — only IDP container configuration. The initial set is one employee-role user for the `acme-corp` tenant.
+- **FR-005**: The application MUST be configured to use the local IDP as its OIDC provider when running in the Docker environment, scoped to the `acme-corp` tenant.
 - **FR-006**: All services (app, IDP, database) MUST emit logs to stdout/stderr so they are readable via `docker logs` without entering the container. No separate log files or UI are required.
 - **FR-007**: A Playwright test suite MUST cover the full user journey: OIDC sign-in → training intake → training modules → evidence export.
 - **FR-008**: Playwright tests MUST capture screenshots and log snapshots on failure for post-run diagnosis.
@@ -90,7 +90,7 @@ An automated Playwright test suite exercises the complete user journey: authenti
 ### Key Entities
 
 - **Test IDP**: A containerised OpenID Connect provider used only in local/test environments. Holds user credentials and issues OIDC tokens. Has no connection to production identity systems.
-- **Test User**: A single employee-role account defined in the IDP config for the `acme` tenant. Used by Playwright tests to authenticate and exercise the full training journey. Additional roles are out of scope for this feature.
+- **Test User**: A single employee-role account defined in the IDP config for the `acme-corp` tenant. Used by Playwright tests to authenticate and exercise the full training journey. Additional roles are out of scope for this feature.
 - **Local Stack**: The set of Docker containers (app, IDP, PostgreSQL) that collectively represent the running application in a production-like configuration.
 - **E2E Test Suite**: The Playwright tests that automate and validate the full user journey against the local stack.
 
@@ -109,7 +109,7 @@ An automated Playwright test suite exercises the complete user journey: authenti
 
 - The project already has a working OIDC integration; this feature wraps it in a local-only IDP rather than changing the auth logic.
 - The app requires only standard OIDC claims (`sub`, `email`, `name`). Employee role assignment occurs during the training intake questionnaire, not at sign-in time.
-- The Docker stack targets a single tenant named `acme`. Multi-tenant isolation testing is out of scope for this feature.
+- The Docker stack targets a single tenant named `acme-corp`. Multi-tenant isolation testing is out of scope for this feature.
 - A lightweight open-source OIDC-capable IDP (e.g., Dex, Keycloak, or mock-oauth2-server) is acceptable for local testing.
 - The Docker stack uses PostgreSQL as the database, matching the production storage adapter. No separate test schema is required; the schema is initialised on first container start.
 - Developers are expected to have Docker and Docker Compose installed; the feature does not provision Docker itself.
@@ -122,11 +122,12 @@ The canonical source for port bindings is `docker/compose.yml`. The table below 
 
 | Service    | Container name | Default host port | Purpose                              |
 |------------|----------------|-------------------|--------------------------------------|
+| `app`      | `jem-app`      | `3000`            | Next.js application (production build) |
 | `postgres` | `jem-postgres` | `5432`            | PostgreSQL database                  |
 | `dex`      | `jem-dex`      | `5556`            | Dex OIDC server (must be browser-reachable; add `127.0.0.1 dex` to `/etc/hosts`) |
 | `dex`      | `jem-dex`      | `5558`            | Dex health and metrics endpoint      |
 
-The Next.js application is **not** a Compose service — it runs on the developer's host via `pnpm dev` (default port `3000`) or `pnpm build && pnpm start`.
+The Next.js application **is** a Compose service — it runs as a containerised production build (`next build && next start`) and is started alongside the IDP and database by the single startup command.
 
 ### Overriding ports
 

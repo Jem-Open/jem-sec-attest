@@ -130,6 +130,8 @@ All unknowns resolved. See [research.md](./research.md).
 
 **File**: `Dockerfile`
 
+The Next.js application is a containerised Compose service — it runs as a production build alongside the IDP and database and is started by the single `pnpm docker:up` command. The Dockerfile produces the image for that service.
+
 Two stages:
 1. **builder** (`node:20-alpine`): installs pnpm, copies source, runs `pnpm install --frozen-lockfile`, runs `pnpm build`, copies `public/` and `.next/static/` into `.next/standalone/`
 2. **runner** (`node:20-alpine`): installs `curl` (for health check), creates non-root `nodejs:1001` user, copies only `.next/standalone/` from builder, sets `NODE_ENV=production PORT=3000 HOSTNAME=0.0.0.0`, exposes 3000, runs `node server.js`
@@ -191,7 +193,7 @@ services:
     networks: [jem_local]
 
   app:
-    build: { context: .., dockerfile: ../Dockerfile }
+    build: { context: .., dockerfile: Dockerfile }
     ports: ["3000:3000"]
     env_file: [../.env.docker]
     environment:
@@ -284,8 +286,13 @@ At repo root. Key settings:
 - `use.trace: "on-first-retry"`
 - `use.video: "retain-on-failure"`
 - `outputDir: "test-results"`
-- `globalSetup: "./tests/e2e/auth.setup.ts"` — runs once before all tests
-- Single project: `chromium`
+- `projects`:
+  ```typescript
+  projects: [
+    { name: "setup", testMatch: /auth\.setup\.ts/ },
+    { name: "chromium", use: { ...devices["Desktop Chrome"], storageState: "tests/e2e/.auth/user.json" }, dependencies: ["setup"] },
+  ]
+  ```
 
 ### Step 11 — tests/e2e/auth.setup.ts (new)
 

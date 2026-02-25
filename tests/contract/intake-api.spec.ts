@@ -23,7 +23,8 @@
 
 // vi.mock calls are hoisted — place them before imports for clarity.
 vi.mock("ai", () => ({
-  generateObject: vi.fn(),
+  generateText: vi.fn(),
+  Output: { object: vi.fn((opts: unknown) => opts) },
 }));
 
 vi.mock("@/storage/factory", () => ({
@@ -53,7 +54,7 @@ vi.mock("@/config/index", () => {
   };
 });
 
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { POST } from "../../app/api/intake/[tenant]/generate/route";
@@ -94,7 +95,7 @@ describe("POST /api/intake/{tenant}/generate", () => {
 
   it("returns 200 with jobExpectations array on valid input", async () => {
     const mockResult = {
-      object: {
+      experimental_output: {
         jobExpectations: [
           "Manage network security infrastructure and firewalls",
           "Conduct regular security audits and vulnerability assessments",
@@ -102,7 +103,7 @@ describe("POST /api/intake/{tenant}/generate", () => {
       },
     };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(mockResult as any); // mock return type
+    vi.mocked(generateText).mockResolvedValue(mockResult as any); // mock return type
 
     const validJobText = `${"x".repeat(50)} This is a job description for a security engineer role.`;
     const request = makeRequest({ jobText: validJobText });
@@ -138,9 +139,9 @@ describe("POST /api/intake/{tenant}/generate", () => {
   });
 
   it("returns 422 when AI returns empty expectations", async () => {
-    const mockResult = { object: { jobExpectations: [] } };
+    const mockResult = { experimental_output: { jobExpectations: [] } };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(mockResult as any); // mock return type
+    vi.mocked(generateText).mockResolvedValue(mockResult as any); // mock return type
 
     const validJobText = "x".repeat(60);
     const request = makeRequest({ jobText: validJobText });

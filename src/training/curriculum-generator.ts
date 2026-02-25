@@ -14,12 +14,12 @@
 
 /**
  * AI-powered curriculum generator.
- * Uses generateObject() from AI SDK v6 with a strict Zod schema to generate
+ * Uses generateText() with Output API from AI SDK v6 with a strict Zod schema to generate
  * a structured training curriculum outline based on a role profile.
  */
 
 import type { LanguageModel } from "ai";
-import { generateObject } from "ai";
+import { Output, generateText } from "ai";
 import { z } from "zod";
 import type { CurriculumOutline } from "./schemas";
 
@@ -101,9 +101,9 @@ export async function generateCurriculum(
   let llmResult: z.infer<typeof CurriculumLlmOutputSchema>;
 
   try {
-    const { object } = await generateObject({
+    const { experimental_output: object } = await generateText({
       model,
-      schema: CurriculumLlmOutputSchema,
+      output: Output.object({ schema: CurriculumLlmOutputSchema }),
       system: SYSTEM_PROMPT,
       prompt,
       temperature: 0,

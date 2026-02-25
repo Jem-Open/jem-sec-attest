@@ -17,8 +17,8 @@
  * Constitution Principle III: Every query is scoped by tenantId.
  */
 
-import type { StorageAdapter } from "../storage/adapter.js";
-import type { ComplianceUploadRecord } from "./types.js";
+import type { StorageAdapter } from "../storage/adapter";
+import type { ComplianceUploadRecord } from "./types";
 
 const COLLECTION = "compliance_uploads";
 

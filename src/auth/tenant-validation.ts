@@ -18,8 +18,8 @@
  * FR-006: Tenant isolation — never leak tenant existence.
  */
 
-import { getSnapshot } from "../config/index.js";
-import type { Tenant } from "../tenant/types.js";
+import { ensureConfigLoaded } from "../config/index";
+import type { Tenant } from "../tenant/types";
 
 export interface TenantValidationResult {
   valid: true;
@@ -37,9 +37,10 @@ export type TenantLookupResult = TenantValidationResult | TenantValidationFailur
  * Returns the Tenant object if valid, or a failure result.
  * The caller should return a generic 404 on failure — never reveal
  * whether the slug was syntactically invalid vs. simply unknown.
+ * Lazily loads config on first call if not already loaded.
  */
-export function validateTenantSlug(slug: string): TenantLookupResult {
-  const snapshot = getSnapshot();
+export async function validateTenantSlug(slug: string): Promise<TenantLookupResult> {
+  const snapshot = await ensureConfigLoaded();
   if (!snapshot) {
     return { valid: false };
   }

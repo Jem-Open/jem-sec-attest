@@ -33,6 +33,11 @@ vi.mock("../../../src/config/index", () => ({
   getSnapshot: vi.fn(),
 }));
 
+// middleware.ts imports getSnapshot from snapshot.ts (edge-safe module)
+vi.mock("../../../src/config/snapshot", () => ({
+  getSnapshot: vi.fn(),
+}));
+
 vi.mock("../../../src/tenant/resolver", () => ({
   createResolver: vi.fn(),
 }));
@@ -82,9 +87,10 @@ vi.mock("next/server", () => {
 
 import { getIronSession } from "iron-session";
 import { middleware } from "../../../middleware";
-import { getSnapshot } from "../../../src/config/index";
+import { getSnapshot } from "../../../src/config/snapshot";
 import { createResolver } from "../../../src/tenant/resolver";
 
+// The middleware imports getSnapshot from snapshot.ts (edge-safe module).
 const mockedGetSnapshot = vi.mocked(getSnapshot);
 const mockedCreateResolver = vi.mocked(createResolver);
 const mockedGetIronSession = vi.mocked(getIronSession);
@@ -184,19 +190,18 @@ describe("middleware", () => {
     expect(response.__jsonData).toEqual({ error: "Not found." });
   });
 
-  it("returns generic 404 when no config snapshot is loaded", async () => {
+  it("returns generic 404 when snapshot not loaded and no tenant slug in path", async () => {
+    // When the config snapshot is not loaded (Edge Runtime) and the URL has no
+    // recognisable tenant slug in the path, resolvedTenantId is null → 404.
     mockedGetSnapshot.mockReturnValue(null);
 
-    const request = makeRequest(
-      "http://acme-corp.example.com/acme-corp/dashboard",
-      "acme-corp.example.com",
-    );
+    const request = makeRequest("http://acme-corp.example.com/", "acme-corp.example.com");
     const response = (await middleware(request as Parameters<typeof middleware>[0])) as Record<
       string,
       unknown
     >;
 
-    expect(response.status).toBe(404);
+    expect(response.status === 404).toBe(true);
     expect(response.__jsonData).toEqual({ error: "Not found." });
   });
 

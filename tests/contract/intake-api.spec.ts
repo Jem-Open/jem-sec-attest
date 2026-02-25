@@ -42,12 +42,16 @@ vi.mock("@/intake/ai-model-resolver", () => ({
   resolveModel: vi.fn().mockReturnValue({}),
 }));
 
-vi.mock("@/config/index", () => ({
-  getSnapshot: vi.fn().mockReturnValue({
+vi.mock("@/config/index", () => {
+  const snapshot = {
     tenants: new Map([["acme-corp", { id: "acme-corp", name: "Acme Corp", settings: {} }]]),
     configHash: "test-hash-123",
-  }),
-}));
+  };
+  return {
+    getSnapshot: vi.fn().mockReturnValue(snapshot),
+    ensureConfigLoaded: vi.fn().mockResolvedValue(snapshot),
+  };
+});
 
 import { generateObject } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";

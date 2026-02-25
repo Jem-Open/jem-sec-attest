@@ -19,7 +19,7 @@
  * Raw job text is NEVER persisted to database, logs, or session.
  */
 
-import { getSnapshot } from "@/config/index";
+import { ensureConfigLoaded } from "@/config/index";
 import { resolveModel } from "@/intake/ai-model-resolver";
 import { ProfileGenerationError, generateRoleProfile } from "@/intake/profile-generator";
 import { sanitizeJobText } from "@/intake/sanitizer";
@@ -61,7 +61,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
   const sanitized = sanitizeJobText(parsed.data.jobText);
 
   // Resolve AI model from tenant config
-  const snapshot = getSnapshot();
+  const snapshot = await ensureConfigLoaded();
   const tenant = snapshot?.tenants.get(tenantSlug);
   if (!tenant) {
     return NextResponse.json({ error: "not_found", message: "Tenant not found" }, { status: 404 });

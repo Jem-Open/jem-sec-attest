@@ -18,8 +18,8 @@
  * One profile per employee per tenant, enforced via transactional upsert.
  */
 
-import type { StorageAdapter } from "../storage/adapter.js";
-import type { ProfileConfirmation, RoleProfile } from "./types.js";
+import type { StorageAdapter } from "../storage/adapter";
+import type { ProfileConfirmation, RoleProfile } from "./types";
 
 const COLLECTION = "role_profiles";
 

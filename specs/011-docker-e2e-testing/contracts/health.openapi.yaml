@@ -1,0 +1,77 @@
+openapi: "3.0.3"
+info:
+  title: Health Check
+  description: |
+    Application liveness and readiness check.
+    Used by Docker Compose healthcheck and orchestrators to determine
+    whether the Next.js application is ready to serve requests.
+  version: "1.0.0"
+
+paths:
+  /api/health:
+    get:
+      summary: Application health check
+      operationId: getHealth
+      description: |
+        Returns the current health status of the application.
+        Does not require authentication.
+        Marked force-dynamic to prevent static caching.
+      tags:
+        - health
+      responses:
+        "200":
+          description: Application is healthy and ready to serve requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthyResponse"
+              example:
+                status: healthy
+                timestamp: "2026-02-23T12:00:00.000Z"
+                uptime: 42.3
+        "503":
+          description: Application is unhealthy or a critical dependency failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UnhealthyResponse"
+              example:
+                status: unhealthy
+                error: "Database connection failed"
+
+components:
+  schemas:
+    HealthyResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+        - uptime
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum:
+            - healthy
+        timestamp:
+          type: string
+          format: date-time
+          description: Server time at response generation
+        uptime:
+          type: number
+          description: Process uptime in seconds
+
+    UnhealthyResponse:
+      type: object
+      required:
+        - status
+        - error
+      additionalProperties: false
+      properties:
+        status:
+          type: string
+          enum:
+            - unhealthy
+        error:
+          type: string
+          description: Human-readable description of the failure

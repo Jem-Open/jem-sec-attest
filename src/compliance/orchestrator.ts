@@ -23,19 +23,15 @@
  * - Record ComplianceUpload status to storage
  */
 
-import { AuditLogger } from "../audit/audit-logger.js";
-import { getSnapshot } from "../config/index.js";
-import { EvidenceRepository } from "../evidence/evidence-repository.js";
-import { renderEvidencePdf } from "../evidence/pdf-renderer.js";
-import type { StorageAdapter } from "../storage/adapter.js";
-import { SprintoProvider } from "./providers/sprinto.js";
-import type { ComplianceConfig } from "./schemas.js";
-import type {
-  ComplianceProvider,
-  ComplianceProviderConfig,
-  ComplianceUploadRecord,
-} from "./types.js";
-import { ComplianceUploadRepository } from "./upload-repository.js";
+import { AuditLogger } from "../audit/audit-logger";
+import { getSnapshot } from "../config/index";
+import { EvidenceRepository } from "../evidence/evidence-repository";
+import { renderEvidencePdf } from "../evidence/pdf-renderer";
+import type { StorageAdapter } from "../storage/adapter";
+import { SprintoProvider } from "./providers/sprinto";
+import type { ComplianceConfig } from "./schemas";
+import type { ComplianceProvider, ComplianceProviderConfig, ComplianceUploadRecord } from "./types";
+import { ComplianceUploadRepository } from "./upload-repository";
 
 // ---------------------------------------------------------------------------
 // Provider registry

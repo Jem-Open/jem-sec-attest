@@ -19,8 +19,8 @@
 
 import { join } from "node:path";
 import { config as loadDotenv } from "dotenv";
-import { loadConfigFromFiles } from "./config/index.js";
-import { createResolver } from "./tenant/resolver.js";
+import { loadConfigFromFiles } from "./config/index";
+import { createResolver } from "./tenant/resolver";
 
 async function main(): Promise<void> {
   loadDotenv();

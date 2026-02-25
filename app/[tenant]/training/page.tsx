@@ -132,36 +132,10 @@ interface HistoryEntry {
 }
 
 // ---------------------------------------------------------------------------
-// Pure helper — exported for unit testing
+// Pure helper — lives in derive-page-state.ts (page exports must be Next.js types)
 // ---------------------------------------------------------------------------
 
-export function derivePageState(
-  session: TrainingSessionResponse | null,
-  modules: ModuleSummary[],
-): PageState {
-  if (session === null) return "start";
-
-  const { status } = session;
-
-  if (status === "evaluating") return "evaluating";
-  if (status === "failed") return "failed-review";
-  if (status === "passed" || status === "exhausted" || status === "abandoned") return "result";
-
-  // in-progress (or curriculum-generating treated as in-progress for UI)
-  const learning = modules.find((m) => m.status === "learning");
-  if (learning) return "module-learning";
-
-  const scenarioActive = modules.find((m) => m.status === "scenario-active");
-  if (scenarioActive) return "module-scenario";
-
-  const quizActive = modules.find((m) => m.status === "quiz-active");
-  if (quizActive) return "module-quiz";
-
-  const contentGenerating = modules.find((m) => m.status === "content-generating");
-  if (contentGenerating) return "module-learning";
-
-  return "curriculum";
-}
+import { derivePageState } from "./derive-page-state";
 
 // ---------------------------------------------------------------------------
 // Shared inline style objects
@@ -654,9 +628,13 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
         if (isCancelled?.()) return;
         throw new Error(body.message ?? `Server error (${res.status})`);
       }
-      const updatedModule = (await res.json()) as ModuleSummary;
+      const content = (await res.json()) as ModuleContentClient;
       if (isCancelled?.()) return;
-      setModules((prev) => prev.map((m) => (m.moduleIndex === moduleIndex ? updatedModule : m)));
+      setModules((prev) =>
+        prev.map((m) =>
+          m.moduleIndex === moduleIndex ? { ...m, content, status: "learning" } : m,
+        ),
+      );
       setActiveModuleIndex(moduleIndex);
       setScenarioIndex(0);
       setLastScenarioResult(null);
@@ -720,13 +698,9 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
       const result = (await res.json()) as {
         score: number;
         rationale?: string;
-        module: ModuleSummary;
       };
 
       setLastScenarioResult({ score: result.score, rationale: result.rationale });
-      setModules((prev) =>
-        prev.map((m) => (m.moduleIndex === activeModuleIndex ? result.module : m)),
-      );
       setSelectedOption("");
       setFreeTextAnswer("");
     } catch (err) {
@@ -794,14 +768,23 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
       const result = (await res.json()) as {
         moduleScore: number;
         answers: QuizAnswerResult[];
-        module: ModuleSummary;
       };
 
       setLastQuizResult({ moduleScore: result.moduleScore, answers: result.answers });
-      setModules((prev) =>
-        prev.map((m) => (m.moduleIndex === activeModuleIndex ? result.module : m)),
-      );
       setQuizAnswers({});
+      // Silently refresh modules to pick up updated status (e.g. scored)
+      const sessionRes = await fetch(`/api/training/${tenant}/session`);
+      if (sessionRes.ok) {
+        const sessionData = (await sessionRes.json()) as SessionApiResponse;
+        setModules(sessionData.modules);
+      } else {
+        console.error("[training] session refresh failed:", sessionRes.status);
+        setModules((prev) =>
+          prev.map((m) =>
+            m.moduleIndex === activeModuleIndex ? { ...m, status: "scored" as ModuleStatus } : m,
+          ),
+        );
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("training.error.submitQuiz"));
       setPageState("error");
@@ -1829,29 +1812,51 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
           </section>
         )}
 
-        {/* T031: View History button */}
-        <div style={{ marginTop: "1.5rem" }}>
-          <button
-            type="button"
-            onClick={handleViewHistory}
-            disabled={isLoadingHistory}
-            style={{
-              ...(styles.secondaryButton as React.CSSProperties),
-              opacity: isLoadingHistory ? 0.7 : 1,
-              cursor: isLoadingHistory ? "not-allowed" : "pointer",
-            }}
-            aria-busy={isLoadingHistory}
-          >
-            {isLoadingHistory ? (
-              <>
-                <LoadingSpinner />
-                {t("training.history.loadingMessage")}
-              </>
-            ) : (
-              t("training.history.viewButton")
-            )}
-          </button>
-        </div>
+        {/* T031: Action buttons — start new session or view history */}
+        {!isExhausted && (
+          <div style={{ marginTop: "1.5rem", display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
+            <button
+              type="button"
+              onClick={handleStartTraining}
+              disabled={isSubmitting}
+              style={{
+                ...(styles.primaryButton as React.CSSProperties),
+                opacity: isSubmitting ? 0.7 : 1,
+                cursor: isSubmitting ? "not-allowed" : "pointer",
+              }}
+              aria-busy={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <LoadingSpinner light />
+                  {t("training.startingSession")}
+                </>
+              ) : (
+                t("training.result.startNewButton")
+              )}
+            </button>
+            <button
+              type="button"
+              onClick={handleViewHistory}
+              disabled={isLoadingHistory}
+              style={{
+                ...(styles.secondaryButton as React.CSSProperties),
+                opacity: isLoadingHistory ? 0.7 : 1,
+                cursor: isLoadingHistory ? "not-allowed" : "pointer",
+              }}
+              aria-busy={isLoadingHistory}
+            >
+              {isLoadingHistory ? (
+                <>
+                  <LoadingSpinner />
+                  {t("training.history.loadingMessage")}
+                </>
+              ) : (
+                t("training.history.viewButton")
+              )}
+            </button>
+          </div>
+        )}
       </section>
     );
   }

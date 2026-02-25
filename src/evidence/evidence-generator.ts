@@ -17,14 +17,14 @@
  * from a completed (terminal) training session and its modules.
  */
 
-import { dispatchUpload } from "../compliance/orchestrator.js";
-import { getSnapshot } from "../config/index.js";
-import { getStorage } from "../storage/factory.js";
-import type { TrainingModule, TrainingSession } from "../training/schemas.js";
-import { SessionRepository } from "../training/session-repository.js";
-import { EvidenceRepository } from "./evidence-repository.js";
-import { computeContentHash } from "./hash.js";
-import type { EvidenceBody, ModuleEvidence, TrainingEvidence } from "./schemas.js";
+import { dispatchUpload } from "../compliance/orchestrator";
+import { getSnapshot } from "../config/index";
+import { getStorage } from "../storage/factory";
+import type { TrainingModule, TrainingSession } from "../training/schemas";
+import { SessionRepository } from "../training/session-repository";
+import { EvidenceRepository } from "./evidence-repository";
+import { computeContentHash } from "./hash";
+import type { EvidenceBody, ModuleEvidence, TrainingEvidence } from "./schemas";
 
 // ---------------------------------------------------------------------------
 // Constants

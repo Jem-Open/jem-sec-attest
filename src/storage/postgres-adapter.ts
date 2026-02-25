@@ -20,8 +20,8 @@
 
 import crypto from "node:crypto";
 import postgres from "postgres";
-import type { StorageAdapter } from "./adapter.js";
-import type { QueryFilter, StorageMetadata, TransactionContext } from "./types.js";
+import type { StorageAdapter } from "./adapter";
+import type { QueryFilter, StorageMetadata, TransactionContext } from "./types";
 
 export interface PostgresAdapterOptions {
   connectionString: string;
@@ -100,7 +100,7 @@ export class PostgresAdapter implements StorageAdapter {
         return null;
       }
 
-      return rows[0]!.data as T;
+      return rows[0]?.data as T;
     } catch (error) {
       throw new Error(
         `Failed to find record ${id}: ${error instanceof Error ? error.message : "unknown error"}`,
@@ -283,7 +283,7 @@ class PostgresTxAdapter {
       return null;
     }
 
-    return rows[0]!.data as T;
+    return rows[0]?.data as T;
   }
 
   async update<T extends Record<string, unknown>>(

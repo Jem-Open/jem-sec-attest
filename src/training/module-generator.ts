@@ -24,7 +24,7 @@
 import type { LanguageModel } from "ai";
 import { generateObject } from "ai";
 import { z } from "zod";
-import type { ModuleContent } from "./types.js";
+import type { ModuleContent } from "./types";
 
 // ---------------------------------------------------------------------------
 // Local LLM output schema (without generatedAt — added after generation)
@@ -54,12 +54,12 @@ const QuizQuestionLlmSchema = z.object({
   rubric: z.string().optional(),
 });
 
+// Flat schema for LLM output — avoids model confusion with nested `quiz.questions` wrapper.
+// `quizQuestions` is mapped back to `quiz.questions` in generateModuleContent().
 const ModuleContentLlmSchema = z.object({
   instruction: z.string(),
   scenarios: z.array(ScenarioLlmSchema),
-  quiz: z.object({
-    questions: z.array(QuizQuestionLlmSchema),
-  }),
+  quizQuestions: z.array(QuizQuestionLlmSchema),
 });
 
 // ---------------------------------------------------------------------------
@@ -88,7 +88,7 @@ Relevant Job Expectations:
 Generate:
 - instruction: A clear instructional passage for the topic (at least a paragraph)
 - scenarios: 2-4 workplace scenarios (mix of multiple-choice and free-text)
-- quiz: 2-4 quiz questions to test understanding (mix of multiple-choice and free-text)
+- quizQuestions: 2-4 quiz questions to test understanding (mix of multiple-choice and free-text)
 For multiple-choice items, include 3-4 options with exactly one marked correct: true.
 For free-text items, include a rubric describing how to evaluate the response.`;
 
@@ -137,6 +137,7 @@ export async function generateModuleContent(
     });
     raw = object;
   } catch (error) {
+    console.error("[module-generator] generateObject failed:", error);
     throw new ModuleGenerationError(
       `AI provider error: ${error instanceof Error ? error.message : String(error)}`,
       "ai_unavailable",
@@ -149,7 +150,7 @@ export async function generateModuleContent(
   }
 
   // Validate quiz questions are present
-  if (!raw.quiz.questions || raw.quiz.questions.length === 0) {
+  if (!raw.quizQuestions || raw.quizQuestions.length === 0) {
     throw new ModuleGenerationError(
       "AI generation returned no quiz questions",
       "generation_failed",
@@ -176,7 +177,7 @@ export async function generateModuleContent(
   }
 
   // Validate multiple-choice quiz questions have exactly one correct option
-  for (const question of raw.quiz.questions) {
+  for (const question of raw.quizQuestions) {
     if (question.responseType === "multiple-choice") {
       if (!question.options || question.options.length === 0) {
         throw new ModuleGenerationError(
@@ -194,8 +195,11 @@ export async function generateModuleContent(
     }
   }
 
+  // Map flat LLM output to the expected ModuleContent shape
+  const { quizQuestions, ...rest } = raw;
   return {
-    ...raw,
+    ...rest,
+    quiz: { questions: quizQuestions },
     generatedAt: new Date().toISOString(),
   };
 }

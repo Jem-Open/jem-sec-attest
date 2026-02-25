@@ -58,6 +58,7 @@ vi.mock("@/evidence/pdf-renderer", () => ({
 }));
 vi.mock("@/config/index", () => ({
   getSnapshot: mockGetSnapshot,
+  ensureConfigLoaded: vi.fn().mockImplementation(() => Promise.resolve(mockGetSnapshot())),
 }));
 
 import { GET } from "../../../app/api/training/[tenant]/evidence/[sessionId]/pdf/route";

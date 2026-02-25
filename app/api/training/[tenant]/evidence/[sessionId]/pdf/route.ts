@@ -19,7 +19,7 @@
  */
 
 import { AuditLogger } from "@/audit/audit-logger";
-import { getSnapshot } from "@/config/index";
+import { ensureConfigLoaded, type getSnapshot } from "@/config/index";
 import { EvidenceRepository } from "@/evidence/evidence-repository";
 import { renderEvidencePdf } from "@/evidence/pdf-renderer";
 import { getStorage } from "@/storage/factory";
@@ -69,7 +69,12 @@ export async function GET(
   }
 
   // Resolve tenant display name from config
-  const snapshot = getSnapshot();
+  let snapshot: ReturnType<typeof getSnapshot> | undefined;
+  try {
+    snapshot = await ensureConfigLoaded();
+  } catch {
+    snapshot = undefined;
+  }
   const tenant = snapshot?.tenants.get(tenantId);
   const tenantDisplayName = tenant?.settings.branding?.displayName ?? tenant?.name ?? tenantId;
 

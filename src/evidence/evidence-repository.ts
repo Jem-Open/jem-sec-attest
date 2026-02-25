@@ -17,8 +17,8 @@
  * No update or delete methods: evidence is append-only by design.
  */
 
-import type { StorageAdapter } from "../storage/adapter.js";
-import type { TrainingEvidence } from "./schemas.js";
+import type { StorageAdapter } from "../storage/adapter";
+import type { TrainingEvidence } from "./schemas";
 
 const EVIDENCE_COLLECTION = "evidence";
 

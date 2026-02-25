@@ -19,8 +19,8 @@
  * Uses Next.js after() API for async writes (zero TTFB impact).
  */
 
-import type { AuditLogger } from "../audit/audit-logger.js";
-import type { AuthEventType } from "./types.js";
+import type { AuditLogger } from "../audit/audit-logger";
+import type { AuthEventType } from "./types";
 
 export interface AuditEventInput {
   eventType: AuthEventType;

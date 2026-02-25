@@ -19,7 +19,7 @@
  */
 
 import { ComplianceUploadRepository } from "@/compliance/upload-repository";
-import { getSnapshot } from "@/config/index";
+import { ensureConfigLoaded, type getSnapshot } from "@/config/index";
 import { EvidenceRepository } from "@/evidence/evidence-repository";
 import { getStorage } from "@/storage/factory";
 import { NextResponse } from "next/server";
@@ -65,7 +65,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
   });
 
   // Check if tenant has compliance integration enabled
-  const snapshot = getSnapshot();
+  let snapshot: ReturnType<typeof getSnapshot> | undefined;
+  try {
+    snapshot = await ensureConfigLoaded();
+  } catch {
+    snapshot = undefined;
+  }
   const tenant = snapshot?.tenants.get(tenantId);
   const hasCompliance = !!tenant?.settings?.integrations?.compliance;
 

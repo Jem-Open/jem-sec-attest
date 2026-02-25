@@ -78,8 +78,8 @@ vi.mock("@/audit/audit-logger", () => ({
   })),
 }));
 
-vi.mock("@/config/index", () => ({
-  getSnapshot: vi.fn().mockReturnValue({
+vi.mock("@/config/index", () => {
+  const snapshot = {
     tenants: new Map([
       [
         "acme-corp",
@@ -93,8 +93,12 @@ vi.mock("@/config/index", () => ({
       ],
     ]),
     configHash: "test-hash-123",
-  }),
-}));
+  };
+  return {
+    getSnapshot: vi.fn().mockReturnValue(snapshot),
+    ensureConfigLoaded: vi.fn().mockResolvedValue(snapshot),
+  };
+});
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 

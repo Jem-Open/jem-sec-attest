@@ -18,7 +18,7 @@
  * Accepts a scenario response, scores it, and updates the training module.
  */
 
-import { getSnapshot } from "@/config/index";
+import { ensureConfigLoaded } from "@/config/index";
 import { SecretRedactor } from "@/guardrails/secret-redactor";
 import { resolveModel } from "@/intake/ai-model-resolver";
 import { getStorage } from "@/storage/factory";
@@ -135,6 +135,11 @@ export async function POST(
   }
 
   // 8. Score the response
+  // Load config once (used for AI model resolution + retention check)
+  const snapshot = await ensureConfigLoaded();
+  if (!snapshot) return NextResponse.json({ error: "config_error" }, { status: 503 });
+  const tenantConfig = snapshot.tenants.get(tenantId);
+
   let score: number;
   let llmRationale: string | undefined;
 
@@ -150,8 +155,6 @@ export async function POST(
       score = scoreMcAnswer(submission.selectedOption ?? "", correctOption);
     } else {
       // free-text
-      const snapshot = getSnapshot();
-      const tenantConfig = snapshot?.tenants.get(tenantId);
       if (!tenantConfig) {
         return NextResponse.json(
           { error: "not_found", message: "Tenant configuration not found" },
@@ -191,13 +194,11 @@ export async function POST(
     llmRationale !== undefined ? redactor.redact(llmRationale).text : undefined;
 
   // 10. Check transcript retention: if disabled, omit free-text fields
-  const retentionSnapshot = getSnapshot();
-  const tenantCfg = retentionSnapshot?.tenants.get(tenantId);
   const transcriptsEnabled =
-    (tenantCfg?.settings?.retention as Record<string, unknown> | undefined)?.transcripts !==
+    (tenantConfig?.settings?.retention as Record<string, unknown> | undefined)?.transcripts !==
     undefined
       ? (
-          (tenantCfg?.settings?.retention as Record<string, unknown>).transcripts as {
+          (tenantConfig?.settings?.retention as Record<string, unknown>).transcripts as {
             enabled?: boolean;
           }
         )?.enabled !== false

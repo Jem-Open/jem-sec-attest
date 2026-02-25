@@ -16,7 +16,7 @@
  * Validated tenant configuration types.
  */
 
-import type { ComplianceConfig } from "../compliance/schemas.js";
+import type { ComplianceConfig } from "../compliance/schemas";
 
 export interface TenantSettings {
   branding?: {

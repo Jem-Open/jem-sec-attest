@@ -17,8 +17,8 @@
  * optimistic concurrency via version counters.
  */
 
-import type { StorageAdapter } from "../storage/adapter.js";
-import type { TrainingModule, TrainingSession } from "./types.js";
+import type { StorageAdapter } from "../storage/adapter";
+import type { TrainingModule, TrainingSession } from "./types";
 
 // ---------------------------------------------------------------------------
 // Constants

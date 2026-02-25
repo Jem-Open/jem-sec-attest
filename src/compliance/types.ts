@@ -18,7 +18,7 @@
  * implement ComplianceProvider without modifying orchestration logic.
  */
 
-import type { TrainingEvidence } from "../evidence/schemas.js";
+import type { TrainingEvidence } from "../evidence/schemas";
 
 // ---------------------------------------------------------------------------
 // Upload result — discriminated union

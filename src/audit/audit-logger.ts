@@ -18,9 +18,9 @@
  * Constitution Principle III: all events tenant-scoped.
  */
 
-import type { StorageAdapter } from "../storage/adapter.js";
-import { AuditEventInputSchema } from "./audit-types.js";
-import type { AuditEventInput } from "./audit-types.js";
+import type { StorageAdapter } from "../storage/adapter";
+import { AuditEventInputSchema } from "./audit-types";
+import type { AuditEventInput } from "./audit-types";
 
 const COLLECTION = "audit_events";
 

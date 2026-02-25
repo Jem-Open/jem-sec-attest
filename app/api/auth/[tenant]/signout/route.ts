@@ -42,7 +42,7 @@ async function handleSignOut(
   const { tenant: tenantSlug } = await params;
 
   // Validate tenant slug — generic 404 prevents enumeration
-  const lookup = validateTenantSlug(tenantSlug);
+  const lookup = await validateTenantSlug(tenantSlug);
   if (!lookup.valid) {
     return NextResponse.json({ error: "Organization not found." }, { status: 404 });
   }

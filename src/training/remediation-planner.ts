@@ -21,7 +21,7 @@
 import type { LanguageModel } from "ai";
 import { generateObject } from "ai";
 import { z } from "zod";
-import type { CurriculumOutline } from "./schemas.js";
+import type { CurriculumOutline } from "./schemas";
 
 // ---------------------------------------------------------------------------
 // Local schema for LLM output only (no generatedAt — we add that ourselves)

@@ -37,4 +37,4 @@ export type {
   ScenarioClient,
   QuizQuestionClient,
   ModuleContentClient,
-} from "./schemas.js";
+} from "./schemas";

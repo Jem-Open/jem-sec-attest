@@ -22,12 +22,12 @@ export type {
   RoleProfile,
   IntakeSubmission,
   ProfileConfirmation,
-} from "./schemas.js";
+} from "./schemas";
 
 export type ProfileGenerationResult =
   | {
       readonly success: true;
-      readonly extraction: import("./schemas.js").RoleProfileExtraction;
+      readonly extraction: import("./schemas").RoleProfileExtraction;
     }
   | {
       readonly success: false;

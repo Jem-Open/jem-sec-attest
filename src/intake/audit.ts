@@ -18,7 +18,7 @@
  * Constitution Principle II: deterministic, audit-friendly records.
  */
 
-import type { StorageAdapter } from "../storage/adapter.js";
+import type { StorageAdapter } from "../storage/adapter";
 
 const COLLECTION = "audit_events";
 

@@ -17,7 +17,7 @@
  * Constitution Principle V: Pluggable Architecture (OIDC now, SAML future).
  */
 
-import type { Tenant } from "../../tenant/types.js";
+import type { Tenant } from "../../tenant/types";
 
 export interface EmployeeClaims {
   sub: string;

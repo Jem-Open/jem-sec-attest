@@ -20,13 +20,13 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join, parse as parsePath } from "node:path";
 import { parse as parseYaml } from "yaml";
-import { ConfigError } from "./errors.js";
+import { ConfigError } from "./errors";
 import type {
   ConfigProvider,
   FileConfigProviderOptions,
   RawConfig,
   RawTenantConfig,
-} from "./provider.js";
+} from "./provider";
 
 const SUPPORTED_EXTENSIONS = new Set([".yaml", ".yml", ".json"]);
 

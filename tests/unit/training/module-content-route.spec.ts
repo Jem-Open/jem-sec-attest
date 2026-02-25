@@ -32,9 +32,13 @@ vi.mock("@/storage/factory", () => ({
   }),
 }));
 
-vi.mock("@/config/index", () => ({
-  getSnapshot: vi.fn(),
-}));
+vi.mock("@/config/index", () => {
+  const mockGetSnapshot = vi.fn();
+  return {
+    getSnapshot: mockGetSnapshot,
+    ensureConfigLoaded: vi.fn().mockImplementation(() => Promise.resolve(mockGetSnapshot())),
+  };
+});
 
 vi.mock("@/intake/ai-model-resolver", () => ({
   resolveModel: vi.fn().mockReturnValue({}),

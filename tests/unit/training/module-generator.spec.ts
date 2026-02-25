@@ -55,27 +55,25 @@ function makeMockObject() {
           "Award marks for mentioning sender verification, link inspection, and IT reporting.",
       },
     ],
-    quiz: {
-      questions: [
-        {
-          id: "q-1",
-          text: "Which of these is a common phishing indicator?",
-          responseType: "multiple-choice" as const,
-          options: [
-            { key: "A", text: "Sender is from your company domain", correct: false },
-            { key: "B", text: "Urgent request to click a link", correct: true },
-            { key: "C", text: "Email contains your name", correct: false },
-          ],
-        },
-        {
-          id: "q-2",
-          text: "Explain what you should do if you accidentally clicked a phishing link.",
-          responseType: "free-text" as const,
-          rubric:
-            "Award marks for: disconnect from network, contact IT immediately, change passwords.",
-        },
-      ],
-    },
+    quizQuestions: [
+      {
+        id: "q-1",
+        text: "Which of these is a common phishing indicator?",
+        responseType: "multiple-choice" as const,
+        options: [
+          { key: "A", text: "Sender is from your company domain", correct: false },
+          { key: "B", text: "Urgent request to click a link", correct: true },
+          { key: "C", text: "Email contains your name", correct: false },
+        ],
+      },
+      {
+        id: "q-2",
+        text: "Explain what you should do if you accidentally clicked a phishing link.",
+        responseType: "free-text" as const,
+        rubric:
+          "Award marks for: disconnect from network, contact IT immediately, change passwords.",
+      },
+    ],
   };
 }
 
@@ -192,7 +190,7 @@ describe("generateModuleContent", () => {
 
     expect(result.instruction).toBe(mockObj.instruction);
     expect(result.scenarios).toEqual(mockObj.scenarios);
-    expect(result.quiz).toEqual(mockObj.quiz);
+    expect(result.quiz.questions).toEqual(mockObj.quizQuestions);
     expect(result.generatedAt).toBeDefined();
     // generatedAt should be a valid ISO 8601 datetime string
     expect(() => new Date(result.generatedAt)).not.toThrow();
@@ -226,7 +224,7 @@ describe("generateModuleContent", () => {
   });
 
   it("throws ModuleGenerationError with code 'generation_failed' when quiz questions are empty", async () => {
-    const mockObj = { ...makeMockObject(), quiz: { questions: [] } };
+    const mockObj = { ...makeMockObject(), quizQuestions: [] };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
     vi.mocked(generateObject).mockResolvedValue({ object: mockObj } as any);
 
@@ -305,8 +303,8 @@ describe("generateModuleContent", () => {
 
   it("throws ModuleGenerationError with code 'generation_failed' when a multiple-choice quiz question has no correct option", async () => {
     const mockObj = makeMockObject();
-    mockObj.quiz.questions[0] = {
-      ...mockObj.quiz.questions[0],
+    mockObj.quizQuestions[0] = {
+      ...mockObj.quizQuestions[0],
       responseType: "multiple-choice" as const,
       options: [
         { key: "A", text: "Option A", correct: false },

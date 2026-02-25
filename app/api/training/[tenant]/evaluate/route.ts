@@ -19,7 +19,7 @@
  */
 
 import { AuditLogger } from "@/audit/audit-logger";
-import { getSnapshot } from "@/config/index";
+import { ensureConfigLoaded } from "@/config/index";
 import { generateEvidenceForSession } from "@/evidence/evidence-generator";
 import { getStorage } from "@/storage/factory";
 import { logEvaluationCompleted, logSessionExhausted } from "@/training/audit";
@@ -82,7 +82,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
   const aggregateScore = computeAggregateScore(moduleScores) ?? 0;
 
   // Get tenant training config
-  const snapshot = getSnapshot();
+  const snapshot = await ensureConfigLoaded();
   const tenant = snapshot?.tenants.get(tenantId);
   const trainingConfig = tenant?.settings?.training;
   const passThreshold = trainingConfig?.passThreshold ?? 0.7;

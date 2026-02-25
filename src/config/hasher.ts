@@ -19,7 +19,7 @@
 
 import { createHash } from "node:crypto";
 import stringify from "safe-stable-stringify";
-import type { Tenant } from "../tenant/types.js";
+import type { Tenant } from "../tenant/types";
 
 /**
  * Compute a deterministic SHA-256 hash of the full tenant configuration.

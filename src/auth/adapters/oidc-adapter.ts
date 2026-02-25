@@ -21,8 +21,9 @@
 import crypto from "node:crypto";
 import { sealData, unsealData } from "iron-session";
 import * as client from "openid-client";
-import type { Tenant } from "../../tenant/types.js";
-import type { AuthAdapter, AuthRedirect, AuthResult } from "./auth-adapter.js";
+import type { Tenant } from "../../tenant/types";
+import { normalizeRequestUrl } from "../normalize-url";
+import type { AuthAdapter, AuthRedirect, AuthResult } from "./auth-adapter";
 
 function getSessionSecret(): string {
   const secret = process.env.SESSION_SECRET;
@@ -59,10 +60,16 @@ async function getOrDiscoverConfig(oidcConfig: {
 }): Promise<client.Configuration> {
   let config = configCache.get(oidcConfig.issuerUrl);
   if (!config) {
+    const issuerUrl = new URL(oidcConfig.issuerUrl);
+    // Allow HTTP for local/dev issuers (e.g., Dex running in Docker without TLS)
+    const discoveryOptions =
+      issuerUrl.protocol === "http:" ? { execute: [client.allowInsecureRequests] } : undefined;
     config = await client.discovery(
-      new URL(oidcConfig.issuerUrl),
+      issuerUrl,
       oidcConfig.clientId,
       resolveClientSecret(oidcConfig.clientSecret),
+      undefined,
+      discoveryOptions,
     );
     configCache.set(oidcConfig.issuerUrl, config);
   }
@@ -150,7 +157,7 @@ export class OIDCAdapter implements AuthAdapter {
     try {
       const config = await getOrDiscoverConfig(oidcConfig);
 
-      const tokens = await client.authorizationCodeGrant(config, new URL(request.url), {
+      const tokens = await client.authorizationCodeGrant(config, normalizeRequestUrl(request), {
         pkceCodeVerifier: storedState.codeVerifier,
         expectedState: storedState.state,
       });

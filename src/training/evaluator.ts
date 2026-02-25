@@ -21,8 +21,8 @@
 
 import type { LanguageModel } from "ai";
 import { Output, generateText } from "ai";
-import { FreeTextEvaluationSchema } from "./schemas.js";
-import type { FreeTextEvaluation } from "./schemas.js";
+import { FreeTextEvaluationSchema } from "./schemas";
+import type { FreeTextEvaluation } from "./schemas";
 
 const MAX_RESPONSE_LENGTH = 2000;
 

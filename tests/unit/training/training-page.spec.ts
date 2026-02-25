@@ -24,7 +24,7 @@
 import { describe, expect, it } from "vitest";
 
 // We import derivePageState directly — it is an exported pure function.
-import { derivePageState } from "../../../app/[tenant]/training/page";
+import { derivePageState } from "../../../app/[tenant]/training/derive-page-state";
 
 // ---------------------------------------------------------------------------
 // Type aliases matching the page's internal types (duplicated here for test

@@ -33,6 +33,18 @@
     }
   },
   "files": {
-    "ignore": ["node_modules", "dist", "coverage", "*.json", "*.yaml", "*.yml", "*.md"]
+    "ignore": [
+      "node_modules",
+      "dist",
+      "coverage",
+      "*.json",
+      "*.yaml",
+      "*.yml",
+      "*.md",
+      ".next",
+      "playwright-report",
+      "test-results",
+      ".playwright-cli"
+    ]
   }
 }

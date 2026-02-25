@@ -209,10 +209,13 @@ describe("OIDCAdapter.initiateSignIn", () => {
 
     await adapter.initiateSignIn(request, tenant);
 
+    // HTTPS issuers pass undefined for the 4th and 5th args (no insecure options needed)
     expect(mockedDiscovery).toHaveBeenCalledWith(
       new URL(ISSUER_URL),
       "client-123",
       OIDC_CLIENT_SECRET,
+      undefined,
+      undefined,
     );
   });
 });

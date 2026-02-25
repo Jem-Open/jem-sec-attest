@@ -22,8 +22,8 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES, createTFunction, enMessages } from "./index.js";
-import type { LocaleMessages } from "./index.js";
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES, createTFunction, enMessages } from "./index";
+import type { LocaleMessages } from "./index";
 
 // ---------------------------------------------------------------------------
 // Client-only helpers

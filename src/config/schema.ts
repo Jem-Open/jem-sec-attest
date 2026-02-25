@@ -18,7 +18,7 @@
  */
 
 import { z } from "zod";
-import { ComplianceConfigSchema } from "../compliance/schemas.js";
+import { ComplianceConfigSchema } from "../compliance/schemas";
 
 export const OIDCConfigSchema = z
   .object({

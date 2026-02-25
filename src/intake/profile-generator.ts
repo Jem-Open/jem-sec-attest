@@ -21,8 +21,8 @@
 
 import type { LanguageModel } from "ai";
 import { generateObject } from "ai";
-import { RoleProfileExtractionSchema } from "./schemas.js";
-import type { RoleProfileExtraction } from "./types.js";
+import { RoleProfileExtractionSchema } from "./schemas";
+import type { RoleProfileExtraction } from "./types";
 
 const SYSTEM_PROMPT = `You are a role profiling assistant for a security training platform.
 Your task is to analyze a job description and extract key job expectations (responsibilities and duties).

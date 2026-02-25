@@ -19,8 +19,8 @@
  * Clarification: Purge skips active sessions; retries on next run.
  */
 
-import { getSnapshot } from "../config/index.js";
-import type { StorageAdapter } from "../storage/adapter.js";
+import { getSnapshot } from "../config/index";
+import type { StorageAdapter } from "../storage/adapter";
 
 const TERMINAL_STATUSES = new Set(["passed", "exhausted", "abandoned"]);
 

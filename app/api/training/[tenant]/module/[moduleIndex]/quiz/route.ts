@@ -19,7 +19,7 @@
  */
 
 import { AuditLogger } from "@/audit/audit-logger";
-import { getSnapshot } from "@/config/index";
+import { ensureConfigLoaded } from "@/config/index";
 import { SecretRedactor } from "@/guardrails/secret-redactor";
 import { resolveModel } from "@/intake/ai-model-resolver";
 import { getStorage } from "@/storage/factory";
@@ -132,7 +132,7 @@ export async function POST(
   let model: ReturnType<typeof resolveModel> | undefined;
 
   if (hasFreeText) {
-    const snapshot = getSnapshot();
+    const snapshot = await ensureConfigLoaded();
     const tenantConfig = snapshot?.tenants.get(tenantId);
     if (!tenantConfig) {
       return NextResponse.json(
@@ -229,7 +229,7 @@ export async function POST(
 
   // 9. Redact secrets from free-text content before storage (FR-001, FR-002)
   const redactor = new SecretRedactor();
-  const retentionSnapshot = getSnapshot();
+  const retentionSnapshot = await ensureConfigLoaded();
   const tenantCfg = retentionSnapshot?.tenants.get(tenantId);
   const transcriptsEnabled =
     (tenantCfg?.settings?.retention as Record<string, unknown> | undefined)?.transcripts !==

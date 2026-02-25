@@ -43,6 +43,7 @@ const STRINGS = {
   startOverButton: "Start Over",
   confirmedTitle: "Profile Saved",
   confirmedMessage: "Your role profile has been saved.",
+  startTrainingLink: "Start Training",
   dashboardLink: "Go to Dashboard",
   errorTitle: "Something went wrong",
   retryButton: "Retry",
@@ -705,9 +706,19 @@ export default function IntakePage({ params }: { params: Promise<{ tenant: strin
 
         <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
           <a
-            href={`/${tenant}/dashboard`}
+            href={`/${tenant}/training`}
             style={{
               ...primaryButtonStyle,
+              display: "inline-block",
+              textDecoration: "none",
+            }}
+          >
+            {STRINGS.startTrainingLink}
+          </a>
+          <a
+            href={`/${tenant}/dashboard`}
+            style={{
+              ...secondaryButtonStyle,
               display: "inline-block",
               textDecoration: "none",
             }}

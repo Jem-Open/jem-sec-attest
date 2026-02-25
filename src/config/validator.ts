@@ -24,10 +24,10 @@
 
 import { parse as parseYaml } from "yaml";
 import type { ZodError } from "zod";
-import type { Tenant, TenantSettings } from "../tenant/types.js";
-import { type SubstitutionResult, substituteEnvVars } from "./env-substitute.js";
-import { type ConfigErrorDetail, ConfigValidationError } from "./errors.js";
-import { type BaseConfigParsed, BaseConfigSchema, TenantConfigSchema } from "./schema.js";
+import type { Tenant, TenantSettings } from "../tenant/types";
+import { type SubstitutionResult, substituteEnvVars } from "./env-substitute";
+import { type ConfigErrorDetail, ConfigValidationError } from "./errors";
+import { type BaseConfigParsed, BaseConfigSchema, TenantConfigSchema } from "./schema";
 
 export interface ValidatedConfig {
   tenants: Tenant[];

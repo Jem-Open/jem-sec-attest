@@ -19,7 +19,7 @@
  * Returns 201 for new profiles, 200 for updates.
  */
 
-import { getSnapshot } from "@/config/index";
+import { ensureConfigLoaded } from "@/config/index";
 import { logProfileConfirmed, logProfileUpdated } from "@/intake/audit";
 import { ProfileRepository } from "@/intake/profile-repository";
 import { ProfileConfirmationSchema } from "@/intake/schemas";
@@ -68,8 +68,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
   const profileRepo = new ProfileRepository(storage);
 
   // Get config hash for evidence stamping
-  const snapshot = getSnapshot();
-  const configHash = snapshot?.configHash ?? "unknown";
+  const snapshot = await ensureConfigLoaded();
+  if (!snapshot?.configHash) {
+    return NextResponse.json(
+      { error: "internal_error", message: "Configuration not available" },
+      { status: 503 },
+    );
+  }
+  const configHash = snapshot.configHash;
   const appVersion = process.env.APP_VERSION ?? "0.1.0";
 
   // Check if this is a new profile or an update, then persist + audit atomically

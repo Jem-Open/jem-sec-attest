@@ -18,7 +18,7 @@
  */
 
 import PDFDocument from "pdfkit";
-import type { TrainingEvidence } from "./schemas.js";
+import type { TrainingEvidence } from "./schemas";
 
 const PAGE_MARGIN = 50;
 const FONT_SIZE_TITLE = 18;

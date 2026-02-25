@@ -26,6 +26,7 @@ import { AuditLogger } from "@/audit/audit-logger";
 import { OIDCAdapter } from "@/auth/adapters/oidc-adapter";
 import { createAuthFailureEvent, createSignInEvent, logAuthEvent } from "@/auth/audit";
 import { EmployeeRepository } from "@/auth/employee-repository";
+import { normalizeRequestUrl } from "@/auth/normalize-url";
 import { createSession } from "@/auth/session/session-manager";
 import { validateEmailDomainForTenant, validateTenantSlug } from "@/auth/tenant-validation";
 import { getStorage } from "@/storage/factory";
@@ -37,7 +38,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
   const { tenant: tenantSlug } = await params;
 
   // Validate tenant slug — generic 404 prevents enumeration
-  const lookup = validateTenantSlug(tenantSlug);
+  const lookup = await validateTenantSlug(tenantSlug);
   if (!lookup.valid) {
     return NextResponse.json({ error: "Organization not found." }, { status: 404 });
   }
@@ -48,7 +49,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
   const employeeRepo = new EmployeeRepository(storage);
   const auditLogger = new AuditLogger(storage);
 
-  const result = await oidcAdapter.handleCallback(request, tenant);
+  // Normalize request URL: in Docker, request.url may have 0.0.0.0 as hostname
+  const normalizedRequest = new Request(normalizeRequestUrl(request), request);
+  const result = await oidcAdapter.handleCallback(normalizedRequest, tenant);
 
   if (!result.ok) {
     await logAuthEvent(auditLogger, createAuthFailureEvent(tenantSlug, result.reason, request));
@@ -121,7 +124,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
   );
 
   // Clear auth state cookie and redirect to dashboard
-  const response = NextResponse.redirect(new URL(`/${tenantSlug}/dashboard`, request.url));
+  const response = NextResponse.redirect(
+    new URL(`/${tenantSlug}/dashboard`, normalizeRequestUrl(request)),
+  );
   response.cookies.delete("jem_auth_state");
   return response;
 }

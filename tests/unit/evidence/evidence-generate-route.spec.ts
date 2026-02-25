@@ -49,6 +49,15 @@ vi.mock("@/evidence/evidence-generator", () => ({
   generateEvidenceForSession: mockGenerateEvidence,
 }));
 
+vi.mock("@/config/index", () => {
+  const mockGetSnapshot = vi.fn();
+  return {
+    getSnapshot: mockGetSnapshot,
+    ensureConfigLoaded: vi.fn().mockImplementation(() => Promise.resolve(mockGetSnapshot())),
+  };
+});
+
+import { getSnapshot } from "@/config/index";
 import type { TrainingEvidence } from "@/evidence/schemas";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -59,6 +68,14 @@ import { POST } from "../../../app/api/training/[tenant]/evidence/[sessionId]/ge
 // ---------------------------------------------------------------------------
 
 const ISO = "2026-02-20T10:00:00.000Z";
+
+function makeSnapshot() {
+  return {
+    tenants: new Map([["acme-corp", { id: "acme-corp", name: "Acme Corp", settings: {} }]]),
+    hash: "config-hash-abc",
+    configHash: "config-hash-abc",
+  };
+}
 
 function makeRequest(
   tenantId = "acme-corp",
@@ -128,6 +145,7 @@ function makeEvidence(overrides?: Partial<TrainingEvidence>): TrainingEvidence {
 describe("POST /api/training/{tenant}/evidence/{sessionId}/generate", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getSnapshot).mockReturnValue(makeSnapshot() as ReturnType<typeof getSnapshot>);
     mockStorage.findById.mockResolvedValue(null);
     mockEvidenceRepo.findBySessionId.mockResolvedValue(null);
     mockGenerateEvidence.mockResolvedValue(null);

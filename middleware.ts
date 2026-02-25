@@ -153,7 +153,7 @@ export async function middleware(request: NextRequest) {
 
   // Session expired — redirect to sign-in and clear the cookie
   if (employee.expiresAt < Date.now()) {
-    const signInUrl = new URL(`/${effectiveTenantId}/auth/signin`, request.url);
+    const signInUrl = new URL(`/${effectiveTenantId ?? "unknown"}/auth/signin`, request.url);
     const redirectResponse = NextResponse.redirect(signInUrl);
     redirectResponse.cookies.set("jem_session", "", {
       httpOnly: true,
@@ -168,7 +168,7 @@ export async function middleware(request: NextRequest) {
   // Tenant mismatch — only enforce when the snapshot is loaded and hostname resolution
   // is authoritative. Skip when snapshot is not available (Edge context).
   if (snapshotLoaded && employee.tenantId !== (effectiveTenantId as string)) {
-    const signInUrl = new URL(`/${effectiveTenantId}/auth/signin`, request.url);
+    const signInUrl = new URL(`/${effectiveTenantId ?? "unknown"}/auth/signin`, request.url);
     const redirectResponse = NextResponse.redirect(signInUrl);
     redirectResponse.cookies.set("jem_session", "", {
       httpOnly: true,

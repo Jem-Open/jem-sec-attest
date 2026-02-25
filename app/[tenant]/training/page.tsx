@@ -774,11 +774,12 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
       setQuizAnswers({});
       // Silently refresh modules to pick up updated status (e.g. scored)
       const sessionRes = await fetch(`/api/training/${tenant}/session`);
-      if (sessionRes.ok) {
+      if (sessionRes.status === 409) {
+        await refreshSession();
+      } else if (sessionRes.ok) {
         const sessionData = (await sessionRes.json()) as SessionApiResponse;
         setModules(sessionData.modules);
       } else {
-        console.error("[training] session refresh failed:", sessionRes.status);
         setModules((prev) =>
           prev.map((m) =>
             m.moduleIndex === activeModuleIndex ? { ...m, status: "scored" as ModuleStatus } : m,

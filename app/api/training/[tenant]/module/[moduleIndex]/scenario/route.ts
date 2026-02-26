@@ -137,12 +137,20 @@ export async function POST(
   // 8. Score the response
   // Load config once (used for AI model resolution + retention check)
   const snapshot = await ensureConfigLoaded();
-  if (!snapshot)
+  if (!snapshot) {
     return NextResponse.json(
       { error: "config_error", message: "Configuration not available" },
       { status: 503 },
     );
+  }
   const tenantConfig = snapshot.tenants.get(tenantId);
+
+  if (!tenantConfig) {
+    return NextResponse.json(
+      { error: "not_found", message: "Tenant configuration not found" },
+      { status: 404 },
+    );
+  }
 
   let score: number;
   let llmRationale: string | undefined;
@@ -159,12 +167,6 @@ export async function POST(
       score = scoreMcAnswer(submission.selectedOption ?? "", correctOption);
     } else {
       // free-text
-      if (!tenantConfig) {
-        return NextResponse.json(
-          { error: "not_found", message: "Tenant configuration not found" },
-          { status: 404 },
-        );
-      }
       const model = resolveModel(tenantConfig);
       const evaluation = await evaluateFreeText(
         scenario.narrative,

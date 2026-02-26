@@ -131,15 +131,16 @@ export async function POST(
   const hasFreeText = submission.answers.some((a) => a.responseType === "free-text");
   let model: ReturnType<typeof resolveModel> | undefined;
 
+  const snapshot = await ensureConfigLoaded();
+  const tenantConfig = snapshot?.tenants.get(tenantId);
+  if (!tenantConfig) {
+    return NextResponse.json(
+      { error: "not_found", message: "Tenant configuration not found" },
+      { status: 404 },
+    );
+  }
+
   if (hasFreeText) {
-    const snapshot = await ensureConfigLoaded();
-    const tenantConfig = snapshot?.tenants.get(tenantId);
-    if (!tenantConfig) {
-      return NextResponse.json(
-        { error: "not_found", message: "Tenant configuration not found" },
-        { status: 404 },
-      );
-    }
     model = resolveModel(tenantConfig);
   }
 
@@ -229,8 +230,7 @@ export async function POST(
 
   // 9. Redact secrets from free-text content before storage (FR-001, FR-002)
   const redactor = new SecretRedactor();
-  const retentionSnapshot = await ensureConfigLoaded();
-  const tenantCfg = retentionSnapshot?.tenants.get(tenantId);
+  const tenantCfg = tenantConfig;
   const transcriptsEnabled =
     (tenantCfg?.settings?.retention as Record<string, unknown> | undefined)?.transcripts !==
     undefined

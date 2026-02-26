@@ -173,57 +173,201 @@ test("training — starts a training session and begins first module", async ({ 
   // Training is in progress — confirm the page is not in an error state
   const errorSection = page.locator("section[aria-labelledby='error-heading']");
   await expect(errorSection).not.toBeVisible({ timeout: 10_000 });
+
+  // ---------------------------------------------------------------------------
+  // API-based module completion
+  //
+  // The UI interactions above started the training session and navigated to the
+  // first module's learning content. Completing every module through the UI
+  // would be extremely brittle (AI-generated content varies across runs), so we
+  // use the training API directly to walk each module through the full
+  // content → scenarios → quiz → scored lifecycle. This ensures the session
+  // reaches a terminal state that the evidence-export test (Test 4) depends on.
+  // ---------------------------------------------------------------------------
+
+  // 1. Retrieve the current session to discover the session ID and module list
+  const sessionRes = await page.request.get(`/api/training/${TENANT}/session`);
+  expect(sessionRes.ok(), `GET session failed: ${sessionRes.status()}`).toBe(true);
+  const sessionPayload = (await sessionRes.json()) as {
+    session: { id: string; status: string };
+    modules: Array<{
+      id: string;
+      moduleIndex: number;
+      status: string;
+    }>;
+  };
+
+  const { session, modules } = sessionPayload;
+  expect(session.id).toBeTruthy();
+  expect(modules.length).toBeGreaterThan(0);
+
+  // 2. Complete each module: generate content → submit scenarios → submit quiz
+  for (let idx = 0; idx < modules.length; idx++) {
+    // 2a. Generate / fetch module content (transitions module: locked → learning)
+    const contentRes = await page.request.post(`/api/training/${TENANT}/module/${idx}/content`);
+    expect(
+      contentRes.ok(),
+      `POST content for module ${idx} failed: ${contentRes.status()} — ${await contentRes.text()}`,
+    ).toBe(true);
+
+    const content = (await contentRes.json()) as {
+      scenarios: Array<{
+        id: string;
+        options?: Array<{ key: string; correct?: boolean }>;
+      }>;
+      quiz: {
+        questions: Array<{
+          id: string;
+          options?: Array<{ key: string; correct?: boolean }>;
+        }>;
+      };
+    };
+
+    // 2b. Submit scenario responses (one POST per scenario)
+    for (const scenario of content.scenarios) {
+      // Pick the correct option if available, otherwise fall back to the first option.
+      // NOTE: The content API strips the `correct` field from client responses, so the
+      // fallback (first option) will almost always be used. This is acceptable for E2E
+      // testing — the goal is to complete the workflow, not guarantee a perfect score.
+      const correctOpt = scenario.options?.find((o) => o.correct === true);
+      const selectedOption = correctOpt?.key ?? scenario.options?.[0]?.key;
+      expect(selectedOption, `Scenario ${scenario.id} has no options`).toBeTruthy();
+
+      const scenarioRes = await page.request.post(
+        `/api/training/${TENANT}/module/${idx}/scenario`,
+        {
+          data: {
+            scenarioId: scenario.id,
+            responseType: "multiple-choice",
+            selectedOption,
+          },
+        },
+      );
+      expect(
+        scenarioRes.ok(),
+        `POST scenario ${scenario.id} for module ${idx} failed: ${scenarioRes.status()} — ${await scenarioRes.text()}`,
+      ).toBe(true);
+    }
+
+    // 2c. Submit all quiz answers in a single POST
+    const answers = content.quiz.questions.map((q) => {
+      const correctOpt = q.options?.find((o) => o.correct === true);
+      const selectedOption = correctOpt?.key ?? q.options?.[0]?.key;
+      expect(selectedOption, `Quiz question ${q.id} has no options`).toBeTruthy();
+      return {
+        questionId: q.id,
+        responseType: "multiple-choice" as const,
+        selectedOption,
+      };
+    });
+
+    const quizRes = await page.request.post(`/api/training/${TENANT}/module/${idx}/quiz`, {
+      data: { answers },
+    });
+    expect(
+      quizRes.ok(),
+      `POST quiz for module ${idx} failed: ${quizRes.status()} — ${await quizRes.text()}`,
+    ).toBe(true);
+  }
+
+  // 3. All modules scored — call evaluate to finalise the session
+  const evaluateRes = await page.request.post(`/api/training/${TENANT}/evaluate`);
+  expect(
+    evaluateRes.ok(),
+    `POST evaluate failed: ${evaluateRes.status()} — ${await evaluateRes.text()}`,
+  ).toBe(true);
+
+  const evalPayload = (await evaluateRes.json()) as {
+    sessionId: string;
+    aggregateScore: number;
+    passed: boolean;
+    nextAction: string;
+  };
+
+  // 4. Verify the session reached a terminal state
+  const finalSessionRes = await page.request.get(`/api/training/${TENANT}/session`);
+  expect(finalSessionRes.ok()).toBe(true);
+  const finalPayload = (await finalSessionRes.json()) as {
+    session: { id: string; status: string };
+  };
+
+  const terminalStatuses = ["passed", "failed", "exhausted"];
+  expect(
+    terminalStatuses.includes(finalPayload.session.status),
+    `Expected session to be in a terminal state but got "${finalPayload.session.status}"`,
+  ).toBe(true);
+
+  // Log the outcome for CI visibility
+  console.log(
+    `[E2E] Training session completed: status=${finalPayload.session.status}, ` +
+      `aggregateScore=${evalPayload.aggregateScore}, passed=${evalPayload.passed}`,
+  );
+
+  // 5. Reload the training page and confirm the UI reflects completion
+  await page.goto(`/${TENANT}/training`);
+  await page.waitForLoadState("domcontentloaded");
 });
 
 // ---------------------------------------------------------------------------
 // Test 4: Evidence export — PDF endpoint returns application/pdf
 // ---------------------------------------------------------------------------
 
-// NOTE: SC-002 full coverage requires a pre-seeded "passed" session. This test validates the conditional soft-pass behavior.
+// NOTE: This test requires the training session created by the prior tests to have
+// reached a terminal state. The content API strips `correct` fields from options,
+// so Test 3 cannot guarantee correct answers — the session may end as "passed",
+// "failed", or "exhausted". We only exercise the PDF export when "passed".
 test("evidence export — PDF endpoint returns a valid PDF for a completed session", async ({
   page,
 }) => {
-  // Navigate to the training page and retrieve the current session from the API
+  // Retrieve the current session from the API
   const sessionResponse = await page.request.get(`/api/training/${TENANT}/session`);
   expect(sessionResponse.status()).toBeLessThan(500);
 
-  if (sessionResponse.status() === 200) {
-    const sessionData = (await sessionResponse.json()) as {
-      session?: { id?: string; status?: string };
-    };
+  expect(
+    sessionResponse.status(),
+    "Expected an active training session (HTTP 200) — ensure prior tests ran successfully",
+  ).toBe(200);
 
-    const sessionId = sessionData?.session?.id;
-    const sessionStatus = sessionData?.session?.status;
+  const sessionData = (await sessionResponse.json()) as {
+    session?: { id?: string; status?: string };
+  };
 
-    if (sessionId && sessionStatus === "passed") {
-      // A completed passing session exists — request the PDF export
-      const pdfResponse = await page.request.get(
-        `/api/training/${TENANT}/evidence/${sessionId}/pdf`,
-      );
+  const sessionId = sessionData?.session?.id;
+  const sessionStatus = sessionData?.session?.status;
 
-      expect(pdfResponse.status()).toBe(200);
+  expect(sessionId, "Expected a session ID in the training session response").toBeTruthy();
 
-      const contentType = pdfResponse.headers()["content-type"] ?? "";
-      expect(contentType).toContain("application/pdf");
+  // The session must be in a terminal state — Test 3 completes all modules via API.
+  // Because the content API strips the `correct` field from options, the E2E test
+  // cannot determine correct answers and always picks the first option. The resulting
+  // score depends on whether the first option happens to be correct, so the session
+  // may end as "passed", "failed", or "exhausted".
+  const terminalStatuses = ["passed", "failed", "exhausted"];
+  expect(
+    terminalStatuses.includes(sessionStatus ?? ""),
+    `Expected session to be in a terminal state (passed/failed/exhausted) but got "${sessionStatus ?? "none"}". Ensure the training journey completed in prior test steps.`,
+  ).toBe(true);
 
-      const body = await pdfResponse.body();
-      expect(body.length).toBeGreaterThan(0);
-
-      // Verify the response starts with the PDF magic bytes (%PDF)
-      expect(body.slice(0, 4).toString()).toBe("%PDF");
-    } else {
-      // No passing session yet — skip so CI dashboards show the PDF path was not exercised
-      test.skip(
-        true,
-        `No completed/passed session available — PDF validation skipped (session status: "${sessionStatus ?? "none"}").`,
-      );
-    }
-  } else if (sessionResponse.status() === 404) {
-    // No session exists at all — skip so CI dashboards show the PDF path was not exercised
-    test.skip(true, "No completed/passed session available — PDF validation skipped.");
-  } else {
-    throw new Error(
-      `Unexpected session API response: ${sessionResponse.status()} — expected 200 or 404`,
+  // Only exercise the PDF export when the session passed — otherwise skip gracefully
+  if (sessionStatus !== "passed") {
+    console.log(
+      `[E2E] Skipping PDF export: session ended as "${sessionStatus}" (not "passed"). This is expected when random answer selection scores below the pass threshold.`,
     );
+    test.skip(true, `PDF export requires "passed" status (got "${sessionStatus}")`);
+    return;
   }
+
+  // A completed passing session exists — request the PDF export
+  const pdfResponse = await page.request.get(`/api/training/${TENANT}/evidence/${sessionId}/pdf`);
+
+  expect(pdfResponse.status()).toBe(200);
+
+  const contentType = pdfResponse.headers()["content-type"] ?? "";
+  expect(contentType).toContain("application/pdf");
+
+  const body = await pdfResponse.body();
+  expect(body.length).toBeGreaterThan(0);
+
+  // Verify the response starts with the PDF magic bytes (%PDF)
+  expect(body.slice(0, 4).toString()).toBe("%PDF");
 });

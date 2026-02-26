@@ -54,7 +54,8 @@ async function handleSignOut(
       originHost = null;
     }
   }
-  if (!originHost || !expectedHost || originHost !== expectedHost) {
+  // Allow if Origin is absent (same-origin POST) or matches expected host
+  if (!expectedHost || (originHost && originHost !== expectedHost)) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

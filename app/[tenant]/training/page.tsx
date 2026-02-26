@@ -388,12 +388,26 @@ function ModuleStatusBadge({
 }
 
 // ---------------------------------------------------------------------------
+// Locale helper
+// ---------------------------------------------------------------------------
+
+function getSafeLocale(locale: string | undefined): string {
+  if (!locale) return "en";
+  try {
+    return Intl.DateTimeFormat.supportedLocalesOf([locale]).length ? locale : "en";
+  } catch {
+    return "en";
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main component
 // ---------------------------------------------------------------------------
 
 export default function TrainingPage({ params }: { params: Promise<{ tenant: string }> }) {
   const { tenant } = use(params);
   const { t, locale } = useTranslation();
+  const safeLocale = getSafeLocale(locale);
 
   const [pageState, setPageState] = useState<PageState>("loading-session");
   const [session, setSession] = useState<TrainingSessionResponse | null>(null);
@@ -1093,7 +1107,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
               const pct =
                 sess.aggregateScore != null ? Math.round(sess.aggregateScore * 100) : null;
               const dateStr = sess.createdAt
-                ? new Date(sess.createdAt).toLocaleDateString(locale, {
+                ? new Date(sess.createdAt).toLocaleDateString(safeLocale, {
                     year: "numeric",
                     month: "short",
                     day: "numeric",

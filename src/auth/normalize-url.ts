@@ -48,7 +48,9 @@ export function normalizeRequestUrl(request: Request): URL {
         const parsed = new URL(`http://${hostHeader}`);
         if (allowedCallbackHosts().has(parsed.hostname)) {
           url.hostname = parsed.hostname;
-          url.port = parsed.port;
+          if (parsed.port) {
+            url.port = parsed.port;
+          }
         }
       } catch {
         // malformed Host header — leave url unchanged

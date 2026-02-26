@@ -22,7 +22,7 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createAzure } from "@ai-sdk/azure";
 import { createOpenAI } from "@ai-sdk/openai";
 import type { LanguageModel } from "ai";
-import type { Tenant } from "../tenant/types.js";
+import type { Tenant } from "../tenant/types";
 
 export function resolveModel(tenant: Tenant): LanguageModel {
   const aiConfig = tenant.settings.ai ?? {};

@@ -7,7 +7,9 @@
     "welcome": "Welcome, {displayName}",
     "signOut": "Sign Out",
     "signedInAs": "Signed in as {email} ({tenant})",
-    "roleProfileIntake": "Role Profile Intake"
+    "roleProfileIntake": "Role Profile Intake",
+    "startTraining": "Start Training",
+    "recentTraining": "Recent Training"
   },
   "common": {
     "loading": "Loading...",
@@ -66,7 +68,8 @@
       "moduleBreakdown": "Module Breakdown",
       "moduleScore": "Score for {title}",
       "passSymbol": "\u2713",
-      "failSymbol": "\u2717"
+      "failSymbol": "\u2717",
+      "startNewButton": "Start New Training"
     },
     "remediation": {
       "hint": "You did not pass this attempt. If remediation is available, contact your administrator to begin remediation training.",
@@ -104,7 +107,13 @@
       "statusLabel": "Status:",
       "modulesLabel": "Module Breakdown",
       "errorMessage": "Failed to load training history. Please try again.",
-      "dateFallback": "\u2014"
+      "dateFallback": "\u2014",
+      "status": {
+        "passed": "Passed",
+        "failed": "Failed",
+        "in_progress": "In Progress",
+        "abandoned": "Abandoned"
+      }
     },
     "abandon": {
       "button": "Abandon Training",

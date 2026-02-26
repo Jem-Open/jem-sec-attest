@@ -26,6 +26,7 @@ import { AuditLogger } from "@/audit/audit-logger";
 import { OIDCAdapter } from "@/auth/adapters/oidc-adapter";
 import { createAuthFailureEvent, createSignInEvent, logAuthEvent } from "@/auth/audit";
 import { EmployeeRepository } from "@/auth/employee-repository";
+import { normalizeRequestUrl } from "@/auth/normalize-url";
 import { createSession } from "@/auth/session/session-manager";
 import { validateEmailDomainForTenant, validateTenantSlug } from "@/auth/tenant-validation";
 import { getStorage } from "@/storage/factory";
@@ -37,23 +38,34 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
   const { tenant: tenantSlug } = await params;
 
   // Validate tenant slug — generic 404 prevents enumeration
-  const lookup = validateTenantSlug(tenantSlug);
+  const rawHost = request.headers.get("host");
+  let hostname: string | undefined;
+  if (rawHost) {
+    try {
+      hostname = new URL(`http://${rawHost}`).hostname;
+    } catch {
+      hostname = undefined;
+    }
+  }
+  const lookup = await validateTenantSlug(tenantSlug, hostname);
   if (!lookup.valid) {
     return NextResponse.json({ error: "Organization not found." }, { status: 404 });
   }
 
   const { tenant } = lookup;
 
+  const normalizedUrl = normalizeRequestUrl(request);
   const storage = await getStorage();
   const employeeRepo = new EmployeeRepository(storage);
   const auditLogger = new AuditLogger(storage);
 
-  const result = await oidcAdapter.handleCallback(request, tenant);
+  const normalizedRequest = new Request(normalizedUrl, request);
+  const result = await oidcAdapter.handleCallback(normalizedRequest, tenant);
 
   if (!result.ok) {
     await logAuthEvent(auditLogger, createAuthFailureEvent(tenantSlug, result.reason, request));
     return NextResponse.redirect(
-      new URL(`/${tenantSlug}/auth/error?code=${result.reason}`, request.url),
+      new URL(`/${tenantSlug}/auth/error?code=${result.reason}`, normalizedUrl),
     );
   }
 
@@ -66,7 +78,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
       createAuthFailureEvent(tenantSlug, "missing-required-claims", request, result.claims.issuer),
     );
     return NextResponse.redirect(
-      new URL(`/${tenantSlug}/auth/error?code=auth_failed`, request.url),
+      new URL(`/${tenantSlug}/auth/error?code=auth_failed`, normalizedUrl),
     );
   }
   const emailParts = result.claims.email.split("@");
@@ -76,7 +88,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
       createAuthFailureEvent(tenantSlug, "missing-required-claims", request, result.claims.issuer),
     );
     return NextResponse.redirect(
-      new URL(`/${tenantSlug}/auth/error?code=auth_failed`, request.url),
+      new URL(`/${tenantSlug}/auth/error?code=auth_failed`, normalizedUrl),
     );
   }
   const emailDomain = emailParts[1];
@@ -86,7 +98,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
       createAuthFailureEvent(tenantSlug, "tenant-mismatch", request, result.claims.issuer),
     );
     return NextResponse.redirect(
-      new URL(`/${tenantSlug}/auth/error?code=auth_failed`, request.url),
+      new URL(`/${tenantSlug}/auth/error?code=auth_failed`, normalizedUrl),
     );
   }
 
@@ -121,7 +133,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
   );
 
   // Clear auth state cookie and redirect to dashboard
-  const response = NextResponse.redirect(new URL(`/${tenantSlug}/dashboard`, request.url));
+  const response = NextResponse.redirect(new URL(`/${tenantSlug}/dashboard`, normalizedUrl));
   response.cookies.delete("jem_auth_state");
   return response;
 }

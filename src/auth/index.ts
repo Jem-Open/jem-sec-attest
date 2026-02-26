@@ -17,7 +17,7 @@
  * Re-exports all auth-related types and implementations.
  */
 
-export { OIDCAdapter } from "./adapters/oidc-adapter.js";
+export { OIDCAdapter } from "./adapters/oidc-adapter";
 export type {
   AuthAdapter,
   AuthFailure,
@@ -25,23 +25,23 @@ export type {
   AuthResult,
   AuthSuccess,
   EmployeeClaims,
-} from "./adapters/auth-adapter.js";
-export { EmployeeRepository } from "./employee-repository.js";
-export type { EmployeeClaims as EmployeeRepoClaimsInput } from "./employee-repository.js";
-export { createSession, destroySession, getSession } from "./session/session-manager.js";
-export type { SessionData } from "./session/session-manager.js";
-export { AuditLogger } from "../audit/audit-logger.js";
+} from "./adapters/auth-adapter";
+export { EmployeeRepository } from "./employee-repository";
+export type { EmployeeClaims as EmployeeRepoClaimsInput } from "./employee-repository";
+export { createSession, destroySession, getSession } from "./session/session-manager";
+export type { SessionData } from "./session/session-manager";
+export { AuditLogger } from "../audit/audit-logger";
 export {
   createAuthConfigErrorEvent,
   createAuthFailureEvent,
   createSignInEvent,
   createSignOutEvent,
   logAuthEvent,
-} from "./audit.js";
-export type { AuditEventInput } from "./audit.js";
+} from "./audit";
+export type { AuditEventInput } from "./audit";
 export type {
   AuthAuditEvent,
   AuthEventType,
   Employee,
   EmployeeSession,
-} from "./types.js";
+} from "./types";

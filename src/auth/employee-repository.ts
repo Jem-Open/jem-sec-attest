@@ -17,8 +17,8 @@
  * FR-014: Creates employee on first sign-in, updates on subsequent.
  */
 
-import type { StorageAdapter } from "../storage/adapter.js";
-import type { Employee } from "./types.js";
+import type { StorageAdapter } from "../storage/adapter";
+import type { Employee } from "./types";
 
 const COLLECTION = "employees";
 

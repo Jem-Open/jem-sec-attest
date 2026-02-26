@@ -1,0 +1,45 @@
+# Dex OIDC identity provider — local development only.
+# This file configures Dex for use with the jem-sec-attest Docker Compose stack.
+#
+# IMPORTANT: This configuration is for LOCAL TESTING ONLY.
+# - Users and credentials defined here must never be used in production.
+# - The client secret below must match ACME_OIDC_CLIENT_SECRET in .env.
+#
+# Regenerate the test user password hash with:
+#   node -e "const b=require('bcryptjs'); b.hash('Acme1234!',10,(_,h)=>console.log(h))"
+
+# Issuer URL — must be reachable by both the app container (via Docker DNS)
+# and the developer's browser (via /etc/hosts: 127.0.0.1 dex).
+issuer: http://dex:5556/dex
+
+storage:
+  type: memory
+
+web:
+  http: 0.0.0.0:5556
+
+# Built-in username/password connector (local development only)
+enablePasswordDB: true
+
+oauth2:
+  # Skip the "Grant access?" approval screen for a smoother test flow
+  skipApprovalScreen: true
+
+staticClients:
+  - id: jem-app
+    # Local-dev-only default — matches ACME_OIDC_CLIENT_SECRET in .env.
+    # Dex does not support env-var substitution in config; change this value for production.
+    secret: local-dev-secret-min32chars-replace-this-1234
+    redirectURIs:
+      - http://localhost:3000/api/auth/acme-corp/callback
+    name: "JEM Attestation (local)"
+
+staticPasswords:
+  # Test user: alice@acme.com / Acme1234!
+  # Role assigned during training intake — not from the OIDC token.
+  - email: alice@acme.com
+    # bcrypt hash of "Acme1234!" (cost 10)
+    # Regenerate: node -e "const b=require('bcryptjs'); b.hash('Acme1234!',10,(_,h)=>console.log(h))"
+    hash: "$2b$10$yvbd6DUu16EBXliz77ybOe1nIm50xGK/TDEsh9wxAhiVtzCAhcPye"
+    username: alice
+    userID: acme-test-001

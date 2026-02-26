@@ -57,8 +57,7 @@ pnpm dev                    # Development server
 
 - **Biome** enforces: import sorting, no unused vars/imports, no explicit `any`, `useConst`
 - **Path alias**: `@/*` maps to `./src/*`
-- **Route files** (`app/api/`): Use `@/` alias imports **without** `.js` extension
-- **Source files** (`src/`): Use `.js` extension in relative imports
+- **All imports**: Use `@/` alias for `src/` modules; use bare relative paths (`../config/index`) without file extensions — `moduleResolution: "bundler"` handles resolution
 - **Apache 2.0 license headers** on all source files
 - **Pre-commit hooks** (lefthook): lint + type-check run automatically
 
@@ -76,6 +75,14 @@ pnpm dev                    # Development server
   }));
   ```
 - Route files create `new SQLiteAdapter()` at module scope — tests must use the `vi.hoisted()` pattern above
+- **Config mocks**: `@/config/index` mocks must export BOTH `getSnapshot` (sync) AND `ensureConfigLoaded` (async) — route files use the async version:
+  ```typescript
+  vi.mock("@/config/index", () => ({
+    getSnapshot: vi.fn().mockReturnValue(snapshot),
+    ensureConfigLoaded: vi.fn().mockResolvedValue(snapshot),
+  }));
+  ```
+- **Module generator mocks**: `ModuleContentLlmSchema` output uses flat `quizQuestions[]`; test mocks must use this shape (not nested `quiz: { questions[] }`)
 
 ## Environment
 
@@ -88,15 +95,28 @@ Copy `.env.example` to `.env`. Required variables:
 ## Gotchas
 
 - **pnpm, not npm** — all commands use pnpm; `npm test` works but `pnpm test` is canonical
+- **Biome lint artifacts** — `playwright-report/` and `test-results/` contain compiled JS that triggers ~650 Biome errors; add them to `biome.json` `files.ignore` when present
 - **Biome tabs vs spaces** — run `npx biome check --write <file>` after creating files to fix formatting
 - **Integration tests need globals** — vitest `globals: true` must be set per-project in `vitest.config.ts`, not just at root level
 - **Tenant isolation** — every API route validates `[tenant]` param against loaded config; storage queries must filter by tenant
 
 ## Recent Changes
+- 011-docker-e2e-testing: Added Docker local stack (PostgreSQL + Dex IDP), Playwright E2E test suite, and health endpoint
 - 009-postgres-support: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x, React 19.x, `postgres` (postgres.js — Unlicense, zero deps)
 - 008-guardrails-i18n-a11y: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), React 19.x, Vercel AI SDK v6, Zod v4.x
-- 007-evidence-integration: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), pdfkit (existing), node `fetch` (native)
+
+## Docker Local Stack
+
+The Docker Compose stack (`docker/compose.yml`) runs **infrastructure only** — PostgreSQL and Dex OIDC IDP. The Next.js application always runs locally via `pnpm dev`. This is by design: the app uses hot-reload and local debugging, while external dependencies (database, identity provider) run in containers.
+
+```bash
+pnpm docker:up              # Start infra (Postgres + Dex)
+pnpm dev                    # Start the app locally (required separately)
+pnpm docker:down            # Tear down infra
+```
+
+Do **not** add an `app` service to `docker/compose.yml` — the app is always run locally.
 
 ## Active Technologies
-- TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x, React 19.x, `postgres` (postgres.js — Unlicense, zero deps) (009-postgres-support)
-- PostgreSQL 14+ via `postgres` library; SQLite via `better-sqlite3` (existing) (009-postgres-support)
+- TypeScript 5.9, Node.js 20.9+ (011-docker-e2e-testing)
+- PostgreSQL 16 via `PostgresAdapter` (existing); schema auto-initialised by `adapter.initialize()` on first connection (011-docker-e2e-testing)

@@ -20,7 +20,7 @@
 
 import { getIronSession } from "iron-session";
 import { cookies } from "next/headers";
-import type { EmployeeSession } from "../types.js";
+import type { EmployeeSession } from "../types";
 
 const COOKIE_NAME = "jem_session";
 

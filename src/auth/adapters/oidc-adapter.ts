@@ -21,8 +21,9 @@
 import crypto from "node:crypto";
 import { sealData, unsealData } from "iron-session";
 import * as client from "openid-client";
-import type { Tenant } from "../../tenant/types.js";
-import type { AuthAdapter, AuthRedirect, AuthResult } from "./auth-adapter.js";
+import type { Tenant } from "../../tenant/types";
+import { normalizeRequestUrl } from "../normalize-url";
+import type { AuthAdapter, AuthRedirect, AuthResult } from "./auth-adapter";
 
 function getSessionSecret(): string {
   const secret = process.env.SESSION_SECRET;
@@ -46,7 +47,10 @@ export function _resetConfigCacheForTesting(): void {
 
 function resolveClientSecret(secretRef: string): string {
   const match = secretRef.match(/^\$\{([A-Z_][A-Z0-9_]*)\}$/);
-  if (!match?.[1]) throw new Error(`Invalid secret reference: ${secretRef}`);
+  if (!match?.[1]) {
+    // Already resolved by env substitution — return as-is
+    return secretRef;
+  }
   const value = process.env[match[1]];
   if (!value) throw new Error(`Missing environment variable: ${match[1]}`);
   return value;
@@ -59,10 +63,25 @@ async function getOrDiscoverConfig(oidcConfig: {
 }): Promise<client.Configuration> {
   let config = configCache.get(oidcConfig.issuerUrl);
   if (!config) {
+    const issuerUrl = new URL(oidcConfig.issuerUrl);
+    // Allow HTTP only for known loopback/Docker-bridge hosts (e.g., Dex in Docker without TLS)
+    const INSECURE_HOSTS = new Set(["localhost", "127.0.0.1", "::1", "dex"]);
+    const isInsecureAllowed =
+      issuerUrl.protocol === "http:" && INSECURE_HOSTS.has(issuerUrl.hostname);
+    const discoveryOptions = isInsecureAllowed
+      ? { execute: [client.allowInsecureRequests] }
+      : undefined;
+    if (issuerUrl.protocol === "http:" && !isInsecureAllowed) {
+      throw new Error(
+        `HTTP issuer URLs are only allowed for local/dev hosts: ${issuerUrl.hostname}`,
+      );
+    }
     config = await client.discovery(
-      new URL(oidcConfig.issuerUrl),
+      issuerUrl,
       oidcConfig.clientId,
       resolveClientSecret(oidcConfig.clientSecret),
+      undefined,
+      discoveryOptions,
     );
     configCache.set(oidcConfig.issuerUrl, config);
   }
@@ -150,7 +169,7 @@ export class OIDCAdapter implements AuthAdapter {
     try {
       const config = await getOrDiscoverConfig(oidcConfig);
 
-      const tokens = await client.authorizationCodeGrant(config, new URL(request.url), {
+      const tokens = await client.authorizationCodeGrant(config, normalizeRequestUrl(request), {
         pkceCodeVerifier: storedState.codeVerifier,
         expectedState: storedState.state,
       });

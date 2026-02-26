@@ -19,6 +19,7 @@
  */
 
 import { AuditLogger } from "@/audit/audit-logger";
+import { ensureConfigLoaded } from "@/config/index";
 import { generateEvidenceForSession } from "@/evidence/evidence-generator";
 import { getStorage } from "@/storage/factory";
 import { logSessionAbandoned } from "@/training/audit";
@@ -36,6 +37,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
       { error: "unauthorized", message: "Not authenticated" },
       { status: 401 },
     );
+  }
+
+  // Safety net: validate tenant exists in config even when middleware bypassed hostname
+  // check (Edge Runtime / snapshot not yet loaded). Ensures tenant isolation regardless
+  // of middleware state.
+  const snapshot = await ensureConfigLoaded();
+  if (!snapshot) {
+    return NextResponse.json(
+      { error: "internal_error", message: "Configuration not available" },
+      { status: 503 },
+    );
+  }
+  if (!snapshot.tenants.get(tenantSlug)) {
+    return NextResponse.json({ error: "not_found", message: "Tenant not found" }, { status: 404 });
   }
 
   // Initialise repositories per-request via shared adapter singleton

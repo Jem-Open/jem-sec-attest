@@ -19,7 +19,7 @@
  */
 
 import { ComplianceUploadRepository } from "@/compliance/upload-repository";
-import { getSnapshot } from "@/config/index";
+import { ensureConfigLoaded } from "@/config/index";
 import { EvidenceRepository } from "@/evidence/evidence-repository";
 import { getStorage } from "@/storage/factory";
 import { NextResponse } from "next/server";
@@ -59,30 +59,37 @@ export async function GET(
   }
 
   // Look up compliance upload status if tenant has compliance enabled
-  const snapshot = getSnapshot();
-  const tenant = snapshot?.tenants.get(tenantId);
-  const complianceProvider = tenant?.settings?.integrations?.compliance?.provider;
   let complianceUpload = null;
-
-  if (complianceProvider) {
-    const uploadRepo = new ComplianceUploadRepository(storage);
-    const upload = await uploadRepo.findByEvidenceId(tenantId, evidence.id, complianceProvider);
-    if (upload) {
-      complianceUpload = {
-        id: upload.id,
-        provider: upload.provider,
-        status: upload.status,
-        attemptCount: upload.attemptCount,
-        maxAttempts: upload.maxAttempts,
-        providerReferenceId: upload.providerReferenceId,
-        lastError: upload.lastError,
-        lastErrorCode: upload.lastErrorCode,
-        retryable: upload.retryable,
-        createdAt: upload.createdAt,
-        updatedAt: upload.updatedAt,
-        completedAt: upload.completedAt,
-      };
+  try {
+    const snapshot = await ensureConfigLoaded();
+    const tenant = snapshot?.tenants.get(tenantId);
+    const complianceProvider = tenant?.settings?.integrations?.compliance?.provider;
+    if (complianceProvider) {
+      const uploadRepo = new ComplianceUploadRepository(storage);
+      const upload = await uploadRepo.findByEvidenceId(tenantId, evidence.id, complianceProvider);
+      if (upload) {
+        complianceUpload = {
+          id: upload.id,
+          provider: upload.provider,
+          status: upload.status,
+          attemptCount: upload.attemptCount,
+          maxAttempts: upload.maxAttempts,
+          providerReferenceId: upload.providerReferenceId,
+          lastError: upload.lastError,
+          lastErrorCode: upload.lastErrorCode,
+          retryable: upload.retryable,
+          createdAt: upload.createdAt,
+          updatedAt: upload.updatedAt,
+          completedAt: upload.completedAt,
+        };
+      }
     }
+  } catch (err) {
+    // Config unavailable — skip compliance lookup, still return evidence
+    console.warn(
+      "[evidence route] compliance lookup failed, returning evidence without compliance data",
+      err,
+    );
   }
 
   return NextResponse.json({ ...evidence, complianceUpload }, { status: 200 });

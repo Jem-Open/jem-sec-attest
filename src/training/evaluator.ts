@@ -21,8 +21,8 @@
 
 import type { LanguageModel } from "ai";
 import { Output, generateText } from "ai";
-import { FreeTextEvaluationSchema } from "./schemas.js";
-import type { FreeTextEvaluation } from "./schemas.js";
+import { FreeTextEvaluationSchema } from "./schemas";
+import type { FreeTextEvaluation } from "./schemas";
 
 const MAX_RESPONSE_LENGTH = 2000;
 
@@ -73,12 +73,12 @@ ${response}
   let result: FreeTextEvaluation;
 
   try {
-    const { experimental_output: object } = await generateText({
+    const { output: object } = await generateText({
       model,
       system: SYSTEM_PROMPT,
       prompt,
       temperature: 0,
-      experimental_output: Output.object({ schema: FreeTextEvaluationSchema }),
+      output: Output.object({ schema: FreeTextEvaluationSchema }),
     });
     result = object;
   } catch (error) {

@@ -18,7 +18,7 @@
  * Lookups are O(1) via pre-built indexes. Case-insensitive.
  */
 
-import type { ConfigSnapshot, Tenant, TenantResolverContext } from "./types.js";
+import type { ConfigSnapshot, Tenant, TenantResolverContext } from "./types";
 
 export class TenantResolverImpl {
   private readonly tenants: ReadonlyMap<string, Tenant>;

@@ -7,7 +7,9 @@
     "welcome": "Bienvenue, {displayName}",
     "signOut": "Déconnexion",
     "signedInAs": "Connecté en tant que {email} ({tenant})",
-    "roleProfileIntake": "Profil de rôle"
+    "roleProfileIntake": "Profil de rôle",
+    "startTraining": "Commencer la formation",
+    "recentTraining": "Formation récente"
   },
   "common": {
     "loading": "Chargement...",
@@ -57,7 +59,8 @@
       "exhaustedLabel": "TENTATIVES ÉPUISÉES",
       "abandonedLabel": "FORMATION ABANDONNÉE",
       "scoreLabel": "Votre score global :",
-      "moduleBreakdown": "Détail par module"
+      "moduleBreakdown": "Détail par module",
+      "startNewButton": "Commencer une nouvelle formation"
     },
     "remediation": {
       "startRemediation": "Commencer la formation de rattrapage",
@@ -79,7 +82,14 @@
     "history": {
       "viewButton": "Voir l'historique de formation",
       "backToResult": "Retour au résultat",
-      "title": "Historique de formation"
+      "title": "Historique de formation",
+      "dateFallback": "\u2014",
+      "status": {
+        "passed": "Réussi",
+        "failed": "Échoué",
+        "in_progress": "En cours",
+        "abandoned": "Abandonné"
+      }
     },
     "conflict": {
       "banner": "Votre formation a été mise à jour dans un autre onglet. Actualisation..."

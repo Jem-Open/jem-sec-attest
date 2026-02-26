@@ -19,14 +19,14 @@ import {
 } from "../../../src/auth/tenant-validation";
 import type { ConfigSnapshot, Tenant } from "../../../src/tenant/types";
 
-// Mock the config module's getSnapshot
+// Mock the config module's ensureConfigLoaded (used by validateTenantSlug)
 vi.mock("../../../src/config/index", () => ({
-  getSnapshot: vi.fn(),
+  ensureConfigLoaded: vi.fn(),
 }));
 
-import { getSnapshot } from "../../../src/config/index";
+import { ensureConfigLoaded } from "../../../src/config/index";
 
-const mockedGetSnapshot = vi.mocked(getSnapshot);
+const mockedEnsureConfigLoaded = vi.mocked(ensureConfigLoaded);
 
 function makeTenant(overrides: Partial<Tenant> & { id: string; name: string }): Tenant {
   return {
@@ -77,15 +77,15 @@ describe("validateTenantSlug", () => {
   });
 
   beforeEach(() => {
-    mockedGetSnapshot.mockReturnValue(makeSnapshot([acme, globex]));
+    mockedEnsureConfigLoaded.mockResolvedValue(makeSnapshot([acme, globex]));
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
   });
 
-  it("returns valid result for a known tenant slug", () => {
-    const result = validateTenantSlug("acme-corp");
+  it("returns valid result for a known tenant slug", async () => {
+    const result = await validateTenantSlug("acme-corp");
     expect(result.valid).toBe(true);
     if (result.valid) {
       expect(result.tenant.id).toBe("acme-corp");
@@ -93,42 +93,87 @@ describe("validateTenantSlug", () => {
     }
   });
 
-  it("returns valid result for another known tenant slug", () => {
-    const result = validateTenantSlug("globex-inc");
+  it("returns valid result for another known tenant slug", async () => {
+    const result = await validateTenantSlug("globex-inc");
     expect(result.valid).toBe(true);
     if (result.valid) {
       expect(result.tenant.id).toBe("globex-inc");
     }
   });
 
-  it("returns failure for an unknown tenant slug", () => {
-    const result = validateTenantSlug("unknown-corp");
+  it("returns failure for an unknown tenant slug", async () => {
+    const result = await validateTenantSlug("unknown-corp");
     expect(result.valid).toBe(false);
   });
 
-  it("returns failure for an empty slug", () => {
-    const result = validateTenantSlug("");
+  it("returns failure for an empty slug", async () => {
+    const result = await validateTenantSlug("");
     expect(result.valid).toBe(false);
   });
 
-  it("returns failure when no config snapshot is loaded", () => {
-    mockedGetSnapshot.mockReturnValue(null);
-    const result = validateTenantSlug("acme-corp");
+  it("returns failure when no config snapshot is loaded", async () => {
+    mockedEnsureConfigLoaded.mockResolvedValue(null);
+    const result = await validateTenantSlug("acme-corp");
     expect(result.valid).toBe(false);
   });
 
-  it("does not leak tenant existence info — failure result is identical regardless of reason", () => {
-    const noSnapshot = (() => {
-      mockedGetSnapshot.mockReturnValue(null);
-      return validateTenantSlug("acme-corp");
-    })();
+  it("does not leak tenant existence info — failure result is identical regardless of reason", async () => {
+    mockedEnsureConfigLoaded.mockResolvedValueOnce(null);
+    const noSnapshot = await validateTenantSlug("acme-corp");
 
-    mockedGetSnapshot.mockReturnValue(makeSnapshot([acme, globex]));
-    const unknownSlug = validateTenantSlug("unknown-corp");
+    mockedEnsureConfigLoaded.mockResolvedValueOnce(makeSnapshot([acme, globex]));
+    const unknownSlug = await validateTenantSlug("unknown-corp");
 
     // Both failures have the same shape — no way to distinguish
     expect(noSnapshot).toEqual({ valid: false });
     expect(unknownSlug).toEqual({ valid: false });
+  });
+
+  it("returns valid when hostname matches tenant's configured hostname", async () => {
+    const result = await validateTenantSlug("acme-corp", "acme.example.com");
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.tenant.id).toBe("acme-corp");
+    }
+  });
+
+  it("returns failure when hostname does not match tenant's configured hostnames", async () => {
+    // globex.example.com is a valid hostname, but it belongs to globex-inc, not acme-corp
+    const result = await validateTenantSlug("acme-corp", "globex.example.com");
+    expect(result.valid).toBe(false);
+  });
+
+  it("hostname comparison is case-insensitive", async () => {
+    const result = await validateTenantSlug("acme-corp", "ACME.EXAMPLE.COM");
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.tenant.id).toBe("acme-corp");
+    }
+  });
+
+  it("skips hostname check when hostname param is not provided", async () => {
+    // No hostname passed — existing slug-only validation applies
+    const result = await validateTenantSlug("acme-corp");
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.tenant.id).toBe("acme-corp");
+    }
+  });
+
+  it("skips hostname check when tenant has no configured hostnames", async () => {
+    const noHostnameTenant = makeTenant({
+      id: "open-tenant",
+      name: "Open Tenant",
+      hostnames: [],
+    });
+    mockedEnsureConfigLoaded.mockResolvedValue(makeSnapshot([noHostnameTenant]));
+
+    // Any hostname is accepted when the tenant has no hostnames configured
+    const result = await validateTenantSlug("open-tenant", "any.unrelated.host");
+    expect(result.valid).toBe(true);
+    if (result.valid) {
+      expect(result.tenant.id).toBe("open-tenant");
+    }
   });
 });
 

@@ -20,8 +20,8 @@
 
 import crypto from "node:crypto";
 import Database from "better-sqlite3";
-import type { StorageAdapter } from "./adapter.js";
-import type { QueryFilter, StorageMetadata, TransactionContext } from "./types.js";
+import type { StorageAdapter } from "./adapter";
+import type { QueryFilter, StorageMetadata, TransactionContext } from "./types";
 
 export interface SQLiteAdapterOptions {
   dbPath: string;

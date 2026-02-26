@@ -71,8 +71,17 @@ vi.mock("@/training/state-machine", () => ({
   },
 }));
 
+vi.mock("@/config/index", () => {
+  const mockGetSnapshot = vi.fn();
+  return {
+    getSnapshot: mockGetSnapshot,
+    ensureConfigLoaded: vi.fn().mockImplementation(() => Promise.resolve(mockGetSnapshot())),
+  };
+});
+
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { getSnapshot } from "@/config/index";
 import { logSessionAbandoned } from "@/training/audit";
 import { VersionConflictError } from "@/training/session-repository";
 import { transitionSession } from "@/training/state-machine";
@@ -85,6 +94,14 @@ import { POST } from "../../../app/api/training/[tenant]/abandon/route";
 // ---------------------------------------------------------------------------
 
 const ISO = "2026-02-20T10:00:00.000Z";
+
+function makeSnapshot() {
+  return {
+    tenants: new Map([["acme-corp", { id: "acme-corp", name: "Acme Corp", settings: {} }]]),
+    hash: "config-hash-abc",
+    configHash: "config-hash-abc",
+  };
+}
 
 function makeRequest(tenantId = "acme-corp", employeeId = "emp-001"): Request {
   return new Request("http://localhost:3000/api/training/acme-corp/abandon", {
@@ -156,6 +173,7 @@ function makeModule(overrides?: Partial<TrainingModule>): TrainingModule {
 describe("POST /api/training/{tenant}/abandon", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(getSnapshot).mockReturnValue(makeSnapshot() as ReturnType<typeof getSnapshot>);
 
     // Re-establish defaults on the shared mock repo after clearAllMocks
     mockSessionRepo.findActiveSession.mockResolvedValue(null);

@@ -18,7 +18,7 @@
  * Runs on raw YAML/JSON text BEFORE parsing.
  */
 
-import { ConfigError } from "./errors.js";
+import { ConfigError } from "./errors";
 
 const ENV_VAR_PATTERN = /\$\{([^}]+)\}/g;
 

@@ -18,13 +18,13 @@
  * Profile generator and repository are consumed by API routes directly.
  */
 
-export { sanitizeJobText } from "./sanitizer.js";
+export { sanitizeJobText } from "./sanitizer";
 export {
   RoleProfileExtractionSchema,
   RoleProfileSchema,
   IntakeSubmissionSchema,
   ProfileConfirmationSchema,
-} from "./schemas.js";
+} from "./schemas";
 export type {
   RoleProfileExtraction,
   RoleProfile,
@@ -32,5 +32,5 @@ export type {
   ProfileConfirmation,
   ProfileGenerationResult,
   IntakeAuditMetadata,
-} from "./types.js";
-export { resolveModel } from "./ai-model-resolver.js";
+} from "./types";
+export { resolveModel } from "./ai-model-resolver";

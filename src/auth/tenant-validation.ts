@@ -18,8 +18,8 @@
  * FR-006: Tenant isolation — never leak tenant existence.
  */
 
-import { getSnapshot } from "../config/index.js";
-import type { Tenant } from "../tenant/types.js";
+import { ensureConfigLoaded } from "../config/index";
+import type { Tenant } from "../tenant/types";
 
 export interface TenantValidationResult {
   valid: true;
@@ -37,9 +37,17 @@ export type TenantLookupResult = TenantValidationResult | TenantValidationFailur
  * Returns the Tenant object if valid, or a failure result.
  * The caller should return a generic 404 on failure — never reveal
  * whether the slug was syntactically invalid vs. simply unknown.
+ * Lazily loads config on first call if not already loaded.
+ *
+ * When `hostname` is provided and the tenant has configured hostnames,
+ * validates that the request hostname matches one of them (case-insensitive).
+ * This prevents cross-tenant access via a valid slug on an unrelated hostname.
  */
-export function validateTenantSlug(slug: string): TenantLookupResult {
-  const snapshot = getSnapshot();
+export async function validateTenantSlug(
+  slug: string,
+  hostname?: string,
+): Promise<TenantLookupResult> {
+  const snapshot = await ensureConfigLoaded();
   if (!snapshot) {
     return { valid: false };
   }
@@ -47,6 +55,14 @@ export function validateTenantSlug(slug: string): TenantLookupResult {
   const tenant = snapshot.tenants.get(slug);
   if (!tenant) {
     return { valid: false };
+  }
+
+  if (hostname && tenant.hostnames.length > 0) {
+    const normalizedHostname = hostname.toLowerCase();
+    const hostnameMatch = tenant.hostnames.some((h) => h.toLowerCase() === normalizedHostname);
+    if (!hostnameMatch) {
+      return { valid: false };
+    }
   }
 
   return { valid: true, tenant };

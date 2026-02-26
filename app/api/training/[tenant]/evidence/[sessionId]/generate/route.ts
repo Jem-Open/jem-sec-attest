@@ -18,6 +18,7 @@
  * Generates (or returns existing) evidence for a terminal training session.
  */
 
+import { ensureConfigLoaded } from "@/config/index";
 import { generateEvidenceForSession } from "@/evidence/evidence-generator";
 import { EvidenceRepository } from "@/evidence/evidence-repository";
 import { getStorage } from "@/storage/factory";
@@ -38,6 +39,20 @@ export async function POST(
       { error: "unauthorized", message: "Not authenticated" },
       { status: 401 },
     );
+  }
+
+  // Safety net: validate tenant exists in config even when middleware bypassed hostname
+  // check (Edge Runtime / snapshot not yet loaded). Ensures tenant isolation regardless
+  // of middleware state.
+  const snapshot = await ensureConfigLoaded();
+  if (!snapshot) {
+    return NextResponse.json(
+      { error: "internal_error", message: "Configuration not available" },
+      { status: 503 },
+    );
+  }
+  if (!snapshot.tenants.get(tenantSlug)) {
+    return NextResponse.json({ error: "not_found", message: "Tenant not found" }, { status: 404 });
   }
 
   const role = request.headers.get("x-employee-role") ?? "employee";

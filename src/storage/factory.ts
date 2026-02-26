@@ -18,9 +18,9 @@
  * Constitution Principle I: Configuration-as-Code — selection via DATABASE_URL env var.
  */
 
-import type { StorageAdapter } from "./adapter.js";
-import { PostgresAdapter } from "./postgres-adapter.js";
-import { SQLiteAdapter } from "./sqlite-adapter.js";
+import type { StorageAdapter } from "./adapter";
+import { PostgresAdapter } from "./postgres-adapter";
+import { SQLiteAdapter } from "./sqlite-adapter";
 
 let instance: StorageAdapter | null = null;
 let initPromise: Promise<StorageAdapter> | null = null;

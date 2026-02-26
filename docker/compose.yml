@@ -1,0 +1,71 @@
+# Docker Compose stack for local development and E2E testing.
+# Starts infrastructure only: PostgreSQL and Dex OIDC IDP.
+# The Next.js application runs locally (pnpm dev).
+#
+# Prerequisites:
+#   1. Add to /etc/hosts: 127.0.0.1 dex
+#   2. Copy .env.example to .env and fill in local dev values (see quickstart.md)
+#   3. pnpm install && pnpm exec playwright install chromium
+#
+# Start:   pnpm docker:up     (or: docker compose -f docker/compose.yml up -d --wait)
+# Stop:    pnpm docker:down   (or: docker compose -f docker/compose.yml down -v)
+# Logs:    docker compose -f docker/compose.yml logs -f [dex|postgres]
+#
+# Service startup order: postgres → dex (each waits for healthcheck)
+
+services:
+
+  # ── PostgreSQL database ────────────────────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: jem-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-jem_attest}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-jem_attest}",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - jem_local
+
+  # ── Dex OIDC identity provider (local testing only) ────────────────────────
+  dex:
+    image: dexidp/dex:v2.41.1
+    container_name: jem-dex
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5556:5556" # OIDC server — must be accessible from browser (see /etc/hosts)
+      - "5558:5558" # Health and metrics
+    volumes:
+      - ./dex/config.yaml:/etc/dex/config.yaml:ro
+    command: dex serve /etc/dex/config.yaml
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5556/dex/.well-known/openid-configuration || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - jem_local
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  jem_local:
+    driver: bridge

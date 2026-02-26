@@ -18,7 +18,7 @@
  * Idempotent: returns existing content if already generated.
  */
 
-import { getSnapshot } from "@/config/index";
+import { ensureConfigLoaded } from "@/config/index";
 import { resolveModel } from "@/intake/ai-model-resolver";
 import { ProfileRepository } from "@/intake/profile-repository";
 import { getStorage } from "@/storage/factory";
@@ -154,7 +154,7 @@ export async function POST(
     }
 
     // 9. Resolve AI model from tenant config
-    const snapshot = getSnapshot();
+    const snapshot = await ensureConfigLoaded();
     const tenant = snapshot?.tenants.get(tenantSlug);
     if (!tenant) {
       return NextResponse.json(
@@ -209,6 +209,7 @@ export async function POST(
       } catch {
         // Best-effort rollback — ignore secondary errors
       }
+      console.error("[content/route] ModuleGenerationError:", error.message);
       if (error.code === "ai_unavailable") {
         return NextResponse.json(
           { error: "ai_unavailable", message: "AI service temporarily unavailable" },
@@ -216,7 +217,7 @@ export async function POST(
         );
       }
       return NextResponse.json(
-        { error: "generation_failed", message: error.message },
+        { error: "generation_failed", message: "Module content generation failed" },
         { status: 422 },
       );
     }

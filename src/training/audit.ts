@@ -19,7 +19,7 @@
  * Constitution Principle II: deterministic, audit-friendly records.
  */
 
-import type { AuditLogger } from "../audit/audit-logger.js";
+import type { AuditLogger } from "../audit/audit-logger";
 
 export async function logSessionStarted(
   logger: AuditLogger,

@@ -39,7 +39,7 @@ export {
   SessionStatusSchema,
   TrainingModuleSchema,
   TrainingSessionSchema,
-} from "./schemas.js";
+} from "./schemas";
 
 // --- Types ---
 export type {
@@ -63,10 +63,10 @@ export type {
   SessionStatus,
   TrainingModule,
   TrainingSession,
-} from "./types.js";
+} from "./types";
 
 // --- State machine ---
-export type { ModuleEvent, SessionEvent } from "./state-machine.js";
+export type { ModuleEvent, SessionEvent } from "./state-machine";
 export {
   StateTransitionError,
   canTransitionModule,
@@ -75,7 +75,7 @@ export {
   isSessionTerminal,
   transitionModule,
   transitionSession,
-} from "./state-machine.js";
+} from "./state-machine";
 
 // --- Score calculator ---
 export {
@@ -84,10 +84,10 @@ export {
   identifyWeakAreas,
   isPassing,
   scoreMcAnswer,
-} from "./score-calculator.js";
+} from "./score-calculator";
 
 // --- Repository ---
-export { SessionRepository, VersionConflictError } from "./session-repository.js";
+export { SessionRepository, VersionConflictError } from "./session-repository";
 
 // --- Audit ---
 export {
@@ -98,16 +98,16 @@ export {
   logSessionAbandoned,
   logSessionExhausted,
   logSessionStarted,
-} from "./audit.js";
+} from "./audit";
 
 // --- Curriculum generator ---
-export { CurriculumGenerationError, generateCurriculum } from "./curriculum-generator.js";
+export { CurriculumGenerationError, generateCurriculum } from "./curriculum-generator";
 
 // --- Module generator ---
-export { ModuleGenerationError, generateModuleContent } from "./module-generator.js";
+export { ModuleGenerationError, generateModuleContent } from "./module-generator";
 
 // --- Evaluator ---
-export { EvaluationError, evaluateFreeText } from "./evaluator.js";
+export { EvaluationError, evaluateFreeText } from "./evaluator";
 
 // --- Remediation planner ---
-export { RemediationPlanError, generateRemediationCurriculum } from "./remediation-planner.js";
+export { RemediationPlanError, generateRemediationCurriculum } from "./remediation-planner";

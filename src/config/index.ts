@@ -19,15 +19,14 @@
 
 import { readFile } from "node:fs/promises";
 import { parse as parseYaml } from "yaml";
-import type { ConfigSnapshot, Tenant } from "../tenant/types.js";
-import { substituteEnvVars } from "./env-substitute.js";
-import { type ConfigErrorDetail, ConfigValidationError } from "./errors.js";
-import { computeConfigHash } from "./hasher.js";
-import type { ConfigProvider } from "./provider.js";
-import { BaseConfigSchema, TenantConfigSchema } from "./schema.js";
-import { deepMergeSettings, validateUniqueness } from "./validator.js";
-
-let currentSnapshot: ConfigSnapshot | null = null;
+import type { ConfigSnapshot, Tenant } from "../tenant/types";
+import { substituteEnvVars } from "./env-substitute";
+import { type ConfigErrorDetail, ConfigValidationError } from "./errors";
+import { computeConfigHash } from "./hasher";
+import type { ConfigProvider } from "./provider";
+import { BaseConfigSchema, TenantConfigSchema } from "./schema";
+import { getSnapshot as getSnapshotFromStore, setSnapshot } from "./snapshot";
+import { deepMergeSettings, validateUniqueness } from "./validator";
 
 export interface LoadConfigOptions {
   env?: Record<string, string | undefined>;
@@ -133,7 +132,7 @@ export async function loadConfig(
     loadedAt: new Date(),
   });
 
-  currentSnapshot = snapshot;
+  setSnapshot(snapshot);
   return snapshot;
 }
 
@@ -145,7 +144,7 @@ export async function loadConfigFromFiles(
   configDir: string,
   options: LoadConfigOptions = {},
 ): Promise<ConfigSnapshot> {
-  const { FileConfigProvider } = await import("./file-provider.js");
+  const { FileConfigProvider } = await import("./file-provider");
   const provider = new FileConfigProvider({ configDir });
   const env = options.env;
   const errors: ConfigErrorDetail[] = [];
@@ -236,13 +235,43 @@ export async function loadConfigFromFiles(
     loadedAt: new Date(),
   });
 
-  currentSnapshot = snapshot;
+  setSnapshot(snapshot);
   return snapshot;
 }
 
 /**
  * Get the current loaded config snapshot.
+ * Re-exported from snapshot.ts for Node.js callers that import from this file.
  */
-export function getSnapshot(): ConfigSnapshot | null {
-  return currentSnapshot;
+export { getSnapshot } from "./snapshot";
+
+let _initPromise: Promise<ConfigSnapshot> | null = null;
+
+/**
+ * Ensures config is loaded, loading it lazily on first call.
+ * Safe to call concurrently — subsequent calls share the same Promise.
+ * Reads config directory from CONFIG_DIR env var or defaults to ./config.
+ */
+export async function ensureConfigLoaded(): Promise<ConfigSnapshot | null> {
+  const existing = getSnapshotFromStore();
+  if (existing) return existing;
+
+  if (!_initPromise) {
+    _initPromise = (async () => {
+      const { join } = await import("node:path");
+      const configDir = process.env.CONFIG_DIR ?? join(process.cwd(), "config");
+      return loadConfigFromFiles(configDir, { env: process.env });
+    })();
+  }
+
+  const current = _initPromise;
+  try {
+    return await current;
+  } catch (e) {
+    if (_initPromise === current) {
+      _initPromise = null;
+    }
+    console.error("[config] ensureConfigLoaded failed:", e);
+    return null;
+  }
 }

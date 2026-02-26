@@ -18,7 +18,7 @@
  * Constitution Principle III: Every method enforces tenantId scoping.
  */
 
-import type { QueryFilter, StorageMetadata, TransactionContext } from "./types.js";
+import type { QueryFilter, StorageMetadata, TransactionContext } from "./types";
 
 export interface StorageAdapter {
   initialize(): Promise<void>;

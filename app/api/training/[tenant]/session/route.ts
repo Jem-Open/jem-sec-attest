@@ -20,7 +20,7 @@
  */
 
 import { AuditLogger } from "@/audit/audit-logger";
-import { getSnapshot } from "@/config/index";
+import { ensureConfigLoaded } from "@/config/index";
 import { resolveModel } from "@/intake/ai-model-resolver";
 import { ProfileRepository } from "@/intake/profile-repository";
 import { getStorage } from "@/storage/factory";
@@ -93,7 +93,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ ten
   }
 
   // Resolve tenant config (needed for both fresh and remediation paths)
-  const snapshot = getSnapshot();
+  const snapshot = await ensureConfigLoaded();
   const tenant = snapshot?.tenants.get(tenantSlug);
   if (!tenant) {
     return NextResponse.json({ error: "not_found", message: "Tenant not found" }, { status: 404 });
@@ -374,8 +374,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
   const clientModules = modules.map(stripServerFields);
 
   // 4. Read maxAttempts from tenant config so the UI can display accurate attempt counts
-  const tenantConfig = getSnapshot()?.tenants.get(tenantSlug);
-  const maxAttempts = tenantConfig?.settings.training?.maxAttempts ?? 3;
+  const snapshot = await ensureConfigLoaded();
+  const tenantConfig = snapshot?.tenants.get(tenantSlug);
+  if (!tenantConfig) {
+    return NextResponse.json({ error: "not_found", message: "Tenant not found" }, { status: 404 });
+  }
+  const maxAttempts = tenantConfig.settings.training?.maxAttempts ?? 3;
 
   return NextResponse.json({ session, modules: clientModules, maxAttempts });
 }

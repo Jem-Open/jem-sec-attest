@@ -17,8 +17,8 @@
  * See contracts/sprinto-graphql.md for the full API contract.
  */
 
-import type { TrainingEvidence } from "../../evidence/schemas.js";
-import type { ComplianceProvider, ComplianceProviderConfig, UploadResult } from "../types.js";
+import type { TrainingEvidence } from "../../evidence/schemas";
+import type { ComplianceProvider, ComplianceProviderConfig, UploadResult } from "../types";
 
 // ---------------------------------------------------------------------------
 // Regional endpoints

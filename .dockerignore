@@ -1,0 +1,39 @@
+# Dependencies — installed inside the container during build
+node_modules/
+
+# Build artefacts — rebuilt inside the container
+.next/
+dist/
+build/
+
+# Test artefacts
+coverage/
+test-results/
+tests/e2e/.auth/
+
+# Source control
+.git/
+.github/
+
+# Environment files — injected at runtime via docker-compose env_file
+.env*
+
+# Documentation and spec files — not needed in the image
+*.md
+specs/
+.specify/
+docs/
+
+# Claude / agent tooling
+.claude/
+.agents/
+
+# OS and IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Playwright config and browser binaries — not needed in app container
+playwright.config.ts
+playwright-report/

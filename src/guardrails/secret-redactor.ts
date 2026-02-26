@@ -19,7 +19,7 @@
  * FR-003: Typed markers indicating the secret category.
  */
 
-import { SECRET_PATTERNS } from "./secret-patterns.js";
+import { SECRET_PATTERNS } from "./secret-patterns";
 
 export interface RedactionResult {
   text: string;

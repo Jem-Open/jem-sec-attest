@@ -33,7 +33,7 @@ function makeMockModel(): LanguageModel {
 
 function makeValidMockResult() {
   return {
-    experimental_output: {
+    output: {
       score: 0.85,
       rationale: "Good understanding demonstrated by the employee.",
     },
@@ -65,7 +65,7 @@ describe("evaluateFreeText", () => {
     expect(vi.mocked(generateText)).toHaveBeenCalledTimes(1);
     const callArgs = vi.mocked(generateText).mock.calls[0][0];
     expect(callArgs.model).toBe(model);
-    expect(callArgs.experimental_output).toBeDefined();
+    expect(callArgs.output).toBeDefined();
     expect(callArgs.system).toBeDefined();
     expect(callArgs.prompt).toBeDefined();
   });
@@ -309,7 +309,7 @@ describe("evaluateFreeText", () => {
     expect(callArgs.temperature).toBe(0);
   });
 
-  // Test 12: FreeTextEvaluationSchema is used (check experimental_output passed to generateText)
+  // Test 12: FreeTextEvaluationSchema is used (check output passed to generateText)
   it("passes FreeTextEvaluationSchema via Output.object to generateText", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
     vi.mocked(generateText).mockResolvedValue(makeValidMockResult() as any);
@@ -322,6 +322,6 @@ describe("evaluateFreeText", () => {
     );
 
     const callArgs = vi.mocked(generateText).mock.calls[0][0];
-    expect(callArgs.experimental_output).toBeDefined();
+    expect(callArgs.output).toBeDefined();
   });
 });

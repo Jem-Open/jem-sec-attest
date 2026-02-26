@@ -25,16 +25,22 @@
 import { getIronSession } from "iron-session";
 import { type NextRequest, NextResponse } from "next/server";
 import type { EmployeeSession } from "./src/auth/types";
-import { getSnapshot } from "./src/config/index";
+import { getSnapshot } from "./src/config/snapshot";
 import { createResolver } from "./src/tenant/resolver";
 
-const PUBLIC_PATHS = ["/api/auth/", "/_next/", "/favicon.ico"];
+const PUBLIC_PATHS = ["/api/auth/", "/api/health/", "/_next/", "/favicon.ico"];
 
 interface SessionData {
   employee?: EmployeeSession;
 }
 
 function isPublicPath(pathname: string): boolean {
+  // Exact match for paths that have a trailing-slash variant in PUBLIC_PATHS
+  // (e.g. "/api/health") so that the bare path is still public but
+  // "/api/health-anything" is not.
+  if (pathname === "/api/health") {
+    return true;
+  }
   if (PUBLIC_PATHS.some((p) => pathname.startsWith(p))) {
     return true;
   }
@@ -56,12 +62,17 @@ function getSessionSecret(): string {
 
 /**
  * Resolve tenant from hostname using the config snapshot.
- * Returns the tenant slug (id) or null if hostname is unresolvable.
+ * Returns the tenant slug (id), or null if the snapshot is loaded but the
+ * hostname is unresolvable (enumeration protection).
+ * Returns undefined when the snapshot is not available in this runtime context
+ * (e.g., Edge Runtime — config is loaded lazily in Node.js route handlers).
  */
-function resolveTenantFromHostname(hostname: string): string | null {
+function resolveTenantFromHostname(hostname: string): string | null | undefined {
   const snapshot = getSnapshot();
   if (!snapshot) {
-    return null;
+    // Config not available in this runtime context; caller should fall back
+    // to URL-path-based tenant resolution.
+    return undefined;
   }
   const resolver = createResolver(snapshot);
   const tenant = resolver.resolve({ hostname });
@@ -77,18 +88,46 @@ export async function middleware(request: NextRequest) {
 
   const hostname = request.headers.get("host")?.split(":")[0] ?? "";
 
-  // Resolve tenant from hostname — return generic 404 for unresolvable
-  // hostnames to prevent tenant existence leakage (enumeration protection)
-  const resolvedTenantId = resolveTenantFromHostname(hostname);
-  if (!resolvedTenantId) {
+  // Extract tenant slug from path segments.
+  // For API routes (/api/<resource>/[tenant]/...) the tenant is segments[2];
+  // for page routes (/[tenant]/...) the tenant is segments[0].
+  const segments = pathname.split("/").filter(Boolean);
+  const isApiRoute = segments[0] === "api";
+  const tenantSlug = isApiRoute ? segments[2] : segments[0];
+
+  // Resolve tenant from hostname.
+  // - If the config snapshot is loaded: strict hostname check (enumeration protection).
+  // - If the snapshot is not yet loaded (Edge Runtime): hostnameResult === undefined.
+  //   In that case, we defer full tenant validation to the route handlers and use the
+  //   employee session to set tenant context headers.
+  const hostnameResult = resolveTenantFromHostname(hostname);
+  const snapshotLoaded = hostnameResult !== undefined;
+
+  // When snapshot is loaded: enforce hostname-based tenant resolution (404 on mismatch).
+  // When snapshot is not loaded: allow the request through; route handlers validate.
+  //
+  // Safety net: all tenant-scoped route handlers call ensureConfigLoaded() and validate
+  // the tenant slug against the loaded config snapshot (returning 404 on failure) before
+  // serving any data. Auth routes (signin, callback, signout) use validateTenantSlug()
+  // which wraps ensureConfigLoaded(). Protected routes (intake, training) call
+  // ensureConfigLoaded() directly and check snapshot.tenants.get(tenantSlug). This
+  // ensures tenant isolation even when the Edge Runtime cannot load config synchronously.
+  if (snapshotLoaded && !hostnameResult) {
     return NextResponse.json({ error: "Not found." }, { status: 404 });
   }
 
-  // Extract tenant slug from first path segment
-  const segments = pathname.split("/").filter(Boolean);
-  const tenantSlug = segments[0];
+  // Resolved tenant for headers and redirect targets.
+  // Prefer hostname resolution when available; fall back to URL slug (page routes only).
+  // API routes starting with /api/ use the employee session tenant set later.
+  const resolvedTenantId = snapshotLoaded ? (hostnameResult as string) : (tenantSlug ?? null);
 
   if (!tenantSlug) {
+    // No tenant slug in the path and no hostname-resolved tenant — cannot
+    // determine a redirect target, so return 404 instead of redirecting to
+    // "/null" (which would be a broken URL).
+    if (resolvedTenantId === null) {
+      return NextResponse.json({ error: "Not found." }, { status: 404 });
+    }
     // Root path "/" with a resolved tenant — redirect to the tenant's root.
     // This prevents unauthenticated access to "/" and avoids bypassing
     // session validation for any content served at the root path.
@@ -109,19 +148,22 @@ export async function middleware(request: NextRequest) {
 
   const employee = session.employee;
 
-  // No valid session — redirect to sign-in using the RESOLVED tenant
-  // (always use the current hostname's tenant, not a path-based slug)
+  // When snapshot is not loaded, use the employee's session tenantId for context.
+  // Route handlers will perform their own tenant validation.
+  const effectiveTenantId = snapshotLoaded
+    ? (resolvedTenantId as string)
+    : (employee?.tenantId ?? resolvedTenantId ?? null);
+
+  // No valid session — redirect to sign-in
   if (!employee) {
-    const signInUrl = new URL(`/${resolvedTenantId}/auth/signin`, request.url);
+    const redirectTenant = effectiveTenantId ?? tenantSlug ?? "unknown";
+    const signInUrl = new URL(`/${redirectTenant}/auth/signin`, request.url);
     return NextResponse.redirect(signInUrl);
   }
 
-  // Session expired — redirect to sign-in using resolved tenant.
-  // Explicitly clear the session cookie on the redirect response because
-  // iron-session's session.destroy() only mutates the response passed to
-  // getIronSession, not the new redirect response we return here.
+  // Session expired — redirect to sign-in and clear the cookie
   if (employee.expiresAt < Date.now()) {
-    const signInUrl = new URL(`/${resolvedTenantId}/auth/signin`, request.url);
+    const signInUrl = new URL(`/${effectiveTenantId ?? "unknown"}/auth/signin`, request.url);
     const redirectResponse = NextResponse.redirect(signInUrl);
     redirectResponse.cookies.set("jem_session", "", {
       httpOnly: true,
@@ -133,11 +175,13 @@ export async function middleware(request: NextRequest) {
     return redirectResponse;
   }
 
-  // Tenant mismatch — session tenantId doesn't match the resolved tenant.
-  // This prevents cross-tenant session reuse. Redirect uses the CURRENT
-  // hostname's resolved tenant, not the session's stale tenant.
-  if (employee.tenantId !== resolvedTenantId) {
-    const signInUrl = new URL(`/${resolvedTenantId}/auth/signin`, request.url);
+  // Tenant mismatch — enforce using hostname-resolved tenant when snapshot is loaded,
+  // or fall back to the URL tenant slug when snapshot is not available (Edge context).
+  const targetTenant = snapshotLoaded
+    ? (effectiveTenantId as string)
+    : (tenantSlug ?? effectiveTenantId);
+  if (targetTenant && employee.tenantId !== targetTenant) {
+    const signInUrl = new URL(`/${targetTenant}/auth/signin`, request.url);
     const redirectResponse = NextResponse.redirect(signInUrl);
     redirectResponse.cookies.set("jem_session", "", {
       httpOnly: true,
@@ -151,7 +195,9 @@ export async function middleware(request: NextRequest) {
 
   // Pass tenant context via headers for downstream route handlers
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-tenant-id", resolvedTenantId);
+  if (effectiveTenantId) {
+    requestHeaders.set("x-tenant-id", effectiveTenantId);
+  }
   requestHeaders.set("x-employee-id", employee.employeeId);
   requestHeaders.set("x-hostname", hostname);
 

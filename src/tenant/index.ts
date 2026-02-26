@@ -16,5 +16,5 @@
  * Public API for tenant resolution.
  */
 
-export { createResolver, TenantResolverImpl } from "./resolver.js";
-export type { Tenant, TenantSettings, ConfigSnapshot, TenantResolverContext } from "./types.js";
+export { createResolver, TenantResolverImpl } from "./resolver";
+export type { Tenant, TenantSettings, ConfigSnapshot, TenantResolverContext } from "./types";

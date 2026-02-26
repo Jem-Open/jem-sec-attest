@@ -15,8 +15,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   reactStrictMode: true,
-  serverExternalPackages: ["better-sqlite3"],
+  serverExternalPackages: ["better-sqlite3", "postgres"],
 };
 
 export default nextConfig;

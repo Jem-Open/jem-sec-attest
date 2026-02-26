@@ -18,18 +18,13 @@
  */
 
 import { z } from "zod";
-import { ComplianceConfigSchema } from "../compliance/schemas.js";
+import { ComplianceConfigSchema } from "../compliance/schemas";
 
 export const OIDCConfigSchema = z
   .object({
     issuerUrl: z.string().url(),
     clientId: z.string().min(1),
-    clientSecret: z
-      .string()
-      .regex(
-        /^\$\{[A-Z_][A-Z0-9_]*\}$/,
-        "Client secret must be an environment variable reference: ${VAR_NAME}",
-      ),
+    clientSecret: z.string().min(1),
     redirectUri: z.string().url(),
     scopes: z
       .array(z.string())

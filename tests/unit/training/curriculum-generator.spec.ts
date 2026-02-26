@@ -14,10 +14,11 @@
 
 // vi.mock calls are hoisted — place them before imports for clarity.
 vi.mock("ai", () => ({
-  generateObject: vi.fn(),
+  generateText: vi.fn(),
+  Output: { object: vi.fn((opts: unknown) => opts) },
 }));
 
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import type { LanguageModel } from "ai";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
@@ -57,7 +58,7 @@ function makeMockAiResult(
     },
   ],
 ) {
-  return { object: { modules } };
+  return { output: { modules } };
 }
 
 // ---------------------------------------------------------------------------
@@ -69,35 +70,33 @@ describe("generateCurriculum", () => {
     vi.clearAllMocks();
   });
 
-  it("calls generateObject with the correct model", async () => {
+  it("calls generateText with the correct model", async () => {
     const model = makeMockModel();
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeMockAiResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeMockAiResult() as any);
 
     await generateCurriculum(makeRoleProfile(), makeTenantTrainingConfig(), model);
 
-    expect(vi.mocked(generateObject).mock.calls[0][0].model).toBe(model);
+    expect(vi.mocked(generateText).mock.calls[0][0].model).toBe(model);
   });
 
-  it("calls generateObject with a schema that has a modules array property", async () => {
+  it("calls generateText with an output option that wraps a schema", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeMockAiResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeMockAiResult() as any);
 
     await generateCurriculum(makeRoleProfile(), makeTenantTrainingConfig(), makeMockModel());
 
-    const callArgs = vi.mocked(generateObject).mock.calls[0][0];
-    expect(callArgs.schema).toBeDefined();
-    // The schema should be a Zod object (has a .parse method)
-    expect(typeof callArgs.schema.parse).toBe("function");
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
+    expect(callArgs.output).toBeDefined();
   });
 
   it("system prompt mentions security training curriculum designer", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeMockAiResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeMockAiResult() as any);
 
     await generateCurriculum(makeRoleProfile(), makeTenantTrainingConfig(), makeMockModel());
 
-    const callArgs = vi.mocked(generateObject).mock.calls[0][0];
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
     expect(callArgs.system).toBeDefined();
     expect(callArgs.system).toMatch(/security training curriculum designer/i);
   });
@@ -105,11 +104,11 @@ describe("generateCurriculum", () => {
   it("user prompt contains jobExpectations wrapped in <role_profile> XML tags", async () => {
     const jobExpectations = ["Manage network security", "Conduct security audits"];
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeMockAiResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeMockAiResult() as any);
 
     await generateCurriculum({ jobExpectations }, makeTenantTrainingConfig(), makeMockModel());
 
-    const callArgs = vi.mocked(generateObject).mock.calls[0][0];
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
     expect(callArgs.prompt).toContain("<role_profile>");
     expect(callArgs.prompt).toContain("</role_profile>");
     expect(callArgs.prompt).toContain("Manage network security");
@@ -119,11 +118,11 @@ describe("generateCurriculum", () => {
   it("user prompt includes maxModules constraint", async () => {
     const maxModules = 6;
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeMockAiResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeMockAiResult() as any);
 
     await generateCurriculum(makeRoleProfile(), { maxModules }, makeMockModel());
 
-    const callArgs = vi.mocked(generateObject).mock.calls[0][0];
+    const callArgs = vi.mocked(generateText).mock.calls[0][0];
     expect(callArgs.prompt).toContain(String(maxModules));
   });
 
@@ -135,8 +134,10 @@ describe("generateCurriculum", () => {
         jobExpectationIndices: [0],
       },
     ];
-    // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue({ object: { modules: aiModules } } as any);
+    vi.mocked(generateText).mockResolvedValue({
+      output: { modules: aiModules },
+      // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
+    } as any);
 
     const result = await generateCurriculum(
       makeRoleProfile(),
@@ -151,8 +152,8 @@ describe("generateCurriculum", () => {
     expect(new Date(result.generatedAt).toISOString()).toBe(result.generatedAt);
   });
 
-  it("throws CurriculumGenerationError with code 'ai_unavailable' when generateObject throws", async () => {
-    vi.mocked(generateObject).mockRejectedValue(new Error("503 Service Unavailable"));
+  it("throws CurriculumGenerationError with code 'ai_unavailable' when generateText throws", async () => {
+    vi.mocked(generateText).mockRejectedValue(new Error("503 Service Unavailable"));
 
     await expect(
       generateCurriculum(makeRoleProfile(), makeTenantTrainingConfig(), makeMockModel()),
@@ -165,7 +166,7 @@ describe("generateCurriculum", () => {
 
   it("throws CurriculumGenerationError with code 'generation_failed' when result has empty modules", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue({ object: { modules: [] } } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: { modules: [] } } as any);
 
     await expect(
       generateCurriculum(makeRoleProfile(), makeTenantTrainingConfig(), makeMockModel()),
@@ -185,8 +186,10 @@ describe("generateCurriculum", () => {
         jobExpectationIndices: [0, 5], // index 5 is out of bounds
       },
     ];
-    // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue({ object: { modules: aiModules } } as any);
+    vi.mocked(generateText).mockResolvedValue({
+      output: { modules: aiModules },
+      // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
+    } as any);
 
     await expect(
       generateCurriculum({ jobExpectations }, makeTenantTrainingConfig(), makeMockModel()),
@@ -198,7 +201,7 @@ describe("generateCurriculum", () => {
   });
 
   it("CurriculumGenerationError has correct name, message, and code properties", async () => {
-    vi.mocked(generateObject).mockRejectedValue(new Error("Network timeout"));
+    vi.mocked(generateText).mockRejectedValue(new Error("Network timeout"));
 
     let thrownError: unknown;
     try {
@@ -216,10 +219,10 @@ describe("generateCurriculum", () => {
 
   it("sets temperature to 0", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateObject).mockResolvedValue(makeMockAiResult() as any);
+    vi.mocked(generateText).mockResolvedValue(makeMockAiResult() as any);
 
     await generateCurriculum(makeRoleProfile(), makeTenantTrainingConfig(), makeMockModel());
 
-    expect(vi.mocked(generateObject).mock.calls[0][0].temperature).toBe(0);
+    expect(vi.mocked(generateText).mock.calls[0][0].temperature).toBe(0);
   });
 });

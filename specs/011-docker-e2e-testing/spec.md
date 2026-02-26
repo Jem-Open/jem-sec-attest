@@ -67,10 +67,13 @@ An automated Playwright test suite exercises the complete user journey: authenti
 
 ### Edge Cases
 
-- What happens when the IDP container is not yet ready when the app starts up?
-- How does the system behave if the test user's OIDC token expires mid-journey?
-- What happens if the database container fails to initialise its schema on first boot?
-- How are port conflicts handled if a developer already has something running on the default ports?
+**IDP not yet ready when the app connects**: Dex has a Docker Compose healthcheck that polls `http://localhost:5556/dex/.well-known/openid-configuration` every 10 seconds (up to 3 retries, 15-second start period). Dex itself depends on postgres via `condition: service_healthy`, so the startup order is postgres → dex, each gated by its own healthcheck. Running `docker compose up -d --wait` (or `pnpm docker:up`) blocks until all healthchecks pass before returning. The Next.js app is started separately (`pnpm dev`) after the stack is up, so by the time the app issues OIDC discovery requests Dex is guaranteed to be healthy. If Dex fails its healthcheck retries, Compose exits with a non-zero code and logs identify the failing service.
+
+**OIDC token expiry mid-journey**: Dex uses its default token lifetimes — ID tokens are valid for 24 hours, access tokens for 1 hour, and refresh tokens rotate on use. A complete E2E Playwright run takes well under 10 minutes, so token expiry cannot occur during a test session. No special handling is required. If a developer leaves a session open for hours and resumes, they will be redirected to the Dex login page as a normal unauthenticated request; they can sign in again with the static test credentials (`alice@acme.com` / `Acme1234!`).
+
+**Database schema not initialised on first boot**: Schema initialisation is handled entirely by the application layer, not by an init SQL script in the container. `PostgresAdapter.initialize()` executes `CREATE TABLE IF NOT EXISTS records ...` and `CREATE INDEX IF NOT EXISTS ...` — fully idempotent DDL — the first time `getStorage()` is called. This means the schema is created automatically on the first API request after the app starts. There is no manual migration step and no risk of a half-initialised state from a prior failed run, because `IF NOT EXISTS` makes the statements safe to re-run on every fresh container start.
+
+**Port conflicts with existing local services**: The default host-side ports are `3000` (app), `5432` (postgres), `5556` and `5558` (dex). If any of these are already bound, `docker compose up` will fail with an `address already in use` error. To remap ports without editing `docker/compose.yml`, create a local override file (not checked in) — see the [Overriding ports](#overriding-ports) section below for the exact syntax. The app port (`3000`) is not a Compose service port but the `pnpm dev` / `next start` process; change it by setting `PORT=3001 pnpm dev` and updating the Dex `redirectURIs` in `docker/dex/config.yaml` accordingly.
 
 ## Requirements *(mandatory)*
 
@@ -84,8 +87,8 @@ An automated Playwright test suite exercises the complete user journey: authenti
 - **FR-006**: All services (app, IDP, database) MUST emit logs to stdout/stderr so they are readable via `docker logs` without entering the container. No separate log files or UI are required.
 - **FR-007**: A Playwright test suite MUST cover the full user journey: OIDC sign-in → training intake → training modules → evidence export.
 - **FR-008**: Playwright tests MUST capture screenshots and log snapshots on failure for post-run diagnosis.
-- **FR-009**: The stack MUST include a dependency health check so the application only starts after the IDP and database are ready.
-- **FR-010**: The environment MUST be destroyable with a single command, leaving no residual state on the developer's machine.
+- **FR-009**: The stack MUST include a dependency health check so the application only starts after the IDP and database are ready. Each infrastructure service declares a Docker `HEALTHCHECK` directive (`pg_isready` for PostgreSQL; an HTTP probe of `/.well-known/openid-configuration` for Dex). Service startup order is enforced via `depends_on` with `condition: service_healthy` (Dex waits for PostgreSQL). The `pnpm docker:up` command passes `--wait` to `docker compose up`, so the command only exits once all declared healthchecks pass.
+- **FR-010**: The environment MUST be destroyable with a single command, leaving no residual state on the developer's machine. The command is `pnpm docker:down` (equivalent to `docker compose -f docker/compose.yml down -v`). The `-v` flag removes named volumes (including the `postgres_data` volume), ensuring no database state persists between runs.
 
 ### Key Entities
 

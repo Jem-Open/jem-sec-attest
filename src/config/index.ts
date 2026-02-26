@@ -264,10 +264,13 @@ export async function ensureConfigLoaded(): Promise<ConfigSnapshot | null> {
     })();
   }
 
+  const current = _initPromise;
   try {
-    return await _initPromise;
+    return await current;
   } catch (e) {
-    _initPromise = null;
+    if (_initPromise === current) {
+      _initPromise = null;
+    }
     console.error("[config] ensureConfigLoaded failed:", e);
     return null;
   }

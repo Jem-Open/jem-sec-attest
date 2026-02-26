@@ -39,7 +39,14 @@ export default async function DashboardPage({
   }
 
   const cookieStore = await cookies();
-  const locale = cookieStore.get("locale")?.value ?? "en";
+  const localeRaw = cookieStore.get("locale")?.value ?? "en";
+  let locale = "en";
+  try {
+    const supported = Intl.DateTimeFormat.supportedLocalesOf([localeRaw]);
+    locale = supported[0] ?? "en";
+  } catch {
+    locale = "en";
+  }
   const t = await getTranslation(locale);
 
   if (session.employee.tenantId !== tenant) {

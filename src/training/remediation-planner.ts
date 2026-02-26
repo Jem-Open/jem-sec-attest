@@ -106,7 +106,7 @@ export async function generateRemediationCurriculum(
   let llmResult: z.infer<typeof RemediationLlmOutputSchema>;
 
   try {
-    const { experimental_output: object } = await generateText({
+    const { output: object } = await generateText({
       model,
       output: Output.object({ schema: RemediationLlmOutputSchema }),
       system: SYSTEM_PROMPT,

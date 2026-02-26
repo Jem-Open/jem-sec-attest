@@ -43,7 +43,7 @@ async function handleSignOut(
     try {
       expectedHost = new URL(`http://${rawHost}`).host;
     } catch {
-      return NextResponse.json({ error: "Bad request." }, { status: 400 });
+      expectedHost = null;
     }
   }
   let originHost: string | null = null;
@@ -66,7 +66,7 @@ async function handleSignOut(
     try {
       hostname = new URL(`http://${rawHost}`).hostname;
     } catch {
-      return NextResponse.json({ error: "Bad request." }, { status: 400 });
+      hostname = undefined;
     }
   }
   const lookup = await validateTenantSlug(tenantSlug, hostname);

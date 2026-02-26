@@ -73,12 +73,12 @@ ${response}
   let result: FreeTextEvaluation;
 
   try {
-    const { experimental_output: object } = await generateText({
+    const { output: object } = await generateText({
       model,
       system: SYSTEM_PROMPT,
       prompt,
       temperature: 0,
-      experimental_output: Output.object({ schema: FreeTextEvaluationSchema }),
+      output: Output.object({ schema: FreeTextEvaluationSchema }),
     });
     result = object;
   } catch (error) {

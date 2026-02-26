@@ -17,14 +17,18 @@
  * (0.0.0.0) in OIDC callback URLs. Reads from the ALLOWED_CALLBACK_HOSTS
  * environment variable (comma-separated), falling back to "localhost".
  */
+let _allowedHostsCache: Set<string> | null = null;
 function allowedCallbackHosts(): Set<string> {
-  const raw = process.env.ALLOWED_CALLBACK_HOSTS ?? "localhost";
-  return new Set(
-    raw
-      .split(",")
-      .map((h) => h.trim())
-      .filter(Boolean),
-  );
+  if (!_allowedHostsCache) {
+    const raw = process.env.ALLOWED_CALLBACK_HOSTS ?? "localhost";
+    _allowedHostsCache = new Set(
+      raw
+        .split(",")
+        .map((h) => h.trim())
+        .filter(Boolean),
+    );
+  }
+  return _allowedHostsCache;
 }
 
 /**
@@ -44,7 +48,7 @@ export function normalizeRequestUrl(request: Request): URL {
         const parsed = new URL(`http://${hostHeader}`);
         if (allowedCallbackHosts().has(parsed.hostname)) {
           url.hostname = parsed.hostname;
-          url.port = parsed.port || url.port;
+          url.port = parsed.port;
         }
       } catch {
         // malformed Host header — leave url unchanged

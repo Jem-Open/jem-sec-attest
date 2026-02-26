@@ -47,7 +47,10 @@ export function _resetConfigCacheForTesting(): void {
 
 function resolveClientSecret(secretRef: string): string {
   const match = secretRef.match(/^\$\{([A-Z_][A-Z0-9_]*)\}$/);
-  if (!match?.[1]) throw new Error(`Invalid secret reference: ${secretRef}`);
+  if (!match?.[1]) {
+    // Already resolved by env substitution — return as-is
+    return secretRef;
+  }
   const value = process.env[match[1]];
   if (!value) throw new Error(`Missing environment variable: ${match[1]}`);
   return value;

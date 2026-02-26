@@ -40,7 +40,7 @@ describe("generateRoleProfile", () => {
 
   it("returns typed object with jobExpectations array on valid extraction", async () => {
     const mockResult = {
-      experimental_output: {
+      output: {
         jobExpectations: [
           "Manage network security infrastructure",
           "Conduct security audits and assessments",
@@ -61,7 +61,7 @@ describe("generateRoleProfile", () => {
   it("passes the model to generateText", async () => {
     const model = makeMockModel();
     const mockResult = {
-      experimental_output: { jobExpectations: ["Valid expectation text here"] },
+      output: { jobExpectations: ["Valid expectation text here"] },
     };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
     vi.mocked(generateText).mockResolvedValue(mockResult as any); // mock return type
@@ -73,7 +73,7 @@ describe("generateRoleProfile", () => {
 
   it("sets temperature to 0", async () => {
     const mockResult = {
-      experimental_output: { jobExpectations: ["Valid expectation text here"] },
+      output: { jobExpectations: ["Valid expectation text here"] },
     };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
     vi.mocked(generateText).mockResolvedValue(mockResult as any); // mock return type
@@ -85,7 +85,7 @@ describe("generateRoleProfile", () => {
 
   it("includes job_description boundary tags in prompt", async () => {
     const mockResult = {
-      experimental_output: { jobExpectations: ["Valid expectation text here"] },
+      output: { jobExpectations: ["Valid expectation text here"] },
     };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
     vi.mocked(generateText).mockResolvedValue(mockResult as any); // mock return type
@@ -100,7 +100,7 @@ describe("generateRoleProfile", () => {
 
   it("includes untrusted-data instruction in system prompt", async () => {
     const mockResult = {
-      experimental_output: { jobExpectations: ["Valid expectation text here"] },
+      output: { jobExpectations: ["Valid expectation text here"] },
     };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
     vi.mocked(generateText).mockResolvedValue(mockResult as any); // mock return type

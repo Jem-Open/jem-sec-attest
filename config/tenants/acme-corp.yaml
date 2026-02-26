@@ -2,7 +2,7 @@ name: "Acme Corp"
 hostnames:
   - acme.training.example.com
   - acme-legacy.example.com
-  - "${ACME_HOSTNAME:localhost}"  # Local Docker stack testing
+  - "${ACME_HOSTNAME:-localhost}"  # Local Docker stack testing
 emailDomains:
   - acme.com
   - acmecorp.com
@@ -19,12 +19,12 @@ settings:
     oidc:
       # Local Docker IDP (Dex). For production, replace with your IdP URL.
       # dex is resolved via /etc/hosts: 127.0.0.1 dex (host) and Docker DNS (container).
-      issuerUrl: "${ACME_OIDC_ISSUER_URL:http://dex:5556/dex}"
+      issuerUrl: "${ACME_OIDC_ISSUER_URL:-http://dex:5556/dex}"
       clientId: "jem-app"
       # Must match the secret in docker/dex/config.yaml
       clientSecret: "${ACME_OIDC_CLIENT_SECRET}"
       # Must match dex staticClients.redirectURIs
-      redirectUri: "${ACME_OIDC_REDIRECT_URI:http://localhost:3000/api/auth/acme-corp/callback}"
+      redirectUri: "${ACME_OIDC_REDIRECT_URI:-http://localhost:3000/api/auth/acme-corp/callback}"
       scopes:
         - openid
         - profile

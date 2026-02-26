@@ -101,7 +101,7 @@ export async function generateCurriculum(
   let llmResult: z.infer<typeof CurriculumLlmOutputSchema>;
 
   try {
-    const { experimental_output: object } = await generateText({
+    const { output: object } = await generateText({
       model,
       output: Output.object({ schema: CurriculumLlmOutputSchema }),
       system: SYSTEM_PROMPT,

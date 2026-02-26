@@ -393,7 +393,7 @@ function ModuleStatusBadge({
 
 export default function TrainingPage({ params }: { params: Promise<{ tenant: string }> }) {
   const { tenant } = use(params);
-  const { t } = useTranslation();
+  const { t, locale } = useTranslation();
 
   const [pageState, setPageState] = useState<PageState>("loading-session");
   const [session, setSession] = useState<TrainingSessionResponse | null>(null);
@@ -703,6 +703,34 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
       setLastScenarioResult({ score: result.score, rationale: result.rationale });
       setSelectedOption("");
       setFreeTextAnswer("");
+      // Silently refresh modules to pick up updated scenario response state
+      const sessionRes = await fetch(`/api/training/${tenant}/session`);
+      if (sessionRes.status === 409) {
+        await refreshSession();
+        return;
+      }
+      if (sessionRes.ok) {
+        const sessionData = (await sessionRes.json()) as SessionApiResponse;
+        setModules(sessionData.modules);
+      } else {
+        setModules((prev) =>
+          prev.map((m) =>
+            m.moduleIndex === activeModuleIndex
+              ? {
+                  ...m,
+                  scenarioResponses: [
+                    ...m.scenarioResponses,
+                    {
+                      scenarioId: scenario.id,
+                      score: result.score,
+                      llmRationale: result.rationale,
+                    },
+                  ],
+                }
+              : m,
+          ),
+        );
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : t("training.error.submitAnswer"));
       setPageState("error");
@@ -1065,7 +1093,7 @@ export default function TrainingPage({ params }: { params: Promise<{ tenant: str
               const pct =
                 sess.aggregateScore != null ? Math.round(sess.aggregateScore * 100) : null;
               const dateStr = sess.createdAt
-                ? new Date(sess.createdAt).toLocaleDateString(undefined, {
+                ? new Date(sess.createdAt).toLocaleDateString(locale, {
                     year: "numeric",
                     month: "short",
                     day: "numeric",

@@ -56,7 +56,7 @@ export async function generateRoleProfile(
   let result: RoleProfileExtraction;
 
   try {
-    const { experimental_output: object } = await generateText({
+    const { output: object } = await generateText({
       model,
       output: Output.object({ schema: RoleProfileExtractionSchema }),
       system: SYSTEM_PROMPT,

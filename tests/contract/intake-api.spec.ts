@@ -95,7 +95,7 @@ describe("POST /api/intake/{tenant}/generate", () => {
 
   it("returns 200 with jobExpectations array on valid input", async () => {
     const mockResult = {
-      experimental_output: {
+      output: {
         jobExpectations: [
           "Manage network security infrastructure and firewalls",
           "Conduct regular security audits and vulnerability assessments",
@@ -139,7 +139,7 @@ describe("POST /api/intake/{tenant}/generate", () => {
   });
 
   it("returns 422 when AI returns empty expectations", async () => {
-    const mockResult = { experimental_output: { jobExpectations: [] } };
+    const mockResult = { output: { jobExpectations: [] } };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
     vi.mocked(generateText).mockResolvedValue(mockResult as any); // mock return type
 

@@ -44,7 +44,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
     try {
       hostname = new URL(`http://${rawHost}`).hostname;
     } catch {
-      return NextResponse.json({ error: "Bad request." }, { status: 400 });
+      hostname = undefined;
     }
   }
   const lookup = await validateTenantSlug(tenantSlug, hostname);

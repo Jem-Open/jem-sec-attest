@@ -3,7 +3,7 @@
 #
 # IMPORTANT: This configuration is for LOCAL TESTING ONLY.
 # - Users and credentials defined here must never be used in production.
-# - The client secret below must match ACME_OIDC_CLIENT_SECRET in .env.docker.
+# - The client secret below must match ACME_OIDC_CLIENT_SECRET in .env.
 #
 # Regenerate the test user password hash with:
 #   node -e "const b=require('bcryptjs'); b.hash('Acme1234!',10,(_,h)=>console.log(h))"
@@ -27,9 +27,9 @@ oauth2:
 
 staticClients:
   - id: jem-app
-    # Local-dev-only default — matches ACME_OIDC_CLIENT_SECRET in .env.docker.example.
+    # Local-dev-only default — matches ACME_OIDC_CLIENT_SECRET in .env.
     # Dex does not support env-var substitution in config; change this value for production.
-    secret: local-dev-secret-change-for-prod
+    secret: local-dev-secret-min32chars-replace-this-1234
     redirectURIs:
       - http://localhost:3000/api/auth/acme-corp/callback
     name: "JEM Attestation (local)"

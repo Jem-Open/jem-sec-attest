@@ -58,7 +58,7 @@ function makeMockAiResult(
     },
   ],
 ) {
-  return { experimental_output: { modules } };
+  return { output: { modules } };
 }
 
 // ---------------------------------------------------------------------------
@@ -135,7 +135,7 @@ describe("generateCurriculum", () => {
       },
     ];
     vi.mocked(generateText).mockResolvedValue({
-      experimental_output: { modules: aiModules },
+      output: { modules: aiModules },
       // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
     } as any);
 
@@ -166,7 +166,7 @@ describe("generateCurriculum", () => {
 
   it("throws CurriculumGenerationError with code 'generation_failed' when result has empty modules", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: { modules: [] } } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: { modules: [] } } as any);
 
     await expect(
       generateCurriculum(makeRoleProfile(), makeTenantTrainingConfig(), makeMockModel()),
@@ -187,7 +187,7 @@ describe("generateCurriculum", () => {
       },
     ];
     vi.mocked(generateText).mockResolvedValue({
-      experimental_output: { modules: aiModules },
+      output: { modules: aiModules },
       // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
     } as any);
 

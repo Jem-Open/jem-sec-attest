@@ -31,10 +31,11 @@ export async function GET(): Promise<Response> {
       { status: 200 },
     );
   } catch (error) {
+    console.error("[health] health check failed:", error);
     return Response.json(
       {
         status: "unhealthy",
-        error: error instanceof Error ? error.message : "Unknown error",
+        error: "internal error",
       },
       { status: 503 },
     );

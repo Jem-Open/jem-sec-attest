@@ -105,7 +105,7 @@ describe("generateModuleContent", () => {
   it("calls generateText with the provided model", async () => {
     const model = makeMockModel();
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: makeMockObject() } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: makeMockObject() } as any);
 
     await generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, model);
 
@@ -114,7 +114,7 @@ describe("generateModuleContent", () => {
 
   it("calls generateText with an output option", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: makeMockObject() } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: makeMockObject() } as any);
 
     await generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, makeMockModel());
 
@@ -124,7 +124,7 @@ describe("generateModuleContent", () => {
 
   it("system prompt identifies role as security training content creator", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: makeMockObject() } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: makeMockObject() } as any);
 
     await generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, makeMockModel());
 
@@ -135,7 +135,7 @@ describe("generateModuleContent", () => {
 
   it("system prompt contains injection mitigation language about untrusted data", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: makeMockObject() } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: makeMockObject() } as any);
 
     await generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, makeMockModel());
 
@@ -146,7 +146,7 @@ describe("generateModuleContent", () => {
 
   it("user prompt wraps module outline in <module_outline> XML boundary", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: makeMockObject() } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: makeMockObject() } as any);
 
     await generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, makeMockModel());
 
@@ -157,7 +157,7 @@ describe("generateModuleContent", () => {
 
   it("user prompt wraps relevant job expectations in <role_profile> XML boundary", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: makeMockObject() } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: makeMockObject() } as any);
 
     await generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, makeMockModel());
 
@@ -169,7 +169,7 @@ describe("generateModuleContent", () => {
   it("user prompt filters jobExpectations by jobExpectationIndices", async () => {
     // jobExpectationIndices [0, 2] should include indices 0 and 2, not 1 and 3
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: makeMockObject() } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: makeMockObject() } as any);
 
     await generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, makeMockModel());
 
@@ -185,7 +185,7 @@ describe("generateModuleContent", () => {
   it("returns valid ModuleContent with generatedAt added", async () => {
     const mockObj = makeMockObject();
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: mockObj } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: mockObj } as any);
 
     const result = await generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, makeMockModel());
 
@@ -213,7 +213,7 @@ describe("generateModuleContent", () => {
   it("throws ModuleGenerationError with code 'generation_failed' when scenarios are empty", async () => {
     const mockObj = { ...makeMockObject(), scenarios: [] };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: mockObj } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: mockObj } as any);
 
     await expect(
       generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, makeMockModel()),
@@ -227,7 +227,7 @@ describe("generateModuleContent", () => {
   it("throws ModuleGenerationError with code 'generation_failed' when quiz questions are empty", async () => {
     const mockObj = { ...makeMockObject(), quizQuestions: [] };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: mockObj } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: mockObj } as any);
 
     await expect(
       generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, makeMockModel()),
@@ -257,7 +257,7 @@ describe("generateModuleContent", () => {
 
   it("sets temperature to 0", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: makeMockObject() } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: makeMockObject() } as any);
 
     await generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, makeMockModel());
 
@@ -277,7 +277,7 @@ describe("generateModuleContent", () => {
       ],
     };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: mockObj } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: mockObj } as any);
 
     await expect(
       generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, makeMockModel()),
@@ -295,7 +295,7 @@ describe("generateModuleContent", () => {
       ],
     };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: mockObj } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: mockObj } as any);
 
     await expect(
       generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, makeMockModel()),
@@ -313,7 +313,7 @@ describe("generateModuleContent", () => {
       ],
     };
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: mockObj } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: mockObj } as any);
 
     await expect(
       generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, makeMockModel()),
@@ -322,7 +322,7 @@ describe("generateModuleContent", () => {
 
   it("user prompt includes module title in module_outline section", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: makeMockObject() } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: makeMockObject() } as any);
 
     await generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, makeMockModel());
 
@@ -332,7 +332,7 @@ describe("generateModuleContent", () => {
 
   it("user prompt includes topicArea in module_outline section", async () => {
     // biome-ignore lint/suspicious/noExplicitAny: mock return type cannot be fully typed
-    vi.mocked(generateText).mockResolvedValue({ experimental_output: makeMockObject() } as any);
+    vi.mocked(generateText).mockResolvedValue({ output: makeMockObject() } as any);
 
     await generateModuleContent(MODULE_OUTLINE, ROLE_PROFILE, makeMockModel());
 

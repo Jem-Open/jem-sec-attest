@@ -105,6 +105,18 @@ Copy `.env.example` to `.env`. Required variables:
 - 009-postgres-support: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x, React 19.x, `postgres` (postgres.js — Unlicense, zero deps)
 - 008-guardrails-i18n-a11y: Added TypeScript 5.9 (strict mode), Node.js 20.9+ + Next.js 16.x (App Router), React 19.x, Vercel AI SDK v6, Zod v4.x
 
+## Docker Local Stack
+
+The Docker Compose stack (`docker/compose.yml`) runs **infrastructure only** — PostgreSQL and Dex OIDC IDP. The Next.js application always runs locally via `pnpm dev`. This is by design: the app uses hot-reload and local debugging, while external dependencies (database, identity provider) run in containers.
+
+```bash
+pnpm docker:up              # Start infra (Postgres + Dex)
+pnpm dev                    # Start the app locally (required separately)
+pnpm docker:down            # Tear down infra
+```
+
+Do **not** add an `app` service to `docker/compose.yml` — the app is always run locally.
+
 ## Active Technologies
 - TypeScript 5.9, Node.js 20.9+ (011-docker-e2e-testing)
 - PostgreSQL 16 via `PostgresAdapter` (existing); schema auto-initialised by `adapter.initialize()` on first connection (011-docker-e2e-testing)

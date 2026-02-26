@@ -21,6 +21,7 @@
 import { AuditLogger } from "@/audit/audit-logger";
 import { OIDCAdapter } from "@/auth/adapters/oidc-adapter";
 import { createAuthConfigErrorEvent, logAuthEvent } from "@/auth/audit";
+import { normalizeRequestUrl } from "@/auth/normalize-url";
 import { validateTenantSlug } from "@/auth/tenant-validation";
 import { getStorage } from "@/storage/factory";
 import { NextResponse } from "next/server";
@@ -32,7 +33,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
 
   // Validate tenant slug — generic 404 prevents enumeration
   const rawHost = request.headers.get("host");
-  const hostname = rawHost ? new URL(`http://${rawHost}`).hostname : undefined;
+  let hostname: string | undefined;
+  if (rawHost) {
+    try {
+      hostname = new URL(`http://${rawHost}`).hostname;
+    } catch {
+      return NextResponse.json({ error: "Bad request." }, { status: 400 });
+    }
+  }
   const lookup = await validateTenantSlug(tenantSlug, hostname);
   if (!lookup.valid) {
     return NextResponse.json({ error: "Organization not found." }, { status: 404 });
@@ -40,6 +48,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
 
   const { tenant } = lookup;
 
+  const normalizedUrl = normalizeRequestUrl(request);
   try {
     const result = await oidcAdapter.initiateSignIn(request, tenant);
 
@@ -70,7 +79,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ tena
     await logAuthEvent(auditLogger, createAuthConfigErrorEvent(tenantSlug, auditReason, request));
 
     return NextResponse.redirect(
-      new URL(`/${tenantSlug}/auth/error?code=${redirectCode}`, request.url),
+      new URL(`/${tenantSlug}/auth/error?code=${redirectCode}`, normalizedUrl),
     );
   }
 }

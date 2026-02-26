@@ -221,5 +221,9 @@ test("evidence export — PDF endpoint returns a valid PDF for a completed sessi
   } else if (sessionResponse.status() === 404) {
     // No session exists at all — skip so CI dashboards show the PDF path was not exercised
     test.skip(true, "No completed/passed session available — PDF validation skipped.");
+  } else {
+    throw new Error(
+      `Unexpected session API response: ${sessionResponse.status()} — expected 200 or 404`,
+    );
   }
 });

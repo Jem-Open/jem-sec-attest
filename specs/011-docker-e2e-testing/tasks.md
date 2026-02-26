@@ -43,14 +43,14 @@
 
 **Goal**: A single command starts all services (app, Dex IDP, PostgreSQL), all health checks pass, the app is reachable at `http://localhost:3000`, and logs are accessible via `docker compose logs`.
 
-**Independent Test**: Run `pnpm docker:up` → verify `docker compose -f docker/compose.yml ps` shows all three services as `healthy`.
+**Independent Test**: Run `pnpm docker:up` → verify `docker compose -f docker/compose.yml ps` shows both services as `healthy`.
 
 - [x] T008 [P] [US1] Create `docker/dex/config.yaml` — Dex IDP config: `issuer: http://dex:5556/dex`, `storage: { type: memory }`, `web: { http: 0.0.0.0:5556 }`, `enablePasswordDB: true`, `oauth2: { skipApprovalScreen: true }`, `staticClients` entry with `id: jem-app`, secret matching `.env.docker.example` default, `redirectURIs: ["http://localhost:3000/api/auth/acme-corp/callback"]`, `name: "JEM Attestation (local)"`, `staticPasswords` entry for `alice@acme.com` / `alice` / `acme-test-001` (bcrypt hash of `Acme1234!` — use `node -e "require('bcryptjs').hash('Acme1234!', 10, (_,h)=>console.log(h))"` or a pre-generated hash; document generation command in a comment)
 - [x] T009 [P] [US1] Modify `config/tenants/acme-corp.yaml` — add `settings.auth.oidc` block: `issuerUrl: "${ACME_OIDC_ISSUER_URL}"`, `clientId: "${ACME_OIDC_CLIENT_ID}"`, `clientSecret: "${ACME_OIDC_CLIENT_SECRET}"`, `redirectUri: "${ACME_OIDC_REDIRECT_URI}"`, `scopes: [openid, profile, email]`
 - [x] T010 [US1] Create `docker/compose.yml` — **Note: the actual implementation intentionally diverges from this original description in three ways: (1) there is no `app` service — Next.js runs locally via `pnpm dev` rather than as a containerised service; (2) the Dex image used is `dexidp/dex:v2.41.1` (not `v2.37.0`); (3) the Dex healthcheck uses `wget` against the OIDC discovery endpoint (`http://localhost:5556/dex/.well-known/openid-configuration`) rather than `curl http://localhost:5558/healthz/ready`.** Two services: `postgres` (`postgres:16-alpine`, env vars from `.env.docker`, healthcheck `pg_isready -U postgres -d jem_attest` every 10s/5 retries/30s start, network `jem_local`); `dex` (`dexidp/dex:v2.41.1`, ports `5556:5556` and `5558:5558`, volume mount `./dex/config.yaml:/etc/dex/config.yaml:ro`, command `dex serve /etc/dex/config.yaml`, healthcheck `wget -qO- http://localhost:5556/dex/.well-known/openid-configuration` every 10s/3 retries/15s start, depends_on postgres healthy, network `jem_local`); volumes `postgres_data`; networks `jem_local: driver: bridge`
 - [x] T011 [US1] Update `package.json` `scripts` — add `"docker:up": "docker compose -f docker/compose.yml up --build -d"` and `"docker:down": "docker compose -f docker/compose.yml down -v"`
 
-**Checkpoint**: `pnpm docker:up` completes without error. `docker compose -f docker/compose.yml ps` shows all three services `(healthy)`. App responds at `http://localhost:3000/api/health`. `pnpm docker:down` cleanly removes all containers and volumes.
+**Checkpoint**: `pnpm docker:up` completes without error. `docker compose -f docker/compose.yml ps` shows both services `(healthy)`. App responds at `http://localhost:3000/api/health`. `pnpm docker:down` cleanly removes all containers and volumes.
 
 ---
 

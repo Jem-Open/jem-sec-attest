@@ -28,7 +28,7 @@ import type { EmployeeSession } from "./src/auth/types";
 import { getSnapshot } from "./src/config/snapshot";
 import { createResolver } from "./src/tenant/resolver";
 
-const PUBLIC_PATHS = ["/api/admin/", "/api/auth/", "/api/health/", "/_next/", "/favicon.ico"];
+const PUBLIC_PATHS = ["/api/auth/", "/api/health/", "/_next/", "/favicon.ico"];
 
 interface SessionData {
   employee?: EmployeeSession;

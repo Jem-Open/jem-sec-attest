@@ -21,6 +21,7 @@
 import { AuditLogger } from "@/audit/audit-logger";
 import { OIDCAdapter } from "@/auth/adapters/oidc-adapter";
 import { createSignOutEvent, logAuthEvent } from "@/auth/audit";
+import { normalizeRequestUrl } from "@/auth/normalize-url";
 import { destroySession, getSession } from "@/auth/session/session-manager";
 import { validateTenantSlug } from "@/auth/tenant-validation";
 import { getStorage } from "@/storage/factory";
@@ -32,18 +33,42 @@ async function handleSignOut(
   request: Request,
   { params }: { params: Promise<{ tenant: string }> },
 ) {
+  const normalizedUrl = normalizeRequestUrl(request);
+
   // CSRF protection: validate Origin header matches the request host
   const origin = request.headers.get("origin");
-  const requestUrl = new URL(request.url);
-  if (!origin || new URL(origin).host !== requestUrl.host) {
+  const rawHost = request.headers.get("host");
+  let expectedHost: string | null = null;
+  if (rawHost) {
+    try {
+      expectedHost = new URL(`http://${rawHost}`).host;
+    } catch {
+      return NextResponse.json({ error: "Bad request." }, { status: 400 });
+    }
+  }
+  let originHost: string | null = null;
+  if (origin) {
+    try {
+      originHost = new URL(origin).host;
+    } catch {
+      originHost = null;
+    }
+  }
+  if (!originHost || !expectedHost || originHost !== expectedHost) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
   const { tenant: tenantSlug } = await params;
 
   // Validate tenant slug — generic 404 prevents enumeration
-  const rawHost = request.headers.get("host");
-  const hostname = rawHost ? new URL(`http://${rawHost}`).hostname : undefined;
+  let hostname: string | undefined;
+  if (rawHost) {
+    try {
+      hostname = new URL(`http://${rawHost}`).hostname;
+    } catch {
+      return NextResponse.json({ error: "Bad request." }, { status: 400 });
+    }
+  }
   const lookup = await validateTenantSlug(tenantSlug, hostname);
   if (!lookup.valid) {
     return NextResponse.json({ error: "Organization not found." }, { status: 404 });
@@ -77,7 +102,7 @@ async function handleSignOut(
   }
 
   // No IdP logout URL configured — redirect to confirmation page
-  return NextResponse.redirect(new URL(`/${tenantSlug}/auth/signout-confirm`, request.url));
+  return NextResponse.redirect(new URL(`/${tenantSlug}/auth/signout-confirm`, normalizedUrl));
 }
 
 export async function POST(request: Request, context: { params: Promise<{ tenant: string }> }) {

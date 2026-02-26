@@ -156,14 +156,20 @@ export async function middleware(request: NextRequest) {
 
   // No valid session — redirect to sign-in
   if (!employee) {
-    const redirectTenant = effectiveTenantId ?? tenantSlug ?? "unknown";
+    if (!effectiveTenantId && !tenantSlug) {
+      return new NextResponse(null, { status: 404 });
+    }
+    const redirectTenant = effectiveTenantId ?? tenantSlug;
     const signInUrl = new URL(`/${redirectTenant}/auth/signin`, request.url);
     return NextResponse.redirect(signInUrl);
   }
 
   // Session expired — redirect to sign-in and clear the cookie
   if (employee.expiresAt < Date.now()) {
-    const signInUrl = new URL(`/${effectiveTenantId ?? "unknown"}/auth/signin`, request.url);
+    if (!effectiveTenantId) {
+      return new NextResponse(null, { status: 404 });
+    }
+    const signInUrl = new URL(`/${effectiveTenantId}/auth/signin`, request.url);
     const redirectResponse = NextResponse.redirect(signInUrl);
     redirectResponse.cookies.set("jem_session", "", {
       httpOnly: true,

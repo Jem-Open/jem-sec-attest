@@ -89,6 +89,8 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/jem_attest
           SESSION_SECRET: ci-test-session-secret-minimum-32-characters-long
           ACME_OIDC_CLIENT_SECRET: local-dev-secret-min32chars-replace-this-1234
+          ACME_WEBHOOK_SECRET: http://localhost:9999/webhook/acme
+          GLOBEX_WEBHOOK_SECRET: http://localhost:9999/webhook/globex
 
       - name: Start application
         run: pnpm start &
@@ -96,6 +98,8 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/jem_attest
           SESSION_SECRET: ci-test-session-secret-minimum-32-characters-long
           ACME_OIDC_CLIENT_SECRET: local-dev-secret-min32chars-replace-this-1234
+          ACME_WEBHOOK_SECRET: http://localhost:9999/webhook/acme
+          GLOBEX_WEBHOOK_SECRET: http://localhost:9999/webhook/globex
 
       - name: Wait for application
         run: npx wait-on http://localhost:3000/api/health --timeout 60000
@@ -109,6 +113,8 @@ jobs:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/jem_attest
           SESSION_SECRET: ci-test-session-secret-minimum-32-characters-long
           ACME_OIDC_CLIENT_SECRET: local-dev-secret-min32chars-replace-this-1234
+          ACME_WEBHOOK_SECRET: http://localhost:9999/webhook/acme
+          GLOBEX_WEBHOOK_SECRET: http://localhost:9999/webhook/globex
 
       - name: Upload test artifacts
         if: failure()

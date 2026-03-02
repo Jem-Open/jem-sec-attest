@@ -4,6 +4,11 @@
   "description": "Multi-tenant security attestation training platform",
   "type": "module",
   "license": "Apache-2.0",
+  "author": "Jem-Open contributors",
+  "repository": { "type": "git", "url": "https://github.com/Jem-Open/jem-sec-attest.git" },
+  "bugs": { "url": "https://github.com/Jem-Open/jem-sec-attest/issues" },
+  "homepage": "https://github.com/Jem-Open/jem-sec-attest#readme",
+  "keywords": ["security", "compliance", "multi-tenant", "ai", "training"],
   "engines": {
     "node": ">=20.9.0"
   },
@@ -62,7 +67,8 @@
   "packageManager": "pnpm@9.15.4",
   "pnpm": {
     "overrides": {
-      "minimatch@<10.2.1": ">=10.2.1"
+      "minimatch@<10.2.3": ">=10.2.3",
+      "rollup@<4.59.0": ">=4.59.0"
     }
   }
 }

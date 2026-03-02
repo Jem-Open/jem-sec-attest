@@ -28,6 +28,14 @@ import { expect, test } from "./fixtures/auth";
 
 const TENANT = "acme-corp";
 
+// AI-powered tests (intake, training, evidence export) require a valid AI
+// provider key (ANTHROPIC_API_KEY, OPENAI_API_KEY, or AZURE_OPENAI_API_KEY).
+// In CI these keys are typically unavailable, so we skip those tests
+// gracefully. Run the full suite locally with a provider key configured.
+const HAS_AI_KEY = Boolean(
+  process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY || process.env.AZURE_OPENAI_API_KEY,
+);
+
 // ---------------------------------------------------------------------------
 // Test 1: Authenticated session is active after sign-in
 // ---------------------------------------------------------------------------
@@ -53,6 +61,7 @@ test("authenticated session is active after sign-in", async ({ page }) => {
 // ---------------------------------------------------------------------------
 
 test("training intake — completes role profile generation", async ({ page }) => {
+  test.skip(!HAS_AI_KEY, "Skipped: no AI provider key configured (set ANTHROPIC_API_KEY to run)");
   await page.goto(`/${TENANT}/intake`);
 
   // Wait for the intake page to load (may show an existing profile or the input form)
@@ -102,6 +111,7 @@ test("training intake — completes role profile generation", async ({ page }) =
 
 // NOTE: This test depends on the session created in test 2 (sequential dependency).
 test("training — starts a training session and begins first module", async ({ page }) => {
+  test.skip(!HAS_AI_KEY, "Skipped: no AI provider key configured (set ANTHROPIC_API_KEY to run)");
   // AI content generation can take 30-90s; override the default 30s test timeout
   test.setTimeout(300_000);
 
@@ -319,6 +329,7 @@ test("training — starts a training session and begins first module", async ({ 
 test("evidence export — PDF endpoint returns a valid PDF for a completed session", async ({
   page,
 }) => {
+  test.skip(!HAS_AI_KEY, "Skipped: no AI provider key configured (set ANTHROPIC_API_KEY to run)");
   // Retrieve the current session from the API
   const sessionResponse = await page.request.get(`/api/training/${TENANT}/session`);
   expect(sessionResponse.status()).toBeLessThan(500);

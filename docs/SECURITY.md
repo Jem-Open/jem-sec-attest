@@ -179,8 +179,10 @@ Stay tuned for updates in future releases.
 If you discover a security vulnerability in jem-sec-attest, please report it responsibly:
 
 1. **Do not** open a public GitHub issue
-2. Contact the maintainers privately via the project's security contact
-3. Provide detailed information about the vulnerability
+2. Use [GitHub Private Vulnerability Reporting](https://github.com/Jem-Open/jem-sec-attest/security/advisories/new) to submit your report
+3. Provide detailed information about the vulnerability, including steps to reproduce
 4. Allow time for a fix to be developed and released
+
+See [.github/SECURITY.md](../.github/SECURITY.md) for our response timeline and supported versions.
 
 We are committed to addressing security issues promptly and transparently.

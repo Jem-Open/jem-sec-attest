@@ -108,7 +108,7 @@ jobs:
         run: pnpm exec playwright install chromium --with-deps
 
       - name: Run E2E tests
-        run: pnpm test:e2e -- --retries=2
+        run: pnpm test:e2e --retries=2
         env:
           DATABASE_URL: postgres://postgres:postgres@localhost:5432/jem_attest
           SESSION_SECRET: ci-test-session-secret-minimum-32-characters-long

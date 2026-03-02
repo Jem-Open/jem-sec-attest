@@ -80,26 +80,22 @@ jobs:
         run: pnpm docker:up
 
       # NOTE: These are test-only fixtures for the local Docker stack (Dex IDP + Postgres).
-      # They match docker/compose.yml and docker/dex/config.yml — not real credentials.
+      # They match docker/compose.yml and docker/dex/config.yaml — not real credentials.
+      # DB uses compose defaults (postgres:postgres). ACME_ env vars match the tenant
+      # YAML (config/tenants/acme-corp.yaml) and the Dex static client config.
       - name: Build application
         run: pnpm build
         env:
-          DATABASE_URL: postgres://jem:jem_dev_password@localhost:5432/jem_attest
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/jem_attest
           SESSION_SECRET: ci-test-session-secret-minimum-32-characters-long
-          OIDC_ISSUER_URL: http://dex:5556/dex
-          OIDC_CLIENT_ID: jem-sec-attest
-          OIDC_CLIENT_SECRET: jem-sec-attest-secret
-          OIDC_REDIRECT_URI: http://localhost:3000/api/auth/acme-corp/callback
+          ACME_OIDC_CLIENT_SECRET: local-dev-secret-min32chars-replace-this-1234
 
       - name: Start application
         run: pnpm start &
         env:
-          DATABASE_URL: postgres://jem:jem_dev_password@localhost:5432/jem_attest
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/jem_attest
           SESSION_SECRET: ci-test-session-secret-minimum-32-characters-long
-          OIDC_ISSUER_URL: http://dex:5556/dex
-          OIDC_CLIENT_ID: jem-sec-attest
-          OIDC_CLIENT_SECRET: jem-sec-attest-secret
-          OIDC_REDIRECT_URI: http://localhost:3000/api/auth/acme-corp/callback
+          ACME_OIDC_CLIENT_SECRET: local-dev-secret-min32chars-replace-this-1234
 
       - name: Wait for application
         run: npx wait-on http://localhost:3000/api/health --timeout 60000
@@ -110,12 +106,9 @@ jobs:
       - name: Run E2E tests
         run: pnpm test:e2e -- --retries=2
         env:
-          DATABASE_URL: postgres://jem:jem_dev_password@localhost:5432/jem_attest
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/jem_attest
           SESSION_SECRET: ci-test-session-secret-minimum-32-characters-long
-          OIDC_ISSUER_URL: http://dex:5556/dex
-          OIDC_CLIENT_ID: jem-sec-attest
-          OIDC_CLIENT_SECRET: jem-sec-attest-secret
-          OIDC_REDIRECT_URI: http://localhost:3000/api/auth/acme-corp/callback
+          ACME_OIDC_CLIENT_SECRET: local-dev-secret-min32chars-replace-this-1234
 
       - name: Upload test artifacts
         if: failure()

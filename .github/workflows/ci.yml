@@ -79,6 +79,8 @@ jobs:
       - name: Start infrastructure
         run: pnpm docker:up
 
+      # NOTE: These are test-only fixtures for the local Docker stack (Dex IDP + Postgres).
+      # They match docker/compose.yml and docker/dex/config.yml — not real credentials.
       - name: Build application
         run: pnpm build
         env:

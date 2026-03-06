@@ -31,12 +31,12 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.45",
-    "@ai-sdk/azure": "^3.0.31",
-    "@ai-sdk/openai": "^3.0.30",
-    "ai": "^6.0.90",
-    "better-sqlite3": "^11.7.0",
-    "dotenv": "^16.4.7",
+    "@ai-sdk/anthropic": "^3.0.50",
+    "@ai-sdk/azure": "^3.0.38",
+    "@ai-sdk/openai": "^3.0.37",
+    "ai": "^6.0.105",
+    "better-sqlite3": "^12.6.2",
+    "dotenv": "^17.3.1",
     "iron-session": "^8.0.4",
     "next": "^16.1.6",
     "openid-client": "^6.8.2",

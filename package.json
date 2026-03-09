@@ -31,10 +31,10 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.50",
-    "@ai-sdk/azure": "^3.0.38",
-    "@ai-sdk/openai": "^3.0.37",
-    "ai": "^6.0.105",
+    "@ai-sdk/anthropic": "^3.0.58",
+    "@ai-sdk/azure": "^3.0.42",
+    "@ai-sdk/openai": "^3.0.41",
+    "ai": "^6.0.116",
     "better-sqlite3": "^12.6.2",
     "dotenv": "^17.3.1",
     "iron-session": "^8.0.4",
